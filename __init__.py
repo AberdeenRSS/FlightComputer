@@ -91,6 +91,10 @@ flight_req = {
         '08f95e52-d372-4827-bc3d-3e29a1ea2f9a': [{
             "name": "temperature",
             "type": "float"
+        }],
+        '6c482d13-64b5-47c7-b804-6186c3669d91': [{
+            "name": "state",
+            "type": "string"
         }]
     }
 }
@@ -140,7 +144,14 @@ def catch_all(event, data):
 
 sio.connect(f"{endpoint}", headers=http_headers, transports = ['websocket'])
 
+ignitorState = [{
+        '_datetime': datetime.now().isoformat(),
+        'measured_values': {
+            'state': 'NOT_IGNITED'
+        }
+    }]
 
+requests.post(f"{endpoint}/flight_data/report/{flight_id}/6c482d13-64b5-47c7-b804-6186c3669d91", json=ignitorState, headers=http_headers)
 
 
 # Send measurements for 100s
