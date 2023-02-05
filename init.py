@@ -3,8 +3,6 @@ import random
 from time import sleep
 import msal
 import json
-import sys
-import logging
 import requests
 import socketio
 

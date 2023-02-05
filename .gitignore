@@ -1,2 +1,5 @@
 /.venv
-/secrets
+/config
+/bin
+/.buildozer
+**/__pycache__
