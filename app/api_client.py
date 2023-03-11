@@ -1,12 +1,19 @@
 from datetime import datetime, timedelta
 import random
 from time import sleep
-from typing import Union
+from typing import Any, Union
+from uuid import UUID
 import msal
 import json
 import httpx
 import socketio
 from asyncio import Future
+from app.logic.rocket_definition import Rocket
+from app.logic.to_vessel_and_flight import to_vessel_and_flight
+from app.models.command import Command, CommandSchema
+from app.models.vessel import Vessel, VesselSchema
+from app.models.flight import Flight, FlightSchema
+from json import dumps
 
 class ApiClient:
     '''API client for the rss FlightManagementServer'''
@@ -14,13 +21,6 @@ class ApiClient:
     bearer_token: Future = Future()
 
     endpoint: str
-
-    vessel: Union[dict, None] = None
-
-    flight: Union[dict, None] = None
-    
-    flight_id: Union[str, None] = None
-
 
     def __init__(self) -> None:
 
@@ -62,14 +62,15 @@ class ApiClient:
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'}
 
-    async def register_vessel(self, vessel_req):
+    async def register_vessel(self, vessel_req) -> Vessel:
+
         async with httpx.AsyncClient() as client:
             vessel_creation_res = await client.post(f"{self.endpoint}/vessel/register", headers=self.get_basic_headers(), json=vessel_req)
 
             if vessel_creation_res.status_code < 200 or vessel_creation_res.status_code > 300:
                 raise ConnectionError(f'Vessel could not be created {vessel_creation_res.text}')
 
-            self.vessel = vessel_creation_res.json()
+            return VesselSchema().load_safe(Vessel, vessel_creation_res.json())
     
     async def create_new_flight(self, flight_req):
         async with httpx.AsyncClient() as client:
@@ -78,61 +79,87 @@ class ApiClient:
             if flight_res.status_code < 200 or flight_res.status_code > 300:
                 raise ConnectionError(f'Vessel could not be created {flight_res.text}')
 
-            self.flight = flight_res.json()
-            self.flight_id = self.flight['_id']
+            return FlightSchema().load_safe(Flight, flight_res.json())
 
-    async def report_flight_data(self, part_id, data):
+    async def report_flight_data(self, flight_id, part_id, data):
         async with httpx.AsyncClient() as client:
-            res = await client.post(f"{self.endpoint}/flight_data/report/{self.flight_id}/{part_id}", json=data, headers=self.get_basic_headers())
+            res = await client.post(f"{self.endpoint}/flight_data/report/{flight_id}/{part_id}", json=data, headers=self.get_basic_headers())
 
             if res.status_code < 200 or res.status_code > 300:
-                raise ConnectionError(f' Error sending flight data: {res.text}')
+                raise ConnectionError(f'Error sending flight data: {res.text}')
 
-    
-    def init_socket_io(self):
-        sio = socketio.Client()
 
-        headers = self.get_basic_headers()
+    async def run_full_setup_handshake(self, rocket: Rocket) -> Flight:
 
-        @sio.event
-        def connect():
-            print("I'm connected!")
-            sio.call('flight_data.subscribe', self.flight_id)
-
-        @sio.event
-        def connect_error(data):
-            print("The connection failed!")
-
-        @sio.event
-        def disconnect():
-            print("I'm disconnected!")
-
-        @sio.on(f'flight_data.new')
-        def on_data(data):
-            print('data received')
-            print(data)
-
-        @sio.on('*')
-        def catch_all(event, data):
-            print(f'received unknown event {event}')
-
-        sio.connect(f"{self.endpoint}", headers=headers, transports = ['websocket'])
-
-    async def run_full_setup_handshake(self, vessel, measured_parts):
+        rocket.id = UUID(self._secrets_config['client_id'])
 
         # Wait for the auth to be finished
         await self.authenticate()
 
-        await self.register_vessel(vessel)
+        vessel, flight = to_vessel_and_flight(rocket)
+
+        vessel_res = await self.register_vessel(VesselSchema().dump(vessel))
+
+        rocket.version = vessel_res._version
+        rocket.id = vessel_res._id
+
+        flight._vessel_version = vessel_res._version
+        flight._vessel_id = vessel_res._id
+
+        return await self.create_new_flight(FlightSchema().dump(flight))
 
 
-        flight_req = {
-            "_vessel_id": self.vessel["_id"],
-            "name": f"Flight at {datetime.now()}",
-            "start": datetime.now().isoformat(),
-            "measured_parts": measured_parts
-        }
+class RealtimeApiClient():
 
-        await self.create_new_flight(flight_req)
+    base_client: ApiClient
 
-        self.init_socket_io()
+    sio = socketio.Client()
+
+    __commands_buffer = list[Command]()
+
+    def __init__(self, base_client: ApiClient, flight: Flight): 
+
+        self.base_client = base_client
+        self.headers = base_client.get_basic_headers()
+        self.flight = flight
+
+    def connect(self):
+        self.init_events()
+        self.sio.connect(f"{self.base_client.endpoint}", headers=self.headers, transports = ['websocket'])
+        self.sio.call('commands.subscribe', self.flight._id)
+
+
+
+    def init_events(self):
+
+        @self.sio.event
+        def connect():
+            self.sio.call('commands.subscribe', self.flight._id)
+
+        @self.sio.event
+        def connect_error(data):
+            print(f"The connection failed: {data}")
+
+        @self.sio.event
+        def disconnect():
+            print("Socket io lost connection")
+            
+        @self.sio.on('command.new')
+        def command_new(data: Any):
+            try:
+                self.__commands_buffer.extend(CommandSchema().load_list_safe(Command, data['commands']))
+            except:
+                print(f'Failed parsing command')
+
+        @self.sio.on('*')
+        def catch_all(event, data):
+            print(f'received unknown event {event}')
+
+    def swap_command_buffer(self) -> list[Command]:
+
+        old = self.__commands_buffer
+        self.__commands_buffer = list[Command]()
+        return old
+
+
+        

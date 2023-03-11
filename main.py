@@ -47,7 +47,9 @@ async def main():
     for d in done:
         if d.exception() is None:
             continue
-        raise d.exception()
+        e = d.exception()
+        if e:
+            raise e
 
 if __name__ == '__main__':
     # Try running the app

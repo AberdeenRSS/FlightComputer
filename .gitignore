@@ -1,5 +1,5 @@
 /.venv
-/config
+/config/api_secrets.json
 /bin
 /.buildozer
 **/__pycache__

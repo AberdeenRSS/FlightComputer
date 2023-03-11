@@ -1,27 +1,26 @@
 
 import asyncio
 from datetime import datetime
-from typing import cast
+from random import random
+from typing import Iterable, Tuple, Union, cast
 from kivy.app import App
 from kivy.uix.label import Label
 from plyer.facades.accelerometer import Accelerometer
 from kivy.core.window import Window
 from plyer import accelerometer
-from app.api_client import ApiClient
+from app.api_client import ApiClient, RealtimeApiClient
 from uuid import uuid4
+from app.logic.commands.command import Command
+from app.logic.execution import topological_sort
+from app.logic.rocket_definition import Part
+from app.rockets.make_spatula import make_spatula
+from app.models.flight import Flight
+from app.models.command import Command as CommandModel
+from app.logic.rocket_definition import Rocket
 
-accelerometer = cast(Accelerometer, accelerometer)
+rocket: Rocket
 
-class SensorFrame:
-
-    acceleration = None
-
-    def poll(self):
-        try:
-            accelerometer.enable()
-            self.acceleration = accelerometer.acceleration
-        except:
-            pass
+flight: Flight
 
 class RSSFlightComputer(App):
 
@@ -42,112 +41,51 @@ def init_app():
 async def run_loop():
 
     api_client = ApiClient()
-
-    # flight_initialization_done, flight_initialization_running  = await asyncio.wait({asyncio.create_task(init_flight(api_client))})
-
     await init_flight(api_client)
+    realtime_client = RealtimeApiClient(api_client, flight)
+    execution_order = topological_sort(rocket.parts)
 
-    sensors = SensorFrame()
+    measurement_buffers = dict[Part, list[Iterable[Union[str, bool, float, None]]]]()
 
     async def update():
-        sensors.poll()
 
+        new_commands = realtime_client.swap_command_buffer()
 
+        commands_by_part = dict[Part, list[Command]]()
 
-        acc_data =  [{
-                '_datetime': datetime.now().isoformat(),
-                'measured_values': {
-                    'state': 'Active',
-                }
-            }]
+        for c in new_commands:
+            part_of_command = rocket.part_lookup.get(cast(CommandModel, c)._id)
+            if part_of_command is None:
+                continue
+            if part_of_command not in commands_by_part:
+                commands_by_part[part_of_command] = list()
+            commands_by_part[part_of_command].append(Command())
 
-        measurements = acc_data[0]['measured_values']
+        for p in execution_order:
 
-        if sensors.acceleration is not None:
-            measurements['acceleration-x'] = sensors.acceleration[0]
-            measurements['acceleration-y'] = sensors.acceleration[1]
-            measurements['acceleration-z'] = sensors.acceleration[2]
+            commands = commands_by_part.get(p)
+            p.update(commands or [])
 
+        for p in execution_order:
 
-        await api_client.report_flight_data('a55fa0f0-6396-4f5b-99c7-811245239383', acc_data)
+            if p not in measurement_buffers:
+                measurement_buffers[p] = list()
 
-    async def draw():
-        app.label.text = f'Current accelertation: {sensors.acceleration}'
+            measurement_buffers[p].extend(p.collect_measurements())
+
+        for p in execution_order:
+            p.flush()
+
 
     while True:
-        await asyncio.sleep(0.5)
         await update()
-        await draw()
+        # await draw()
 
 async def init_flight(api_client: ApiClient):
-    vessel_req = {
-        "name": "Kai",
-        "_id": uuid4().__str__(),
-        "_version": 0,
-        "parts": [
-            {
-                "_id": "08f95e52-d372-4827-bc3d-3e29a1ea2f9a",
-                "name": "Engine x",
-                "part_type": "Propulsion.Engine.Main"
-            },
-            {
-                "_id": "6c482d13-64b5-47c7-b804-6186c3669d91",
-                "name": "Electrical engine ignitors",
-                "part_type": "Propulsion.Control.Ignition",
-                "parent": "08f95e52-d372-4827-bc3d-3e29a1ea2f9a"
-            },
-            {
-                "_id": "704f4a3f-c297-4f43-bf01-d6a3e870f1d4",
-                "name": "Parachute",
-                "part_type": "Aerodynamics.Breaks.Parachute"
-            },
-            {
-                "_id": "25489204-b26f-405f-8010-2878c00350e0",
-                "name": "Fin 1",
-                "part_type": "Aerodynamics.ControlSurface.Fin"
-            },
-            {
-                "_id": "da04e924-96e2-4382-b351-6741cf1b68e7",
-                "name": "Fin 2",
-                "part_type": "Aerodynamics.ControlSurface.Fin"
-            },
-            {
-                "_id": "a1c77546-603b-4bc3-956a-db08802adafe",
-                "name": "Fin 3",
-                "part_type": "Aerodynamics.ControlSurface.Fin"
-            },
-            {
-                "_id": "a55fa0f0-6396-4f5b-99c7-811245239383",
-                "name": "Accelerometer",
-                "part_type": "Sensor.Accelerometer"
-            },
-        ]
-    } 
 
-    measured_parts = {
-        '08f95e52-d372-4827-bc3d-3e29a1ea2f9a': [{
-            "name": "temperature",
-            "type": "float"
-        }],
-        'a55fa0f0-6396-4f5b-99c7-811245239383': [
-            {
-                "name": "state",
-                "type": "string"
-            },
-            {
-                "name": "acceleration-x",
-                "type": "float"
-            },
-            {
-                "name": "acceleration-y",
-                "type": "float"
-            },
-            {
-                "name": "acceleration-z",
-                "type": "float"
-            }
-        ]
-    }
+    global rocket
+    global flight
 
-    await api_client.run_full_setup_handshake(vessel_req, measured_parts)
+    rocket = make_spatula()
+    flight = await api_client.run_full_setup_handshake(rocket)
 
