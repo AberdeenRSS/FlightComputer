@@ -11,6 +11,7 @@ from asyncio import Future
 from app.logic.rocket_definition import Rocket
 from app.logic.to_vessel_and_flight import to_vessel_and_flight
 from app.models.command import Command, CommandSchema
+from app.models.flight_measurement import FlightMeasurementSchema
 from app.models.vessel import Vessel, VesselSchema
 from app.models.flight import Flight, FlightSchema
 from json import dumps
@@ -81,13 +82,26 @@ class ApiClient:
 
             return FlightSchema().load_safe(Flight, flight_res.json())
 
-    async def report_flight_data(self, flight_id, part_id, data):
+    async def try_report_flight_data(self, flight_id, data, timeout: float) -> tuple[bool, str]:
+
+        serialized = FlightMeasurementSchema().dump_list(data)
+
         async with httpx.AsyncClient() as client:
-            res = await client.post(f"{self.endpoint}/flight_data/report/{flight_id}/{part_id}", json=data, headers=self.get_basic_headers())
 
-            if res.status_code < 200 or res.status_code > 300:
-                raise ConnectionError(f'Error sending flight data: {res.text}')
+            try:
+                res = await client.post(f"{self.endpoint}/flight_data/report/{flight_id}", json=serialized, headers=self.get_basic_headers(), timeout=timeout)
 
+                success = res.status_code >= 200 or res.status_code < 300
+
+                if not success:
+                    print(f'Warning error sending flight data: {res.text}')
+
+                return (success, str(res.status_code))
+            except TimeoutError:
+                return (False, 'TIMEOUT')
+            except  Exception as e:
+                print(f'Fatal error sending flight data: {e}')
+                return (False, str(e))
 
     async def run_full_setup_handshake(self, rocket: Rocket) -> Flight:
 

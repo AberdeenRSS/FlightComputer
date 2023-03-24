@@ -32,7 +32,7 @@ class PlyerBatterySensor(Part):
     def get_accepted_commands(self) -> list[Type[CommandBase]]:
         return [EnableCommand, DisableCommand]
    
-    def update(self, commands: Iterable[Command]):
+    def update(self, commands: Iterable[Command], now):
         
         for c in commands:
             if c is EnableCommand:
@@ -64,6 +64,6 @@ class PlyerBatterySensor(Part):
             ('battery_percentage', float),
         ]
 
-    def collect_measurements(self) -> Iterable[Iterable[Union[str, float, int, None]]]:
+    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
         return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0,  1 if self.is_charging else 0, self.battery_percent]]
     

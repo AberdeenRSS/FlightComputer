@@ -56,6 +56,9 @@ class FlightMeasurement:
 
     _id: Union[uuid.UUID, None] = None
 
+    part_id: Union[uuid.UUID, None] = None
+    """Optional part id. Used to send the part over the network, not committed to database"""
+
 class FlightMeasurementSchema(make_safe_schema(FlightMeasurement)):
     """A single measurement relayed back by the model
     """
@@ -67,6 +70,9 @@ class FlightMeasurementSchema(make_safe_schema(FlightMeasurement)):
 
     measured_values = fields.Dict(keys = fields.Str(), values = fields.Raw())
     """The measured values themselves"""
+
+    part_id = fields.UUID(optional=True, allow_none=True)
+    """Optional part id. Used to send the part over the network, not committed to database"""
 
 def getConcreteMeasuredValuesType(schemas: list[FlightMeasurementDescriptorSchema]):
     """
