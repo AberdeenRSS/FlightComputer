@@ -55,5 +55,7 @@ Now go into your wsl and connect your device through the `adb` command
 Further instructions on this can be found here: https://developer.android.com/studio/command-line/adb#wireless
 
 ## 5. Deploy your app
-Run `buildozer android debug deploy run` within this repositorie's directory (while at the same file path as the FlightComputer code). The command runs for quite some time.
+Run `buildozer android debug deploy run` within this repositorie's directory (while at the same file path as the FlightComputer code).   
+NOTE: don't run the command with the files being in windows. Clone the repo in linux and then run things there. Otherwise the build might take up to 100x as long   
+
 When it's done your phone should automatically open the app. You'll also see the app in your "All apps" menu on your phone. It can be use like any other app from that point on

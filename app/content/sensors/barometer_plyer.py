@@ -6,35 +6,48 @@ from uuid import UUID
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import CommandBase, Part, Rocket
-from plyer import battery
-from plyer.facades.battery import Battery
+from plyer import barometer
+from plyer.facades.barometer import Barometer
 
 
 
-class PlyerBatterySensor(Part):
+class PlyerBarometerSensor(Part):
 
-    type = 'Sensor.Battery'
+    type = 'Sensor.Barometer'
 
     enabled: bool = True
 
-    # plyerSensor = Battery()
+    # plyerSensor = Barometer()
 
-    battery_percent: Union[float, None] = None
+    pressure_value: Union[float, None] = None
 
     sensor_failed: bool = False
 
-    is_charging: Union[None, bool] = None
-
     # Set update to only every 5 seconds as 
     # battery information is low frequency
-    min_update_period = timedelta(seconds=5)
-    min_measurement_period = timedelta(seconds=5)
+    min_update_period = timedelta(milliseconds=10)
+    min_measurement_period = timedelta(milliseconds=10)
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
         self.enabled = start_enabled
+        self.try_enable_barometer(self.enabled)
 
         super().__init__(_id, name, parent, list()) # type: ignore
+
+    def try_enable_barometer(self, enable: bool) -> bool:
+        try:
+            as_barometer = cast(Barometer, barometer)
+            if enable:
+                as_barometer.enable()
+            else:
+                as_barometer.disable()
+        except Exception as e:
+            self.sensor_failed = True
+            print(f'Plyer barometer sensor failed: {e}')
+            return False
+    
+        return True
 
     def get_accepted_commands(self) -> list[Type[CommandBase]]:
         return [EnableCommand, DisableCommand]
@@ -54,25 +67,22 @@ class PlyerBatterySensor(Part):
         
         if self.enabled and not self.sensor_failed:
             try:    
-                as_battery = cast(Battery, battery)
-                as_battery.get_state()
-                self.is_charging = as_battery.status['isCharging']
-                self.battery_percent = as_battery.status['percentage']
+                as_barometer = cast(Barometer, barometer)
+                self.pressure_value = as_barometer.pressure
+
             except Exception as e:
-                print(f'Plyer battery sensor failed: {e}')
+                print(f'Plyer barometer sensor failed: {e}')
                 self.sensor_failed = True
         else:
-            self.is_charging = None
-            self.battery_percent = None
+            self.pressure_value = None
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', int),
             ('sensor_failed', int),
-            ('is_charging', int),
-            ('battery_percentage', float),
+            ('preaaure_value', float),
         ]
 
     def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0,  1 if self.is_charging else 0, self.battery_percent]]
+        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.pressure_value]]
     

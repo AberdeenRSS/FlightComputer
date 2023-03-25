@@ -7,29 +7,40 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import CommandBase, Measurements, Part, Rocket
 from plyer.facades.battery import Battery
 from random import random
+from datetime import timedelta
 
 
-class RandomSensor(Part):
+class TemperatureSensor(Part):
 
-    type = 'Sensor.Random'
+    type = 'Sensor.Themperture'
 
-    current_value = 0
+    enabled: bool = True
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None]):
-        super().__init__(_id, name, parent, list())
+    sensor_failed: bool = False
+
+    temperature: Union[None, float] = None
+
+    min_update_period = timedelta(milliseconds=10)
+
+    min_measurement_period = timedelta(milliseconds=10)
+
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
+        self.enabled = start_enabled
+        super().__init__(_id, name, parent, list()) # type: ignore
 
     def update(self, commands: Iterable[Command], now):
-        self.current_value = random()
+        self.temperature = random()
+
+    def get_accepted_commands(self) -> list[Type[CommandBase]]:
+        return [EnableCommand, DisableCommand]
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
-        """Name and type of the measurement values of this part"""
+        '''Commands that can be processed by this part'''
         return [
-            ('value', float)
+            ('enabled', int),
+            ('sensor_failed', int),
+            ('temperature', float),
         ]
 
-    def get_accepted_commands(self) -> Iterable[Type[CommandBase]]:
-        '''Commands that can be processed by this part'''
-        return []
-
-    def collect_measurements(self, now) -> Sequence[Measurements]:
-        return [[self.current_value]]
+    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]] :
+        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.temperature]]

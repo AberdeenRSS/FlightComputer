@@ -1,13 +1,13 @@
 [app]
 
 # (str) Title of your application
-title = My Application
+title = RSS Flight Computer
 
 # (str) Package name
-package.name = myapp
+package.name = FlightComputer
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = org.test
+package.domain = rssaberdeen.apps
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -95,7 +95,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = android.permission.INTERNET
+android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,android.permission.BATTERY_STATS
 #, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) features (adds uses-feature -tags to manifest)
@@ -258,7 +258,7 @@ android.permissions = android.permission.INTERNET
 
 # (bool) Indicate whether the screen should stay on
 # Don't forget to add the WAKE_LOCK permission if you set this to True
-#android.wakelock = False
+android.wakelock = True
 
 # (list) Android application meta-data to set (key=value format)
 #android.meta_data =
@@ -274,7 +274,7 @@ android.permissions = android.permission.INTERNET
 #android.logcat_filters = *:S python:D
 
 # (bool) Android logcat only display log for activity's pid
-#android.logcat_pid_only = False
+android.logcat_pid_only = True
 
 # (str) Android additional adb arguments
 #android.adb_args = -H host.docker.internal
@@ -403,7 +403,7 @@ ios.codesign.allowed = false
 [buildozer]
 
 # (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
-log_level = 2
+log_level = 1
 
 # (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 0
