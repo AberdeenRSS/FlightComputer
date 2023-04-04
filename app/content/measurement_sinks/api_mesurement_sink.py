@@ -2,12 +2,12 @@ import asyncio
 import math
 import time
 from typing import Iterable, Sequence, Tuple, Type, Union
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 from app.api_client import ApiClient
 from app.logic.commands.command import Command, CommandBase
 from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase
-from app.logic.rocket_definition import Measurements, Rocket
+from app.logic.rocket_definition import Measurements, Part, Rocket
 from app.models.flight import Flight
 from app.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
@@ -38,7 +38,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
     def update(self, commands: Iterable[Command], now: float):
 
         # If the last send was not completed yet do nothing
-        if self.send_task is not None and self.send_task.done():
+        if self.send_task is not None and not self.send_task.done():
             return
         
         # Otherwise initiate next send
@@ -77,30 +77,41 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         if self.last_send_duration is not None and self.last_send_duration > self.target_send_period.total_seconds():
             drop_rate = self.last_send_duration/self.target_send_period.total_seconds()
 
-        flight_measurements = list[FlightMeasurement]()
+
+        combined_measurement_dict = dict[Part, list[FlightMeasurement]]()
 
         for measurement_dicts in old_buffer:
+
 
             for part, (start, end, measurements) in measurement_dicts.items():
 
                 m_count = len(measurements)
-                i = m_count
+                i = 0
                 time_increment = end-start
                 for m in measurements:
 
-                    # Drop the measurement if overwhelmed
-                    # Start with the last measurement as index 0
-                    # to ensure it gets send
-                    if math.floor((m_count-i) % drop_rate) > 0:
-                        i =- 1
-                        continue
-
                     inflated = part.inflate_measurement(m)
 
-                    measurement_timestamp = end - (time_increment*i)
-                    as_date = datetime.fromtimestamp(measurement_timestamp)
-                    flight_measurements.append(FlightMeasurement(_datetime=as_date, measured_values=inflated, _id=uuid4(), part_id=part._id))
-                    i -= 1
+                    measurement_timestamp = start + (time_increment*i)
+                    as_date = datetime.fromtimestamp(measurement_timestamp, tz=timezone.utc)
+                    if part not in combined_measurement_dict:
+                        combined_measurement_dict[part] = list()
+                    combined_measurement_dict[part].append(FlightMeasurement(_datetime=as_date, measured_values=inflated, _id=uuid4(), part_id=part._id))
+                    i += 1
+
+        flight_measurements = list[FlightMeasurement]()
+
+        for measurements in combined_measurement_dict.values():
+            m_count = len(measurements)
+            # Drop the measurement if overwhelmed
+            # Start with the last measurement as index 0
+            # to ensure it gets send
+            i = m_count
+            for m in measurements:
+                if ((m_count-i) % drop_rate) < 1:
+                    flight_measurements.append(m)
+                i -= 1
+
         
         print(f'{now}: Sending {len(flight_measurements)}. Drop rate: {drop_rate}')
 

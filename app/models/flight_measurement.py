@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from time import strftime
 from typing import Type, Union
 import uuid
@@ -65,7 +65,7 @@ class FlightMeasurementSchema(make_safe_schema(FlightMeasurement)):
 
     _id = fields.String()
 
-    _datetime = fields.DateTime(required = True)
+    _datetime = fields.AwareDateTime(required = True, default_timezone=timezone.utc)
     """The datetime the measurement is for (primary index)"""
 
     measured_values = fields.Dict(keys = fields.Str(), values = fields.Raw())
@@ -74,7 +74,27 @@ class FlightMeasurementSchema(make_safe_schema(FlightMeasurement)):
     part_id = fields.UUID(optional=True, allow_none=True)
     """Optional part id. Used to send the part over the network, not committed to database"""
 
-def getConcreteMeasuredValuesType(schemas: list[FlightMeasurementDescriptorSchema]):
+class FlightMeasurementAggregatedSchema(Schema):
+    """A single measurement relayed back by the model
+    """
+
+    _id = fields.Raw()
+
+    start_date = fields.AwareDateTime(required = True, default_timezone=timezone.utc)
+    """The datetime the range starts"""
+
+    end_date = fields.AwareDateTime(required = True, default_timezone=timezone.utc)
+    """The datetime the range starts"""
+
+    measured_values = fields.Raw()
+    """The measured values themselves"""
+
+    flight_id = fields.UUID(optional=True, allow_none=True)
+
+    part_id = fields.UUID(optional=True, allow_none=True)
+    """Optional part id. Used to send the part over the network, not committed to database"""
+
+def getConcreteMeasuredValuesType(schemas: list[FlightMeasurementDescriptor]):
     """
     Creates a new marshmallow definition according to the past schemas.
     This definition will have the measurement name as the property key
@@ -98,7 +118,7 @@ def getConcreteMeasuredValuesType(schemas: list[FlightMeasurementDescriptorSchem
     # previously created fields
     return type(str(uuid.uuid4()).upper(), (Schema, ), res_types)
 
-def getConcreteMeasurementSchema(schema: list[FlightMeasurementDescriptorSchema]) -> Type[FlightMeasurementSchema]:
+def getConcreteMeasurementSchema(schema: list[FlightMeasurementDescriptor]) -> Type[FlightMeasurementSchema]:
     """
     Creates a new FlightMeasurement schema based on the requested properties.
     Replaces the `FlightMeasurement.measured_values` with a nested schema

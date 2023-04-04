@@ -108,6 +108,9 @@ async def run_loop():
             except:
                 print(f'Iteration {iteration}: Part {p.name} failed to flush')
 
+        if len(current_measurements) < 1:
+            return now
+
         for sink in measurement_sinks:
             sink.measurement_buffer.append(current_measurements)
 
