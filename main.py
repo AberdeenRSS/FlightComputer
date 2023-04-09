@@ -5,6 +5,8 @@ kivy.require('2.1.0') # replace with your current kivy version !
 
 from kivy.app import App
 from kivy.uix.label import Label
+from kivy.uix.scatterlayout import ScatterLayout
+from kivy.metrics import cm
 from kivy.core.window import Window
 
 # We need a reference to the Java activity running the current
@@ -19,7 +21,13 @@ class CrashScreen(App):
         super().__init__(**kwargs)
 
     def build(self):
-        return Label(text=f'Uncaught exception, the app crashed with the following message:\n {self.error}', text_size=Window.size, font_size=16, valign='center' )
+        exception_label = Label(text=f'Uncaught exception, the app crashed with the following message:\n {self.error}',  shorten=False, font_size=16, valign='center' )
+        exception_label.size = exception_label.texture_size
+
+        layout = ScatterLayout()
+        layout.add_widget(exception_label)
+
+        return layout
 
 
 async def main():
