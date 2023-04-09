@@ -8,7 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import CommandBase, Part, Rocket
 from plyer import gps
 from plyer.facades.gps import GPS
-
+from android.permissions import request_permissions, Permission
 
 class PlyerGPSSensor(Part):
 
@@ -41,13 +41,14 @@ class PlyerGPSSensor(Part):
         try:
             as_gps = cast(GPS, gps)
             if enable:
+                request_permissions([Permission.WRITE_EXTERNAL_STORAGE])
                 as_gps.configure(lambda l: self.on_location(l), lambda s: self.on_status(s))
                 as_gps.start(1, 1)
             else:
                 as_gps.stop()
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer acceleration sensor failed: {e}')
+            print(f'Plyer gps sensor failed: {e}')
             return False
     
         return True
