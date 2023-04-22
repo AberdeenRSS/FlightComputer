@@ -90,7 +90,11 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
                 time_increment = end-start
                 for m in measurements:
 
-                    inflated = part.inflate_measurement(m)
+                    try:
+                        inflated = part.inflate_measurement(m)
+                    except:
+                        print(f'Failed inflating measurement for part {part.name}')
+                        continue
 
                     measurement_timestamp = start + (time_increment*i)
                     as_date = datetime.fromtimestamp(measurement_timestamp, tz=timezone.utc)

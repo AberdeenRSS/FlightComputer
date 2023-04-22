@@ -29,7 +29,7 @@ source.include_patterns = assets/*,images/*.png,config/*
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1
+version = 0.1.1
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -95,7 +95,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,android.permission.BATTERY_STATS,android.permission.ACCESS_FINE_LOCATION
+android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,android.permission.BATTERY_STATS,android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION
 #, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) features (adds uses-feature -tags to manifest)
@@ -271,7 +271,7 @@ android.wakelock = True
 #android.uses_library =
 
 # (str) Android logcat filters to use
-#android.logcat_filters = *:S python:D
+android.logcat_filters = *:S python:D
 
 # (bool) Android logcat only display log for activity's pid
 android.logcat_pid_only = True
