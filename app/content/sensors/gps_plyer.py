@@ -8,7 +8,10 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import CommandBase, Part, Rocket
 from plyer import gps
 from plyer.facades.gps import GPS
-from android.permissions import request_permissions, Permission
+try:
+    from android.permissions import request_permissions, Permission
+except:
+    print('Not on android')
 
 class PlyerGPSSensor(Part):
 
@@ -33,7 +36,10 @@ class PlyerGPSSensor(Part):
         self.enabled = start_enabled
 
         # Request the android permission so that the app definetly gets location access
-        request_permissions([Permission.ACCESS_FINE_LOCATION, Permission.ACCESS_COARSE_LOCATION])
+        try:
+            request_permissions([Permission.ACCESS_FINE_LOCATION, Permission.ACCESS_COARSE_LOCATION])
+        except:
+            print('Failed acquiring gps permissions')
 
         self.try_enable_gps(self.enabled)
 

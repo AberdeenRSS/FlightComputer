@@ -12,6 +12,8 @@ from app.models.flight import Flight
 from app.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
 
+from app.models.flight_measurement_compact import FlightMeasurementCompact
+
 class ApiMeasurementSink(ApiMeasurementSinkBase):
      
     type = 'Measurement_Sink.Api'
@@ -78,7 +80,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
             drop_rate = self.last_send_duration/self.target_send_period.total_seconds()
 
 
-        combined_measurement_dict = dict[Part, list[FlightMeasurement]]()
+        combined_measurement_dict = dict[Part, list[Tuple[float, list[Union[float, int, str]]]]]()
 
         for measurement_dicts in old_buffer:
 
@@ -90,38 +92,43 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
                 time_increment = end-start
                 for m in measurements:
 
-                    try:
-                        inflated = part.inflate_measurement(m)
-                    except:
-                        print(f'Failed inflating measurement for part {part.name}')
-                        continue
+                    # try:
+                    #     inflated = part.inflate_measurement(m)
+                    # except:
+                    #     print(f'Failed inflating measurement for part {part.name}')
+                    #     continue
 
                     measurement_timestamp = start + (time_increment*i)
-                    as_date = datetime.fromtimestamp(measurement_timestamp, tz=timezone.utc)
+                    # as_date = datetime.fromtimestamp(measurement_timestamp, tz=timezone.utc)
                     if part not in combined_measurement_dict:
                         combined_measurement_dict[part] = list()
-                    combined_measurement_dict[part].append(FlightMeasurement(_datetime=as_date, measured_values=inflated, _id=uuid4(), part_id=part._id))
+                    combined_measurement_dict[part].append((measurement_timestamp, m))
                     i += 1
 
-        flight_measurements = list[FlightMeasurement]()
+        flight_measurements = list[FlightMeasurementCompact]()
 
-        for measurements in combined_measurement_dict.values():
+        for part, measurements in combined_measurement_dict.items():
             m_count = len(measurements)
+            filtered_measurements = list[Tuple[float, list[Union[float, int, str]]]]()
             # Drop the measurement if overwhelmed
             # Start with the last measurement as index 0
             # to ensure it gets send
             i = m_count
             for m in measurements:
                 if ((m_count-i) % drop_rate) < 1:
-                    flight_measurements.append(m)
+                    filtered_measurements.append(m)
                 i -= 1
 
+            parts = [s[0] for s in part.get_measurement_shape()]
+
+            flight_measurements.append(FlightMeasurementCompact(part._id, parts, filtered_measurements))
+
         
-        print(f'{now}: Sending {len(flight_measurements)}. Drop rate: {drop_rate}')
+        print(f'Sending measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
 
         send_start = time.time()
 
-        (send_success, reason) = await self.api_client.try_report_flight_data(self.flight._id, flight_measurements, self.send_timeout.total_seconds())
+        (send_success, reason) = await self.api_client.try_report_flight_data_compact(self.flight._id, flight_measurements, self.send_timeout.total_seconds())
 
         self.drop_rate = drop_rate
         self.last_send_attempt_time = now
