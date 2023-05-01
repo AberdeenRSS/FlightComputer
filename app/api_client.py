@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import random
 from time import sleep
-from typing import Any, Union
+from typing import Any, Callable, Coroutine, Union
 from uuid import UUID
 import msal
 import json
@@ -20,8 +20,6 @@ from json import dumps
 class ApiClient:
     '''API client for the rss FlightManagementServer'''
 
-    bearer_token: Future = Future()
-
     endpoint: str
 
     def __init__(self) -> None:
@@ -38,8 +36,9 @@ class ApiClient:
             authority=self._secrets_config["authority"],
             client_credential=self._secrets_config["secret"]
             )
+        
 
-    async def authenticate(self):
+    def authenticate(self):
 
         # First, the code looks up a token from the cache.
         # Because we're looking for a token for the current app, not for a user,
@@ -50,59 +49,60 @@ class ApiClient:
             error = result.get("error")
             error_description = result.get("error_description")
             correlation_id = result.get("correlation_id")
-            print(error)
-            print(error_description)
-            print(correlation_id)  # You might need this when reporting a bug.
+            print(f'Msal authentication failed: {error}; {error_description}; correlation_id {correlation_id}')
             exception = Exception(f'Error: {error} \n Description: {error_description} \n CorrelationID: {correlation_id}')
-            self.bearer_token.set_exception(exception)
             raise exception
 
-        self.bearer_token.set_result(result['access_token'])
+        return result['access_token']
 
-    def get_basic_headers(self):
-        return {'Authorization': 'Bearer ' + self.bearer_token.result(),
+    async def request_with_error_handling_and_retry(self, func: Callable[[httpx.AsyncClient], Coroutine[Any, Any, httpx.Response]], retries: int = 0):
+
+        async with httpx.AsyncClient() as client:
+
+            response: Union[None, httpx.Response] = None
+
+            curRetry = 0
+            while(curRetry <= retries):
+                
+                response = await func(client)
+
+                # If successful return
+                if response.status_code >= 200 and response.status_code < 300:
+                    return response
+                
+                print(f'Request to {response.url} failed wit code {response.status_code}: {response.text}. (Retry {curRetry})')
+
+                curRetry += 1
+            
+            assert response is not None
+            raise ConnectionError(f'All retries to {response.url} failed with code {response.status_code}: {response.text}')
+        
+
+    def authenticate_and_get_headers(self):
+
+        bearer_token = self.authenticate()
+
+        return {'Authorization': 'Bearer ' + bearer_token,
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'}
 
     async def register_vessel(self, vessel_req) -> Vessel:
 
-        async with httpx.AsyncClient() as client:
-            vessel_creation_res = await client.post(f"{self.endpoint}/vessel/register", headers=self.get_basic_headers(), json=vessel_req)
+        vessel_creation_res = await self.request_with_error_handling_and_retry(
+                lambda client: client.post(f"{self.endpoint}/vessel/register", headers=self.authenticate_and_get_headers(), json=vessel_req),
+                3
+            )
 
-            if vessel_creation_res.status_code < 200 or vessel_creation_res.status_code > 300:
-                raise ConnectionError(f'Vessel could not be created {vessel_creation_res.text}')
-
-            return VesselSchema().load_safe(Vessel, vessel_creation_res.json())
+        return VesselSchema().load_safe(Vessel, vessel_creation_res.json())
     
     async def create_new_flight(self, flight_req):
-        async with httpx.AsyncClient() as client:
-            flight_res = await client.post(f"{self.endpoint}/flight/create", headers=self.get_basic_headers(), json=flight_req)
-
-            if flight_res.status_code < 200 or flight_res.status_code > 300:
-                raise ConnectionError(f'Vessel could not be created {flight_res.text}')
+            
+            flight_res = await self.request_with_error_handling_and_retry(
+                lambda client: client.post(f"{self.endpoint}/flight/create", headers=self.authenticate_and_get_headers(), json=flight_req),
+                3
+            )
 
             return FlightSchema().load_safe(Flight, flight_res.json())
-
-    async def try_report_flight_data(self, flight_id, data, timeout: float) -> tuple[bool, str]:
-
-        serialized = FlightMeasurementSchema().dump_list(data)
-
-        async with httpx.AsyncClient() as client:
-
-            try:
-                res = await client.post(f"{self.endpoint}/flight_data/report/{flight_id}", json=serialized, headers=self.get_basic_headers(), timeout=timeout)
-
-                success = res.status_code >= 200 or res.status_code < 300
-
-                if not success:
-                    print(f'Warning error sending flight data: {res.text}')
-
-                return (success, str(res.status_code))
-            except TimeoutError:
-                return (False, 'TIMEOUT')
-            except  Exception as e:
-                print(f'Fatal error sending flight data: {e}')
-                return (False, str(e))
 
     async def try_report_flight_data_compact(self, flight_id, data: list[FlightMeasurementCompact], timeout: float) -> tuple[bool, str]:
 
@@ -111,7 +111,7 @@ class ApiClient:
         async with httpx.AsyncClient() as client:
 
             try:
-                res = await client.post(f"{self.endpoint}/flight_data/report_compact/{flight_id}", json=serialized, headers=self.get_basic_headers(), timeout=timeout)
+                res = await client.post(f"{self.endpoint}/flight_data/report_compact/{flight_id}", json=serialized, headers=self.authenticate_and_get_headers(), timeout=timeout)
 
                 success = res.status_code >= 200 or res.status_code < 300
 
@@ -128,9 +128,6 @@ class ApiClient:
     async def run_full_setup_handshake(self, rocket: Rocket) -> Flight:
 
         rocket.id = UUID(self._secrets_config['client_id'])
-
-        # Wait for the auth to be finished
-        await self.authenticate()
 
         vessel, flight = to_vessel_and_flight(rocket)
 
@@ -156,7 +153,7 @@ class RealtimeApiClient():
     def __init__(self, base_client: ApiClient, flight: Flight): 
 
         self.base_client = base_client
-        self.headers = base_client.get_basic_headers()
+        self.headers = base_client.authenticate_and_get_headers()
         self.flight = flight
 
     def connect(self):

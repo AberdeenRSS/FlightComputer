@@ -22,9 +22,9 @@ class PlyerSpatialOrientationSensor(Part):
 
     spatial_orientation: Union[None, Tuple[float, float, float], Tuple[None, None, None]]
 
-    min_update_period = timedelta(milliseconds=10)
+    min_update_period = timedelta(milliseconds=1)
 
-    min_measurement_period = timedelta(milliseconds=10)
+    min_measurement_period = timedelta(milliseconds=1)
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
