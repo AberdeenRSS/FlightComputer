@@ -1,5 +1,10 @@
 from datetime import timedelta
-from app.content.measurement_sinks.api_mesurement_sink import ApiMeasurementSink
+from typing import Iterable, Tuple
+
+from app.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
+from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
+from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
 from app.content.sensors.acceleration_plyer import PlyerAccelerationSensor
 from app.content.sensors.gps_plyer import PlyerGPSSensor
 from app.content.sensors.temperature_plyer import PlyerTemperatureSensor
@@ -7,12 +12,15 @@ from app.content.sensors.barometer_plyer import PlyerBarometerSensor
 from app.content.sensors.gyroscope_plyer import PlyerGyroscopeSensor 
 from app.content.sensors.light_plyer import PlyerLightSensor 
 from app.content.sensors.gravity_plyer import PlyerGravitySensor
-from app.content.sensors.spatial_orientation_plyer import PlyerSpatialOrientationSensor 
+from app.content.sensors.spatial_orientation_plyer import PlyerSpatialOrientationSensor
+from app.flight_config import FlightConfig 
 from app.logic.rocket_definition import Rocket
 from app.content.sensors.battery_plyer import PlyerBatterySensor
 from uuid import UUID
 
-def make_spatula() -> Rocket:
+from app.ui.part_ui import PartUi
+
+def make_spatula() -> FlightConfig:
     ''' Makes the spatula rocket '''
 
     rocket = Rocket('Spatula')
@@ -32,6 +40,8 @@ def make_spatula() -> Rocket:
     # rnd.min_update_period = timedelta(milliseconds=1)
     # rnd.min_measurement_period = timedelta(milliseconds=1)
 
-    ApiMeasurementSink(UUID('fa9eac88-5d2f-41a6-aeab-85c1591433a2'), 'Measurement dispatch', rocket)
+    arduino_serial = ArduinoSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
 
-    return rocket
+    measurement_sink = ApiMeasurementSink(UUID('fa9eac88-5d2f-41a6-aeab-85c1591433a2'), 'Measurement dispatch', rocket)
+
+    return FlightConfig(rocket, [ApiMeasurementSinkUI(measurement_sink), ArduinoSerialSelectUI(arduino_serial)], True)

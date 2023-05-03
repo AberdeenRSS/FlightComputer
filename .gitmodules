@@ -1,0 +1,3 @@
+[submodule "submodules/tinyproto"]
+	path = submodules/tinyproto
+	url = https://github.com/lexus2k/tinyproto

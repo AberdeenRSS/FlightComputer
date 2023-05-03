@@ -125,7 +125,7 @@ class ApiClient:
                 print(f'Fatal error sending flight data: {e}')
                 return (False, str(e))
 
-    async def run_full_setup_handshake(self, rocket: Rocket) -> Flight:
+    async def run_full_setup_handshake(self, rocket: Rocket, flight_name: str) -> Flight:
 
         rocket.id = UUID(self._secrets_config['client_id'])
 
@@ -138,6 +138,7 @@ class ApiClient:
 
         flight._vessel_version = vessel_res._version
         flight._vessel_id = vessel_res._id
+        flight.name = flight_name
 
         return await self.create_new_flight(FlightSchema().dump(flight))
 
