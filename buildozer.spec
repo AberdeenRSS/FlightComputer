@@ -95,7 +95,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,android.permission.BATTERY_STATS,android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION
+android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,android.permission.BATTERY_STATS,android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION,android.permission.MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING
 #, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) features (adds uses-feature -tags to manifest)
@@ -148,7 +148,7 @@ android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,a
 
 # (str) Extra xml to write directly inside the <manifest> element of AndroidManifest.xml
 # use that parameter to provide a filename from where to load your custom XML code
-#android.extra_manifest_xml = ./src/android/extra_manifest.xml
+android.extra_manifest_xml = manifest/extra_manifest.xml
 
 # (str) Extra xml to write directly inside the <manifest><application> tag of AndroidManifest.xml
 # use that parameter to provide a filename from where to load your custom XML arguments:
@@ -162,7 +162,7 @@ android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,a
 # android.apptheme = "@android:style/Theme.NoTitleBar"
 
 # (list) Pattern to whitelist for the whole project
-#android.whitelist =
+android.whitelist = lib-dynload/termios.so
 
 # (str) Path to a custom whitelist file
 #android.whitelist_src =
@@ -237,10 +237,10 @@ android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,a
 #android.ouya.icon.filename = %(source.dir)s/data/ouya_icon.png
 
 # (str) XML file to include as an intent filters in <activity> tag
-#android.manifest.intent_filters =
+android.manifest.intent_filters = manifest/intent-filter.xml
 
 # (list) Copy these files to src/main/res/xml/ (used for example with intent-filters)
-#android.res_xml = PATH_TO_FILE,
+android.res_xml = manifest/device_filter.xml
 
 # (str) launchMode to set for the main activity
 #android.manifest.launch_mode = standard
@@ -331,7 +331,7 @@ android.no-byte-compile-python = False
 #p4a.source_dir =
 
 # (str) The directory in which python-for-android should look for your own build recipes (if any)
-#p4a.local_recipes =
+p4a.local_recipes = recipes
 
 # (str) Filename to the hook for p4a
 #p4a.hook =
@@ -403,7 +403,7 @@ ios.codesign.allowed = false
 [buildozer]
 
 # (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
-log_level = 1
+log_level = 2
 
 # (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 0

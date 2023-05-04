@@ -65,7 +65,6 @@ class PlyerGPSSensor(Part):
 
             if enable and not self.enabled_confirmed:
                 self.enabled_confirmed = False
-                print('Starting GPS sensor')
                 as_gps.configure(on_location=on_location, on_status=self.on_status)
                 as_gps.start(1, 1)
             elif not enable:
@@ -73,7 +72,6 @@ class PlyerGPSSensor(Part):
 
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer gps sensor failed: {e}')
             return False
     
         return True

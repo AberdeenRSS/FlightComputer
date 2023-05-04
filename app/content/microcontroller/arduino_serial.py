@@ -50,6 +50,10 @@ class ArduinoSerial(Part):
 
     read_thread: Union[None, threading.Thread] = None
 
+    read_thread_failure = False
+
+    last_meassage = None
+
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
         self.enabled = start_enabled
@@ -129,7 +133,7 @@ class ArduinoSerial(Part):
 
             package = RssPacket(int(b[0]), int(b[1]), payload_size, payload)
 
-            print(f'Bytes {package}')
+            self.last_meassage = package
 
         hdlc.on_read = on_read
         hdlc.crc = 8
@@ -167,8 +171,12 @@ class ArduinoSerial(Part):
         return [
             ('enabled', int),
             ('communication_failure', int),
+            ('last_packet_index', int)
         ]
 
     def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        return [[1 if self.enabled else 0, 0]]
+
+        last_index = self.last_meassage.index if self.last_meassage is not None else -1
+
+        return [[1 if self.enabled else 0, 1 if self.read_thread_failure else 0, last_index]]
     

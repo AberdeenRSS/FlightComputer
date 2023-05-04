@@ -78,7 +78,9 @@ class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoSerial]):
 
         if (self.old_device_list is not None and new_device_list is not None) and len(new_device_list) == len(self.old_device_list) and [i for i, j in zip(new_device_list, self.old_device_list) if i == j]:
             return
-        
+
+        self.old_device_list = new_device_list
+
         self.device_options_list.clear_widgets()
 
         if new_device_list is None:

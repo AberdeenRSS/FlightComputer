@@ -124,7 +124,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
             flight_measurements.append(FlightMeasurementCompact(part._id, parts, filtered_measurements))
 
         
-        print(f'Sending measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
+        # print(f'Sending measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
 
         send_start = time.time()
 

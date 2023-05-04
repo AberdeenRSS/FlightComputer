@@ -13,6 +13,7 @@ class DefaultPartUI(BoxLayout, PartUi[Part]):
     labels = dict[str, Label]()
 
     def __init__(self, part: Part, **kwargs):
+        kwargs['orientation'] = 'vertical'
         super().__init__(**kwargs)
 
         self.part = part
