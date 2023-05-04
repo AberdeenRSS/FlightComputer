@@ -4,6 +4,7 @@ from typing import Iterable, Tuple
 from app.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
 from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
 from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
 from app.content.sensors.acceleration_plyer import PlyerAccelerationSensor
 from app.content.sensors.gps_plyer import PlyerGPSSensor
@@ -44,4 +45,4 @@ def make_spatula() -> FlightConfig:
 
     measurement_sink = ApiMeasurementSink(UUID('fa9eac88-5d2f-41a6-aeab-85c1591433a2'), 'Measurement dispatch', rocket)
 
-    return FlightConfig(rocket, [ApiMeasurementSinkUI(measurement_sink), ArduinoSerialSelectUI(arduino_serial)], True)
+    return FlightConfig(rocket, [ApiMeasurementSinkUI(measurement_sink), ArduinoSerialSelectUI(arduino_serial), ArduinoSerialMonitorUI(arduino_serial)], True)
