@@ -15,18 +15,19 @@ class PlyerLightSensor(Part):
 
     type = 'Sensor.Light'
 
+    min_update_period = timedelta(milliseconds=10)
+    min_measurement_period = timedelta(milliseconds=10)
+
+    status_data_rate = 1_000
+
     enabled: bool = True
-
-    # plyerSensor = Light()
-
-    illumination: Union[float, None] = None
 
     sensor_failed: bool = False
 
-    # Set update to only every 5 seconds as 
-    # battery information is low frequency
-    min_update_period = timedelta(seconds=5)
-    min_measurement_period = timedelta(seconds=5)
+    illumination: Union[float, None] = None
+
+    iteration_illumination: Union[float, None] = None
+
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
@@ -52,7 +53,7 @@ class PlyerLightSensor(Part):
     def get_accepted_commands(self) -> list[Type[CommandBase]]:
         return [EnableCommand, DisableCommand]
    
-    def update(self, commands: Iterable[Command], now):
+    def update(self, commands: Iterable[Command], now, iteration):
         
         for c in commands:
             if c is EnableCommand:
@@ -68,13 +69,13 @@ class PlyerLightSensor(Part):
         if self.enabled and not self.sensor_failed:
             try:    
                 as_light = cast(Light, light)
-                self.illumination = as_light.illumination
+                self.iteration_illumination = self.illumination = as_light.illumination
 
             except Exception as e:
                 print(f'Plyer light sensor failed: {e}')
                 self.sensor_failed = True
         else:
-            self.illumination = None
+            self.iteration_illumination = self.illumination = None
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
@@ -83,6 +84,12 @@ class PlyerLightSensor(Part):
             ('illumination', float),
         ]
 
-    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.illumination]]
+    def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
+
+        if iteration % self.status_data_rate > 0 and self.iteration_illumination is None:
+            return
+
+        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.iteration_illumination]]
     
+    def flush(self):
+        self.iteration_illumination

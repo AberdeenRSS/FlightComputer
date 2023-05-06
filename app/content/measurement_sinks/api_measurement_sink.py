@@ -37,7 +37,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
     def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None]):
         super().__init__(_id, name, parent)
 
-    def update(self, commands: Iterable[Command], now: float):
+    def update(self, commands: Iterable[Command], now: float, iteration):
 
         # If the last send was not completed yet do nothing
         if self.send_task is not None and not self.send_task.done():
@@ -56,7 +56,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
     def get_accepted_commands(self) -> Iterable[Type[CommandBase]]:
         return []
 
-    def collect_measurements(self, now: float) -> Sequence[Measurements]:
+    def collect_measurements(self, now: float, iterations) -> Sequence[Measurements]:
 
         if self.last_measurement is not None and self.last_send_attempt_time is not None and self.last_measurement < self.last_send_attempt_time:
             return []

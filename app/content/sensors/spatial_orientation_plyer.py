@@ -14,17 +14,19 @@ class PlyerSpatialOrientationSensor(Part):
 
     type = 'Sensor.SpatialOrientation'
 
-    enabled: bool = True
+    min_update_period = timedelta(milliseconds=1)
 
-    # plyerSensor = SpatialOrientation()
+    min_measurement_period = timedelta(milliseconds=1)
+
+    status_data_rate = 1_000
+
+    enabled: bool = True
 
     sensor_failed: bool = False
 
     spatial_orientation: Union[None, Tuple[float, float, float], Tuple[None, None, None]]
 
-    min_update_period = timedelta(milliseconds=1)
-
-    min_measurement_period = timedelta(milliseconds=1)
+    iteration_spacial_orientation: Union[None, Tuple[float, float, float], Tuple[None, None, None]]
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
@@ -50,7 +52,7 @@ class PlyerSpatialOrientationSensor(Part):
     
         return True
    
-    def update(self, commands: Iterable[Command], now):
+    def update(self, commands: Iterable[Command], now, iteration):
         
         for c in commands:
             if c is EnableCommand:
@@ -67,12 +69,12 @@ class PlyerSpatialOrientationSensor(Part):
         if self.enabled and not self.sensor_failed:
             try:    
                 as_spatial_orientation = cast(SpatialOrientation, spatialorientation)
-                self.spatial_orientation = as_spatial_orientation.orientation
+                self.iteration_spacial_orientation = self.spatial_orientation = as_spatial_orientation.orientation
             except Exception as e:
                 print(f'Plyer spatial orientation sensor failed: {e}')
                 self.sensor_failed = True
         else:
-            self.spatial_orientation = None
+            self.iteration_spacial_orientation = self.spatial_orientation = None
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
@@ -83,7 +85,14 @@ class PlyerSpatialOrientationSensor(Part):
             ('spatial_orientation-y', float),
         ]
 
-    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        spat =  self.spatial_orientation or [None, None, None]
+    def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
+
+        if iteration % self.status_data_rate > 0 and self.iteration_spacial_orientation is None:
+            return
+
+        spat = self.iteration_spacial_orientation or [None, None, None]
         return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, spat[0], spat[1], spat[2]]]
+    
+    def flush(self):
+        self.iteration_spacial_orientation = None
     

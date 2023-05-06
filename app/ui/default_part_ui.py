@@ -10,7 +10,7 @@ class DefaultPartUI(BoxLayout, PartUi[Part]):
 
     name = ''
 
-    labels = dict[str, Label]()
+    labels: dict[str, Label]
 
     def __init__(self, part: Part, **kwargs):
         kwargs['orientation'] = 'vertical'
@@ -18,6 +18,8 @@ class DefaultPartUI(BoxLayout, PartUi[Part]):
 
         self.part = part
         self.name = f'{part.name} Measurements'
+
+        self.labels = dict()
 
         self.add_labels_for_measurements()
 
@@ -29,7 +31,9 @@ class DefaultPartUI(BoxLayout, PartUi[Part]):
 
     def update_text(self):
 
-        measurement = self.part.collect_measurements(time.time())
+        measurement = self.part.collect_measurements(time.time(), 0)
+        if measurement is None:
+            return
 
         i = 0
         for name, type in self.part.get_measurement_shape():

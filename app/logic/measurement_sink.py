@@ -23,7 +23,7 @@ class MeasurementSinkBase(Part):
     of all the other parts to store them, send them away, etc.
     '''
 
-    measurement_buffer = list[MeasurementsByPart]()
+    measurement_buffer: list[MeasurementsByPart]
     '''
     The measurement buffer. It gets appended with all new measurements with
     each iteration of the main flight loop. The part itself is responsible
@@ -34,8 +34,14 @@ class MeasurementSinkBase(Part):
     might be held by other sinks as well
     '''
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None]):
-        super().__init__(_id, name, parent, list())
+    def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None], **kwargs):
+
+        if 'dependencies' not in kwargs:
+            kwargs['dependencies'] = list()
+
+        super().__init__(_id, name, parent, **kwargs)
+
+        self.measurement_buffer = list()
 
 
 class ApiMeasurementSinkBase(MeasurementSinkBase):

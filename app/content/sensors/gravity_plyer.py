@@ -14,15 +14,19 @@ class PlyerGravitySensor(Part):
 
     type = 'Sensor.Gravity'
 
+    min_update_period = timedelta(milliseconds=10)
+
+    min_measurement_period = timedelta(milliseconds=10)
+
+    status_data_rate = 1_000
+
     enabled: bool = True
 
     sensor_failed: bool = False
 
     gravity_value: Union[None, Tuple[float, float, float]]
 
-    min_update_period = timedelta(milliseconds=10)
-
-    min_measurement_period = timedelta(milliseconds=10)
+    iteration_gravity_value: Union[None, Tuple[float, float, float]]
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
@@ -48,7 +52,7 @@ class PlyerGravitySensor(Part):
     
         return True
    
-    def update(self, commands: Iterable[Command], now):
+    def update(self, commands: Iterable[Command], now, iteration):
         
         for c in commands:
             if c is EnableCommand:
@@ -61,16 +65,15 @@ class PlyerGravitySensor(Part):
                 c.state = 'failed' # Part cannot handle this command
                 continue
             
-        
         if self.enabled and not self.sensor_failed:
             try:    
                 as_gravity = cast(Gravity, gravity)
-                self.gravity_value = as_gravity.gravity
+                self.iteration_gravity_value = self.gravity_value = as_gravity.gravity
             except Exception as e:
                 print(f'Plyer gravity sensor failed: {e}')
                 self.sensor_failed = True
         else:
-            self.gravity_value = None
+            self.iteration_gravity_value = self.gravity_value = None
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
@@ -81,7 +84,14 @@ class PlyerGravitySensor(Part):
             ('gravity-z', float),
         ]
 
-    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        grav =  self.gravity_value or [None, None, None]
+    def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
+
+        if iteration % self.status_data_rate > 0 and self.iteration_gravity_value is None:
+            return
+
+        grav =  self.iteration_gravity_value or [None, None, None]
         return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, grav[0], grav[1], grav[2]]]
     
+    def flush(self):
+        self.iteration_gravity_value = None
+        

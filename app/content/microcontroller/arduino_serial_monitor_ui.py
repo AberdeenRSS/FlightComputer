@@ -15,14 +15,17 @@ class ArduinoSerialMonitorUI(BoxLayout, PartUi[ArduinoSerial]):
 
     name = 'Serial Monitor'
 
-    message_labels: list[Label] = []
+    message_labels: list[Label]
 
-    messages: list[RssPacket] = []
+    messages: list[RssPacket]
 
 
     def __init__(self, part: ArduinoSerial, max_messages: int = 10,  **kwargs):
         kwargs['orientation'] = 'vertical'
         super().__init__(**kwargs)
+
+        self.message_labels = []
+        self.messages = []
 
         self.max_messages = max_messages
 

@@ -15,18 +15,19 @@ class PlyerBarometerSensor(Part):
 
     type = 'Sensor.Barometer'
 
+    min_update_period = timedelta(milliseconds=10)
+
+    min_measurement_period = timedelta(milliseconds=10)
+
+    status_data_rate = 1_000
+
     enabled: bool = True
-
-    # plyerSensor = Barometer()
-
-    pressure_value: Union[float, None] = None
 
     sensor_failed: bool = False
 
-    # Set update to only every 5 seconds as 
-    # battery information is low frequency
-    min_update_period = timedelta(milliseconds=10)
-    min_measurement_period = timedelta(milliseconds=10)
+    pressure_value: Union[float, None] = None
+
+    iteration_pressure_value: Union[float, None] = None
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
@@ -52,7 +53,7 @@ class PlyerBarometerSensor(Part):
     def get_accepted_commands(self) -> list[Type[CommandBase]]:
         return [EnableCommand, DisableCommand]
    
-    def update(self, commands: Iterable[Command], now):
+    def update(self, commands: Iterable[Command], now, iteration):
         
         for c in commands:
             if c is EnableCommand:
@@ -68,13 +69,13 @@ class PlyerBarometerSensor(Part):
         if self.enabled and not self.sensor_failed:
             try:    
                 as_barometer = cast(Barometer, barometer)
-                self.pressure_value = as_barometer.pressure
+                self.iteration_pressure_value = self.pressure_value = as_barometer.pressure
 
             except Exception as e:
                 print(f'Plyer barometer sensor failed: {e}')
                 self.sensor_failed = True
         else:
-            self.pressure_value = None
+            self.iteration_pressure_value = self.pressure_value = None
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
@@ -83,6 +84,12 @@ class PlyerBarometerSensor(Part):
             ('preaaure_value', float),
         ]
 
-    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.pressure_value]]
+    def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
+
+        if iteration % self.status_data_rate > 0 and self.iteration_pressure_value is None:
+            return
+
+        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.iteration_pressure_value]]
     
+    def flush(self):
+        self.iteration_pressure_value = None

@@ -45,11 +45,11 @@ class Part(ABC):
 
     rocket: Rocket
 
-    children: list[Self] = list()
+    children: list[Self]
 
     parent: Union[Self, None] = None
 
-    dependencies: list[Self] = list()
+    dependencies: list[Self] 
 
     min_update_period: timedelta = timedelta(milliseconds=100)
     '''
@@ -84,6 +84,9 @@ class Part(ABC):
         self._id = _id
         self.name = name
 
+        self.children = list()
+        self.dependencies = list()
+
         if type(parent) is Rocket:
             self.rocket = parent
             parent.add_part(self) # type: ignore
@@ -95,9 +98,16 @@ class Part(ABC):
         self.dependencies.extend(dependencies)
 
     @abstractclassmethod
-    def update(self, commands: Iterable[Command], now: float):
-        """Method called per tick on every part to get it's own information updated based
-        on real parameters"""
+    def update(self, commands: Iterable[Command], now: float, iteration: int):
+        """
+        Method called per tick on every part to get it's own information updated based
+        on real parameters
+
+        commands: All the new commands received
+        now: The current times in epoch seconds
+        iteration: The index of this iteration, can be used to preform some actions more infrequently
+        
+        """
         pass
 
     @abstractclassmethod
@@ -111,7 +121,7 @@ class Part(ABC):
         return []
 
     @abstractclassmethod
-    def collect_measurements(self, now: float) -> Sequence[Measurements]:
+    def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:
         """Should give back all measurements obtained since the last tick"""
         return []
 

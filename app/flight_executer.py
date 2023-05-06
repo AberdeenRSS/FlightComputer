@@ -171,7 +171,7 @@ class FlightExecuter:
 
         # Run the update loop
         flight_loop_iteration = 0
-        last_update = time.time()
+        last_update: float = time.time()
         while True:
             update_end_time = self.control_loop(flight_loop_iteration, last_update)
             self.part_list_widget.update_cur_part()
@@ -209,7 +209,7 @@ class FlightExecuter:
             # Only update if the part is due for update this iteration
             if p.last_update is None or (now - p.last_update) > p.min_update_period.total_seconds():
                 try:
-                    p.update(commands or [], now)
+                    p.update(commands or [], now, iteration)
                     p.last_update = now
                 except:
                     print(f'Iteration {iteration}: Part {p.name} failed to update')
@@ -220,7 +220,10 @@ class FlightExecuter:
             # Only get measurements if the part is due for update this iteration
             if p.last_measurement is None or (now - p.last_measurement) > p.min_measurement_period.total_seconds():
                 try:
-                    current_measurements[p] = (p.last_measurement or now, now, p.collect_measurements(now))
+                    measurements = p.collect_measurements(now, iteration)
+                    if measurements is None:
+                        continue
+                    current_measurements[p] = (p.last_measurement or now, now, measurements)
                     p.last_measurement = now
                 except:
                     print(f'Iteration {iteration}: Part {p.name} failed to take measurements')

@@ -14,15 +14,17 @@ class TemperatureSensor(Part):
 
     type = 'Sensor.Themperture'
 
+    min_update_period = timedelta(milliseconds=10)
+
+    min_measurement_period = timedelta(milliseconds=10)
+
+    status_data_rate = 1_000
+
     enabled: bool = True
 
     sensor_failed: bool = False
 
     temperature: Union[None, float] = None
-
-    min_update_period = timedelta(milliseconds=10)
-
-    min_measurement_period = timedelta(milliseconds=10)
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
         self.enabled = start_enabled

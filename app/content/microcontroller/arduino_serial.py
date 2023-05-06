@@ -156,7 +156,7 @@ class ArduinoSerial(Part):
     def get_accepted_commands(self) -> list[Type[CommandBase]]:
         return [EnableCommand, DisableCommand]
    
-    def update(self, commands: Iterable[Command], now):
+    def update(self, commands: Iterable[Command], now, iteration):
         
         for c in commands:
             if c is EnableCommand:
@@ -174,7 +174,7 @@ class ArduinoSerial(Part):
             ('last_packet_index', int)
         ]
 
-    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
+    def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:
 
         last_index = self.last_message.index if self.last_message is not None else -1
 

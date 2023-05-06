@@ -16,7 +16,20 @@ if platform == 'android':
 
 class PlyerGPSSensor(Part):
 
+    #region Config
+
     type = 'Sensor.GPS'
+
+    min_update_period = timedelta(milliseconds=1000)
+
+    min_measurement_period = timedelta(milliseconds=10)
+
+    status_data_rate = 10
+    ''' Rate at which the status of this component is reported if no other data is being received (in update cycles) '''
+
+    #endregion
+
+    #region Peristant state
 
     enabled: bool = True
 
@@ -24,21 +37,33 @@ class PlyerGPSSensor(Part):
 
     sensor_failed: bool = False
 
-    location_data_buffer = list[Tuple[Union[float, None], Union[float, None], Union[float, None]]]()
+    location_data_buffer: list[Tuple[Union[float, None], Union[float, None], Union[float, None]]]
 
-    status_data_buffer = list[Tuple[float, float, float]]()
+    status_data_buffer: list[Tuple[float, float, float]]
 
-    min_update_period = timedelta(milliseconds=1000)
+    #endregion
 
-    min_measurement_period = timedelta(milliseconds=10)
+    #region Current iteration state
+
+    _enabled: Union[bool, None] = None
+
+    _enabled_confirmed: Union[bool, None] = None
+
+    _sensor_failed: Union[bool, None] = None
+
+    #endregion
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
         self.enabled = start_enabled
+        self._enabled = start_enabled
+
+        self.location_data_buffer = list()
+        self.status_data_buffer = list()
 
         # Request the android permission so that the app definetly gets location access
         if platform == 'android':
-            request_permissions([Permission.ACCESS_FINE_LOCATION, Permission.ACCESS_COARSE_LOCATION])
+            request_permissions([Permission.ACCESS_COARSE_LOCATION, Permission.ACCESS_FINE_LOCATION])
 
         self.try_enable_gps(self.enabled)
 
@@ -49,23 +74,14 @@ class PlyerGPSSensor(Part):
     
     def try_enable_gps(self, enable: bool) -> bool:
 
-        def on_location(**kwargs):
-
-            self.enabled_confirmed = True
-            print(f'received location {kwargs}')
-            lat = kwargs['lat'] if 'lat' in kwargs else None
-            lon = kwargs['lon'] if 'lon' in kwargs else None
-            alt = kwargs['altitude'] if 'altitude' in kwargs else None
-
-            self.location_data_buffer.append((lat, lon, alt))
-
         try:
 
             as_gps = cast(GPS, gps)
 
             if enable and not self.enabled_confirmed:
                 self.enabled_confirmed = False
-                as_gps.configure(on_location=on_location, on_status=self.on_status)
+                self._enabled_confirmed = False
+                as_gps.configure(on_location=self.make_on_location(), on_status=self.make_on_status())
                 as_gps.start(1, 1)
             elif not enable:
                 as_gps.stop()
@@ -76,29 +92,59 @@ class PlyerGPSSensor(Part):
     
         return True
     
-    def on_location(self, location):
-        print(location)
+    def make_on_location(self):
 
-    def on_status(self, location):
-        print(location)
-   
-    def update(self, commands: Iterable[Command], now):
+        def on_location(**kwargs):
+
+            self.enabled_confirmed = True
+            self._enabled_confirmed = True
+            print(f'received location {kwargs}')
+            lat = kwargs['lat'] if 'lat' in kwargs else None
+            lon = kwargs['lon'] if 'lon' in kwargs else None
+            alt = kwargs['altitude'] if 'altitude' in kwargs else None
+
+            self.location_data_buffer.append((lat, lon, alt))
+
+        return on_location
+
+    def make_on_status(self):
+
+        def on_status(**kwargs):
+            
+            print(f'gps status: {kwargs}')
+
+        return on_status
+
+    def update(self, commands: Iterable[Command], now, iteration: int):
         
-        # Try to enable gps. As soon as the first location
-        # is received this will stop doing anything
-        self.try_enable_gps(True)
-
-
         for c in commands:
             if c is EnableCommand:
                 self.enabled = True
+                self._enabled = True
                 c.state = 'success' if self.try_enable_gps(True) else 'failed'
             elif c is DisableCommand:
                 self.enabled = False
+                self._enabled
                 c.state = 'success' if self.try_enable_gps(False) else 'failed'
             else:
                 c.state = 'failed' # Part cannot handle this command
                 continue
+
+        # Re report status every 10 cycles and try to set up GPS again if
+        # enable confirmed not true yet
+        if iteration % self.status_data_rate > 0:
+            return
+
+        self._enabled = self.enabled
+        self._enabled_confirmed = self.enabled_confirmed
+        self._sensor_failed = self.sensor_failed
+        
+        if not self.enabled:
+            return
+
+        # Try to enable gps. As soon as the first location
+        # is received this will stop doing anything
+        self.try_enable_gps(True)
 
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
@@ -111,7 +157,7 @@ class PlyerGPSSensor(Part):
             ('height', float),
         ]
 
-    def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]]:
+    def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
 
         if len(self.location_data_buffer) > 0:
             res = [[
@@ -123,8 +169,10 @@ class PlyerGPSSensor(Part):
                 l[2]
             ] for l in self.location_data_buffer]
 
-            self.location_data_buffer = list(self.location_data_buffer[:-1]) # Keep the last location update
             return res
+        
+        if self._enabled == None and self._enabled_confirmed == None and self._sensor_failed == None:
+            return None
         
         return [[
             1 if self.enabled else 0,
@@ -134,4 +182,11 @@ class PlyerGPSSensor(Part):
             None,
             None
         ]]
+    
+    def flush(self):
+        self._enabled = None
+        self._enabled_confirmed = None
+        self._sensor_failed = None
+        self.location_data_buffer.clear()
+        self.status_data_buffer.clear()
     

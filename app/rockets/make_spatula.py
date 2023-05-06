@@ -7,6 +7,7 @@ from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
 from app.content.sensors.acceleration_plyer import PlyerAccelerationSensor
+from app.content.sensors.framerate import FramerateSensor
 from app.content.sensors.gps_plyer import PlyerGPSSensor
 from app.content.sensors.temperature_plyer import PlyerTemperatureSensor
 from app.content.sensors.barometer_plyer import PlyerBarometerSensor
@@ -35,7 +36,7 @@ def make_spatula() -> FlightConfig:
     PlyerLightSensor(UUID('1ae63061-2763-4374-80fd-8328ab8c30ef'), 'Light', rocket)
     PlyerSpatialOrientationSensor(UUID('01219fb4-4f2f-42d8-a910-6aae01eee1c7'), 'Spatial Orientation', rocket)
     PlyerGPSSensor(UUID('2a3de588-a4a3-46e1-b94b-fd17ad75b06a'), 'GPS', rocket)
-
+    FramerateSensor(UUID('8d45c8e7-7ae2-4496-a5e0-047a631ef17c'), 'Framerate', rocket)
 
     # rnd = RandomSensor(UUID('ebc108a5-ffc3-44b2-b505-840e732a1519'), 'Random Sensor 2', rocket)
     # rnd.min_update_period = timedelta(milliseconds=1)
