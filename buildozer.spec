@@ -178,7 +178,7 @@ android.whitelist = lib-dynload/termios.so
 
 # (list) List of Java files to add to the android project (can be java or a
 # directory containing the files)
-#android.add_src =
+android.add_src = app/java
 
 # (list) Android AAR archives to add
 #android.add_aars =
@@ -412,7 +412,7 @@ warn_on_root = 0
 # build_dir = ./.buildozer
 
 # (str) Path to build output (i.e. .apk, .aab, .ipa) storage
-# bin_dir = ./bin
+bin_dir = ./bin
 
 #    -----------------------------------------------------------------------------
 #    List as sections

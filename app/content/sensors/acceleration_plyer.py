@@ -14,9 +14,9 @@ class PlyerAccelerationSensor(Part):
 
     type = 'Sensor.Acceleration'
 
-    min_update_period = timedelta(milliseconds=10)
+    min_update_period = timedelta(milliseconds=1)
 
-    min_measurement_period = timedelta(milliseconds=10)
+    min_measurement_period = timedelta(milliseconds=1)
 
     status_data_rate = 1000
 
