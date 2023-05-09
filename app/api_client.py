@@ -154,14 +154,16 @@ class RealtimeApiClient():
 
     base_client: ApiClient
 
-    sio = socketio.Client()
 
-    __commands_buffer = list[Command]()
 
     def __init__(self, base_client: ApiClient, flight: Flight): 
 
         self.base_client = base_client
         self.flight = flight
+
+        self.sio =  socketio.Client(logger=True)
+        __commands_buffer = list[Command]()
+
 
     def connect(self):
         self.init_events()
