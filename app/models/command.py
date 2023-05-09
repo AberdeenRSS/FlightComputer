@@ -103,7 +103,7 @@ class CommandSchema(make_safe_schema(Command)):
     If not set, the command was yet completed or it failed
     """
 
-    state = fields.String(required = True, validate= validate.Regexp(r"(new)|(dispatched)|(received)|(completed)|(failed)"))
+    state = fields.String(required = True, validate= validate.Regexp(r"(new)|(dispatched)|(received)|(success)|(failed)"))
     """The state the command is in as known by the server"""
 
     command_payload = fields.Raw(allow_none=True)

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import random
 from time import sleep
-from typing import Any, Callable, Coroutine, Union
+from typing import Any, Callable, Collection, Coroutine, Union
 from uuid import UUID
 import msal
 import json
@@ -124,6 +124,13 @@ class ApiClient:
             except  Exception as e:
                 # print(f'Fatal error sending flight data: {e}')
                 return (False, str(e))
+            
+    async def try_send_command_responses(self, flight_id: str, commands):
+
+        await self.request_with_error_handling_and_retry(
+            lambda client: client.post(f'{self.endpoint}/command/confirm/{flight_id}', json=json.dumps(commands), headers=self.authenticate_and_get_headers()),
+            3
+        )
 
     async def run_full_setup_handshake(self, rocket: Rocket, flight_name: str) -> Flight:
 
@@ -154,21 +161,23 @@ class RealtimeApiClient():
     def __init__(self, base_client: ApiClient, flight: Flight): 
 
         self.base_client = base_client
-        self.headers = base_client.authenticate_and_get_headers()
         self.flight = flight
 
     def connect(self):
         self.init_events()
-        self.sio.connect(f"{self.base_client.endpoint}", headers=self.headers, transports = ['websocket'])
-        self.sio.call('commands.subscribe', self.flight._id)
 
+        token = self.base_client.authenticate()
 
+        self.sio.connect(f"{self.base_client.endpoint}", auth={'token': token}, transports = ['websocket'])
 
     def init_events(self):
 
         @self.sio.event
         def connect():
-            self.sio.call('commands.subscribe', self.flight._id)
+            try:
+                self.sio.call('command.subscribe', str(self.flight._id))
+            except Exception as e:
+                print(f'Failed to subscribe to command stream: {e}')
 
         @self.sio.event
         def connect_error(data):
@@ -181,7 +190,10 @@ class RealtimeApiClient():
         @self.sio.on('command.new')
         def command_new(data: Any):
             try:
-                self.__commands_buffer.extend(CommandSchema().load_list_safe(Command, data['commands']))
+                commands = CommandSchema().load_list_safe(Command, data['commands'])
+                for c in commands:
+                    c.state = 'received'
+                self.__commands_buffer.extend(commands)
             except:
                 print(f'Failed parsing command')
 
@@ -194,6 +206,7 @@ class RealtimeApiClient():
         old = self.__commands_buffer
         self.__commands_buffer = list[Command]()
         return old
+    
 
 
         

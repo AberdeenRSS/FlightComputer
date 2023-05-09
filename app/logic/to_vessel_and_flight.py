@@ -1,6 +1,6 @@
 from typing import Type
 from uuid import UUID
-from app.logic.rocket_definition import CommandBase
+from app.logic.rocket_definition import Command
 from app.models.command import CommandInfo
 from app.models.flight_measurement import FlightMeasurement, FlightMeasurementDescriptor
 from app.models.vessel import Vessel
@@ -59,7 +59,7 @@ def get_measured_parts(rocket: Rocket) -> dict[str, list[FlightMeasurementDescri
 
 def get_commands(rocket: Rocket) -> dict[str, CommandInfo]:
 
-    commands = dict[Type[CommandBase], list[UUID]]()
+    commands = dict[Type[Command], list[UUID]]()
 
     res = dict[str, CommandInfo]()
 

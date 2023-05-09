@@ -6,7 +6,7 @@ from abc import ABC, abstractclassmethod
 from marshmallow import Schema
 
 from app.helper.model_helper import SchemaExt
-from app.logic.commands.command import Command, CommandBase
+from app.logic.commands.command import Command, Command
 
 #Maybe
 
@@ -98,7 +98,7 @@ class Part(ABC):
         self.dependencies.extend(dependencies)
 
     @abstractclassmethod
-    def update(self, commands: Iterable[Command], now: float, iteration: int):
+    def update(self, commands: Iterable[Command], now: float, iteration: int) -> Union[None, Collection[Command]]:
         """
         Method called per tick on every part to get it's own information updated based
         on real parameters
@@ -116,7 +116,7 @@ class Part(ABC):
         return []
 
     @abstractclassmethod
-    def get_accepted_commands(self) -> Iterable[Type[CommandBase]]:
+    def get_accepted_commands(self) -> Iterable[Type[Command]]:
         '''Commands that can be processed by this part'''
         return []
 

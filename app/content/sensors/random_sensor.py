@@ -4,7 +4,7 @@ from typing_extensions import Self
 from uuid import UUID
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.rocket_definition import CommandBase, Measurements, Part, Rocket
+from app.logic.rocket_definition import Command, Measurements, Part, Rocket
 from plyer.facades.battery import Battery
 from random import random
 from datetime import timedelta
@@ -33,7 +33,7 @@ class TemperatureSensor(Part):
     def update(self, commands: Iterable[Command], now):
         self.temperature = random()
 
-    def get_accepted_commands(self) -> list[Type[CommandBase]]:
+    def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:

@@ -5,7 +5,7 @@ from typing import Iterable, Sequence, Tuple, Type, Union
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 from app.api_client import ApiClient
-from app.logic.commands.command import Command, CommandBase
+from app.logic.commands.command import Command, Command
 from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase
 from app.logic.rocket_definition import Measurements, Part, Rocket
 from app.models.flight import Flight
@@ -53,7 +53,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
             ('drop_rate', float)
         ]
 
-    def get_accepted_commands(self) -> Iterable[Type[CommandBase]]:
+    def get_accepted_commands(self) -> Iterable[Type[Command]]:
         return []
 
     def collect_measurements(self, now: float, iterations) -> Sequence[Measurements]:

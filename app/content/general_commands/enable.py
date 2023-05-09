@@ -1,9 +1,9 @@
 from app.content.general_commands.basic_success_response import BasicErrorResponseSchema
-from app.logic.rocket_definition import CommandBase
+from app.logic.rocket_definition import Command
 
 
 
-class EnableCommand(CommandBase):
+class EnableCommand(Command):
 
     command_type = 'Control.Enable'
 
@@ -11,11 +11,17 @@ class EnableCommand(CommandBase):
 
     response_schema = BasicErrorResponseSchema()
 
+    def set_payload(self, payload):
+        pass
 
-class DisableCommand(CommandBase):
+
+class DisableCommand(Command):
 
     command_type = 'Control.Disable'
 
     payload_schema = None
 
     response_schema = BasicErrorResponseSchema()
+
+    def set_payload(self, payload):
+        pass

@@ -5,7 +5,7 @@ from typing_extensions import Self
 from uuid import UUID
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.rocket_definition import CommandBase, Part, Rocket
+from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import spatialorientation
 from plyer.facades.spatialorientation import SpatialOrientation
 
@@ -35,7 +35,7 @@ class PlyerSpatialOrientationSensor(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_accepted_commands(self) -> list[Type[CommandBase]]:
+    def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
     
     def try_enable_spatial_orientation(self, enable: bool) -> bool:

@@ -7,7 +7,7 @@ from uuid import UUID
 
 from dataclasses import dataclass
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.commands.command import Command, CommandBase
+from app.logic.commands.command import Command, Command
 
 from app.logic.rocket_definition import Part, Rocket
 
@@ -153,7 +153,7 @@ class ArduinoSerial(Part):
                 print(f'crash read thread {ex.args[0]}')
                 raise ex
 
-    def get_accepted_commands(self) -> list[Type[CommandBase]]:
+    def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
    
     def update(self, commands: Iterable[Command], now, iteration):

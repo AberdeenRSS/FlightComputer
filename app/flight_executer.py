@@ -1,15 +1,16 @@
 import asyncio
 import time
-from typing import Iterable, cast
+from typing import Collection, Iterable, cast
 from datetime import datetime
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from app.api_client import ApiClient, RealtimeApiClient
 from app.flight_config import FlightConfig
-from app.logic.commands.command import Command
+from app.logic.commands.command import Command, Command
+from app.logic.commands.command_helper import deserialize_command, gather_known_commands, make_command_schemas
 from app.logic.to_vessel_and_flight import to_vessel_and_flight
-from app.models.command import Command as CommandModel
+from app.models.command import Command as CommandModel, CommandSchema
 from app.logic.execution import topological_sort
 from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase, MeasurementsByPart
 from app.logic.rocket_definition import Part, Rocket
@@ -24,13 +25,13 @@ class FlightExecuterUI(BoxLayout):
 
 class ServerHandshakeDeciderWidget(BoxLayout):
 
-    def __init__(self, **kwargs):
+    def __init__(self, exception, **kwargs):
         kwargs['orientation'] = 'vertical'
         super().__init__(**kwargs)
 
         self.decision_future = asyncio.Future()
 
-        self.add_widget(Label(text='Server Handshake failed', size_hint=(1, 0.25)))
+        self.add_widget(Label(text=f'Server Handshake failed: {exception}', size_hint=(1, 0.25)))
 
         def on_retry(instance):
             self.decision_future.set_result('RETRY')
@@ -108,27 +109,51 @@ class PartListWidget(BoxLayout):
 
 class FlightExecuter:
 
+    known_commands: dict[str, type[Command]]
+    '''
+    List of commands known within the context of the flight. Used to
+    initialize the actual command objects from the models send by the 
+    server
+    '''
+
+    executed_commands: list[Command]
+
     def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.001) -> None:
     
+        self.executed_commands = list()
+
         self.flight_config = flight_config
         self.rocket = flight_config.rocket
         self.max_frame_time = max_frame_time
-        self.api_client = ApiClient()
 
+        self.execution_order = topological_sort(self.rocket.parts)
+        self.known_commands = gather_known_commands(self.rocket)
+        self.command_schemas = make_command_schemas(self.known_commands)
+
+        self.api_client = ApiClient()
         self.ui = FlightExecuterUI()
 
         self.init_flight_task = asyncio.get_event_loop().create_task(self.init_flight())
         self.control_loop_task = asyncio.get_event_loop().create_task(self.run_control_loop())
+
+        self.send_command_responses_task = asyncio.get_event_loop().create_task(self.send_command_responses())
 
     async def init_flight(self):
         
         while(True):
             try:
                 self.flight = await self.api_client.run_full_setup_handshake(self.rocket, self.flight_config.name)
+
+                self.realtime_client = RealtimeApiClient(self.api_client, self.flight)
+                self.realtime_client.connect()
+
                 break
-            except:
+            except Exception as e:
+
+                print(f'Failed connecting to server: {e}')
+
                 self.ui.clear_widgets()
-                user_decision_widget = ServerHandshakeDeciderWidget()
+                user_decision_widget = ServerHandshakeDeciderWidget(e)
                 self.ui.add_widget(user_decision_widget)
 
                 user_decision = await user_decision_widget.decision_future
@@ -142,10 +167,12 @@ class FlightExecuter:
                     continue
                 
                 _, self.flight = to_vessel_and_flight(self.rocket)
+                self.realtime_client = None
                 break
 
-        self.realtime_client = RealtimeApiClient(self.api_client, self.flight)
-        self.execution_order = topological_sort(self.rocket.parts)
+
+        self.ui.clear_widgets()
+
 
         # Get list of all available measurement sinks
         self.measurement_sinks = [p for p in self.rocket.parts if isinstance(p, MeasurementSinkBase)]
@@ -193,40 +220,39 @@ class FlightExecuter:
         now_datetime = datetime.fromtimestamp(now)
 
         # Make a list of all new commands sorted by part
-        new_commands = self.realtime_client.swap_command_buffer()
+        new_commands = [deserialize_command(self.known_commands, c) for c in self.realtime_client.swap_command_buffer()] if self.realtime_client is not None else []
         commands_by_part = dict[Part, list[Command]]()
-        for c in new_commands:
-            part_of_command = self.rocket.part_lookup.get(cast(CommandModel, c)._id)
-            if part_of_command is None:
-                continue
-            if part_of_command not in commands_by_part:
-                commands_by_part[part_of_command] = list()
-            commands_by_part[part_of_command].append(Command())
+        self.add_command_by_part(new_commands, commands_by_part)
 
         # Call update on every part
         for p in self.execution_order:
             commands = commands_by_part.get(p)
-            # Only update if the part is due for update this iteration
-            if p.last_update is None or (now - p.last_update) > p.min_update_period.total_seconds():
-                try:
-                    p.update(commands or [], now, iteration)
-                    p.last_update = now
-                except:
-                    print(f'Iteration {iteration}: Part {p.name} failed to update')
+            # Only update if the part is due for update this iteration or if there are commands for it
+            if (p not in commands_by_part) and (p.last_update is not None) and ((now - p.last_update) < p.min_update_period.total_seconds()):
+                continue
+            try:
+                generated_commands = p.update(commands or [], now, iteration)
+                if generated_commands is not None:
+                    new_commands.extend(generated_commands)
+                    self.add_command_by_part(generated_commands, commands_by_part)
+                p.last_update = now
+            except:
+                print(f'Iteration {iteration}: Part {p.name} failed to update')
 
         # Gather all measurements of all parts
         current_measurements = MeasurementsByPart()
         for p in self.execution_order:
-            # Only get measurements if the part is due for update this iteration
-            if p.last_measurement is None or (now - p.last_measurement) > p.min_measurement_period.total_seconds():
-                try:
-                    measurements = p.collect_measurements(now, iteration)
-                    if measurements is None:
-                        continue
-                    current_measurements[p] = (p.last_measurement or now, now, measurements)
-                    p.last_measurement = now
-                except:
-                    print(f'Iteration {iteration}: Part {p.name} failed to take measurements')
+            # Only get measurements if the part is due for update this iteration or if there was a command for the part
+            if (p not in commands_by_part) and (p.last_measurement is not None) and ((now - p.last_measurement) < p.min_measurement_period.total_seconds()):
+                continue
+            try:
+                measurements = p.collect_measurements(now, iteration)
+                if measurements is None:
+                    continue
+                current_measurements[p] = (p.last_measurement or now, now, measurements)
+                p.last_measurement = now
+            except:
+                print(f'Iteration {iteration}: Part {p.name} failed to take measurements')
 
         # Flush all parts (free memory)
         for p in self.execution_order:
@@ -241,4 +267,62 @@ class FlightExecuter:
         for sink in self.measurement_sinks:
             sink.measurement_buffer.append(current_measurements)
 
+        self.executed_commands.extend(new_commands)
+
         return now
+
+    def add_command_by_part(self, new_commands: Collection[Command], commands_by_part: dict[Part, list[Command]]):
+        for c in new_commands:
+
+            if c._part_id is None:
+                continue
+
+            part_of_command = self.rocket.part_lookup.get(c._part_id)
+            if part_of_command is None:
+                continue
+            if part_of_command not in commands_by_part:
+                commands_by_part[part_of_command] = list()
+            commands_by_part[part_of_command].append(c)
+    
+    async def send_command_responses(self):
+
+        abort = await self.init_flight_task
+
+        if(abort):
+            return
+
+        while(True):
+
+            if len(self.executed_commands) < 1:
+                await asyncio.sleep(0.01)
+                continue
+
+            # swap buffer
+            commands_to_send = self.executed_commands
+            self.executed_commands = list()
+
+            # Set all commands to failed, if they haven't been processed yet
+            for c in commands_to_send:
+                if c.state == 'dispatched' or c.state == 'received':
+                    c.state = 'failed'
+
+            c_schema = CommandSchema()
+
+            # Convert the commands into native objects (ready to be send over the api)
+            models = [ (self.command_schemas.get(c.command_type) or c_schema).dump(c) for c in commands_to_send ]
+
+            try:
+                await self.api_client.try_send_command_responses(str(self.flight._id), models)
+            except Exception as e:
+                print(f'Failed sending {len(models)} command responses: {e}')
+
+    def __del__(self):
+
+        if not self.control_loop_task.done():
+            self.control_loop_task.cancel()
+
+        if not self.init_flight_task.done():
+            self.init_flight_task.cancel()
+
+        if not self.send_command_responses_task.done():
+            self.send_command_responses_task.cancel()

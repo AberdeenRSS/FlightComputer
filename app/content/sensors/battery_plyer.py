@@ -5,7 +5,7 @@ from typing_extensions import Self
 from uuid import UUID
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.rocket_definition import CommandBase, Part, Rocket
+from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import battery
 from plyer.facades.battery import Battery
 
@@ -36,15 +36,15 @@ class PlyerBatterySensor(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_accepted_commands(self) -> list[Type[CommandBase]]:
+    def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
    
     def update(self, commands: Iterable[Command], now, iteration):
         
         for c in commands:
-            if c is EnableCommand:
+            if isinstance(c, EnableCommand):
                 self.enabled = True
-            elif c is DisableCommand:
+            elif isinstance(c, DisableCommand):
                 self.enabled = False
             else:
                 c.state = 'failed' # Part cannot handle this command

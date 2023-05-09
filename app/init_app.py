@@ -9,7 +9,6 @@ from kivy.uix.boxlayout import BoxLayout
 from plyer.facades.accelerometer import Accelerometer
 from kivy.core.window import Window
 from plyer import accelerometer
-from app.api_client import ApiClient, RealtimeApiClient
 from uuid import uuid4
 from app.flight_executer import FlightExecuter
 from app.logic.commands.command import Command

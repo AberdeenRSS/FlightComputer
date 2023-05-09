@@ -5,7 +5,7 @@ from typing_extensions import Self
 from uuid import UUID
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.rocket_definition import CommandBase, Part, Rocket
+from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import light
 from plyer.facades.light import Light
 
@@ -50,7 +50,7 @@ class PlyerLightSensor(Part):
     
         return True
 
-    def get_accepted_commands(self) -> list[Type[CommandBase]]:
+    def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
    
     def update(self, commands: Iterable[Command], now, iteration):
