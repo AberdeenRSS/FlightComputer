@@ -6,12 +6,12 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import java.util;
+import java.util.LinkedList;
 
 public class Accelerometer {
 
     // Contain the last event we got from the listener
-    static public SensorEvent lastEvents = new LinkedList<SensorEvent>();
+    static public LinkedList<SensorEvent> lastEvents = new LinkedList<SensorEvent>();
 
     static public int lastAccuracy = 0;
 
@@ -32,7 +32,7 @@ public class Accelerometer {
     static void accelerometerEnable(boolean enable) {
         Context context = (Context) PythonActivity.mActivity;
         SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        Sensor accel = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        Sensor accel = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
         if (accel == null)
             return;
