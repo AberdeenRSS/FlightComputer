@@ -55,6 +55,9 @@ class Command:
     command_payload: Union[None, Any] = None
     """The payload data of the command. Can be any arbitrary additional data specifying what exactly should happen"""
 
+    response_message: str = ''
+    """Free text for a response message. Meant for human readable information"""
+
     response: Union[None, Any] = None
     """
     Response by the vessel, detailing how the command was processed
@@ -108,6 +111,9 @@ class CommandSchema(make_safe_schema(Command)):
 
     command_payload = fields.Raw(allow_none=True)
     """The payload data of the command. Can be any arbitrary additional data specifying what exactly should happen"""
+    
+    response_message = fields.String()
+    """Free text for a response message. Meant for human readable information"""
 
     response = fields.Raw(allow_none=True)
     """

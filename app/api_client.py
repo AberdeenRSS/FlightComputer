@@ -162,17 +162,17 @@ class RealtimeApiClient():
         self.flight = flight
 
         self.sio =  socketio.Client(logger=True)
-        __commands_buffer = list[Command]()
+        self.commands_buffer = list[Command]()
 
 
-    def connect(self):
-        self.init_events()
+    def connect(self, command_callback: Callable[[Collection[Command]], None]):
+        self.init_events(command_callback)
 
         token = self.base_client.authenticate()
 
-        self.sio.connect(f"{self.base_client.endpoint}", auth={'token': token}, transports = ['websocket'])
+        self.sio.connect(f"{self.base_client.endpoint}", auth={'token': token}, transports = ['websocket', 'polling'])
 
-    def init_events(self):
+    def init_events(self, command_callback: Callable[[Collection[Command]], None]):
 
         @self.sio.event
         def connect():
@@ -193,9 +193,8 @@ class RealtimeApiClient():
         def command_new(data: Any):
             try:
                 commands = CommandSchema().load_list_safe(Command, data['commands'])
-                for c in commands:
-                    c.state = 'received'
-                self.__commands_buffer.extend(commands)
+                command_callback(commands)
+                
             except:
                 print(f'Failed parsing command')
 
@@ -203,12 +202,6 @@ class RealtimeApiClient():
         def catch_all(event, data):
             print(f'received unknown event {event}')
 
-    def swap_command_buffer(self) -> list[Command]:
-
-        old = self.__commands_buffer
-        self.__commands_buffer = list[Command]()
-        return old
-    
 
 
         

@@ -6,20 +6,21 @@ from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSin
 from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
-from app.content.sensors.acceleration_plyer import PlyerAccelerationSensor
-from app.content.sensors.acceleration_pyjinius import PyjiniusAccelerationSensor
+from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
+from app.content.sensors.plyer.acceleration_plyer import PlyerAccelerationSensor
+from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
 
-from app.content.sensors.framerate import FramerateSensor
-from app.content.sensors.gps_plyer import PlyerGPSSensor
-from app.content.sensors.temperature_plyer import PlyerTemperatureSensor
-from app.content.sensors.barometer_plyer import PlyerBarometerSensor
-from app.content.sensors.gyroscope_plyer import PlyerGyroscopeSensor 
-from app.content.sensors.light_plyer import PlyerLightSensor 
-from app.content.sensors.gravity_plyer import PlyerGravitySensor
-from app.content.sensors.spatial_orientation_plyer import PlyerSpatialOrientationSensor
+from app.content.sensors.plyer.framerate import FramerateSensor
+from app.content.sensors.plyer.gps_plyer import PlyerGPSSensor
+from app.content.sensors.plyer.temperature_plyer import PlyerTemperatureSensor
+from app.content.sensors.plyer.barometer_plyer import PlyerBarometerSensor
+from app.content.sensors.plyer.gyroscope_plyer import PlyerGyroscopeSensor 
+from app.content.sensors.plyer.light_plyer import PlyerLightSensor 
+from app.content.sensors.plyer.gravity_plyer import PlyerGravitySensor
+from app.content.sensors.plyer.spatial_orientation_plyer import PlyerSpatialOrientationSensor
 from app.flight_config import FlightConfig 
 from app.logic.rocket_definition import Rocket
-from app.content.sensors.battery_plyer import PlyerBatterySensor
+from app.content.sensors.plyer.battery_plyer import PlyerBatterySensor
 from uuid import UUID
 
 from app.ui.part_ui import PartUi
@@ -31,9 +32,10 @@ def make_spatula() -> FlightConfig:
 
     PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
     PyjiniusAccelerationSensor(UUID('d91eed66-d699-4816-892d-3e99282966ab'), 'Accelerometer', rocket)
+    PyjiniusGyroscopeSensor(UUID('5159e64a-0f55-4a8c-8d24-596a0118e0be'), 'Gyroscope', rocket)
     # PlyerAccelerationSensor(UUID('5cefc100-3e52-401c-9dfc-e6331355eb55'), 'Accelerometer', rocket)
     PlyerTemperatureSensor(UUID('db5f474d-2b83-4d38-b438-f94a21510c1e'), 'Temperature', rocket)
-    PlyerGyroscopeSensor(UUID('a2197a9f-37e9-46f4-ac19-32d3ea153d92'), 'Gyroscope', rocket)
+    # PlyerGyroscopeSensor(UUID('a2197a9f-37e9-46f4-ac19-32d3ea153d92'), 'Gyroscope', rocket)
     PlyerBarometerSensor(UUID('d7a8e2e0-4e8f-4cfa-8921-d299d28b8182'), 'Barometer', rocket)
     PlyerGravitySensor(UUID('cde714a2-2179-4b0d-964d-f1af4696bf2e'), 'Gravity', rocket)
     PlyerLightSensor(UUID('1ae63061-2763-4374-80fd-8328ab8c30ef'), 'Light', rocket)

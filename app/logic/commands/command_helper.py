@@ -44,6 +44,7 @@ def deserialize_command(known_commands: dict[str, type[Command]], model: Command
     command.dispatch_time = model.dispatch_time
     command.receive_time = model.receive_time
     command.complete_time = model.complete_time
+    command.response_message = model.response_message
 
     if constructor.payload_schema is not None and model.command_payload is not None:
         command.set_payload(constructor.payload_schema.load(model.command_payload))

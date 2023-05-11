@@ -43,9 +43,16 @@ class Command(ABC):
 
     payload_schema: Union[SchemaExt, None]
 
+    response_message: str = ''
+
     response_schema: Union[SchemaExt, None]
     
     state: str = 'new'
+    '''
+    - "new" or "dispatched" or "received" if received from the server
+    - "processing" if currently processing this command
+    - "success" or "failed" to send back to the server
+    '''
 
     @abstractclassmethod
     def set_payload(self, payload):

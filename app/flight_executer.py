@@ -116,10 +116,13 @@ class FlightExecuter:
     server
     '''
 
+    command_buffer: list[Command]
+
     executed_commands: list[Command]
 
     def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.001) -> None:
     
+        self.command_buffer = list()
         self.executed_commands = list()
 
         self.flight_config = flight_config
@@ -138,6 +141,22 @@ class FlightExecuter:
 
         self.send_command_responses_task = asyncio.get_event_loop().create_task(self.send_command_responses())
 
+    def make_on_new_command(self):
+        def on_new_command(models: Collection[CommandModel]):
+
+            for c in models:
+                c.state = 'received'
+
+            self.command_buffer.extend([deserialize_command(self.known_commands, c) for c in models])
+        return on_new_command
+
+    def swap_command_buffer(self) -> list[Command]:
+
+        old = self.command_buffer
+        self.command_buffer = list[Command]()
+        return old
+    
+
     async def init_flight(self):
         
         while(True):
@@ -145,12 +164,12 @@ class FlightExecuter:
                 self.flight = await self.api_client.run_full_setup_handshake(self.rocket, self.flight_config.name)
 
                 self.realtime_client = RealtimeApiClient(self.api_client, self.flight)
-                self.realtime_client.connect()
+                self.realtime_client.connect(self.make_on_new_command())
 
                 break
             except Exception as e:
 
-                print(f'Failed connecting to server: {e}')
+                print(f'Failed connecting to server: {e} {e.args}')
 
                 self.ui.clear_widgets()
                 user_decision_widget = ServerHandshakeDeciderWidget(e)
@@ -220,7 +239,7 @@ class FlightExecuter:
         now_datetime = datetime.fromtimestamp(now)
 
         # Make a list of all new commands sorted by part
-        new_commands = [deserialize_command(self.known_commands, c) for c in self.realtime_client.swap_command_buffer()] if self.realtime_client is not None else []
+        new_commands = self.swap_command_buffer()
         commands_by_part = dict[Part, list[Command]]()
         self.add_command_by_part(new_commands, commands_by_part)
 
@@ -251,8 +270,8 @@ class FlightExecuter:
                     continue
                 current_measurements[p] = (p.last_measurement or now, now, measurements)
                 p.last_measurement = now
-            except:
-                print(f'Iteration {iteration}: Part {p.name} failed to take measurements')
+            except Exception as e:
+                print(f'Iteration {iteration}: Part {p.name} failed to take measurements: {e}')
 
         # Flush all parts (free memory)
         for p in self.execution_order:
@@ -267,7 +286,9 @@ class FlightExecuter:
         for sink in self.measurement_sinks:
             sink.measurement_buffer.append(current_measurements)
 
-        self.executed_commands.extend(new_commands)
+        # Set all commands to be executed, except those that are currently set to be prossesing
+        self.executed_commands.extend([c for c in new_commands if c.state != 'processing'])
+        self.command_buffer.extend([c for c in new_commands if c.state == 'processing'])
 
         return now
 
@@ -305,6 +326,7 @@ class FlightExecuter:
             for c in commands_to_send:
                 if c.state == 'dispatched' or c.state == 'received':
                     c.state = 'failed'
+                    c.response_message = 'Part did not process the command for an uknown reason'
 
             c_schema = CommandSchema()
 

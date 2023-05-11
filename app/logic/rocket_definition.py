@@ -111,9 +111,9 @@ class Part(ABC):
         pass
 
     @abstractclassmethod
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         """Name and type of the measurement values of this part"""
-        return []
+        return list[Tuple[str, Type]]()
 
     @abstractclassmethod
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
@@ -130,12 +130,14 @@ class Part(ABC):
         pass        
 
     def inflate_measurement(self, measurement: Measurements) -> dict[str, Union[str, int, float]]:
-        res = dict()
+        res = dict[str, Union[str, int, float]]()
         i = 0
-        for (key, type) in self.get_measurement_shape():
+        for (key, _) in self.get_measurement_shape():
             if measurement[i] is None:
                 continue
-            res[key] = measurement[i]
+            m = measurement[i]
+            if m is not None:
+                res[key] = m
             i += 1
         
         return res
