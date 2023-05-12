@@ -8,9 +8,14 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from kivy.utils import platform
 
-if platform == 'android':
-    # from android.permissions import request_permissions, Permission
-    from jnius import autoclass
+try:
+    from kivy.utils import platform
+
+    if platform == 'android':
+        # from android.permissions import request_permissions, Permission
+        from jnius import autoclass
+except:
+    print('Not running in kivy app')
 
 
 class PyjiniusGyroscopeSensor(Part):

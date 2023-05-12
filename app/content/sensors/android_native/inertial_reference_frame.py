@@ -57,12 +57,12 @@ class InertialReferenceFrame(Part):
         self.dependencies.append(accelerometer)
         self.dependencies.append(gyro)
 
-        self.position = kwargs.get('initial_position') or np.array([0, 0, 0])
-        self.air_velocity = kwargs.get('initial_air_velocity') or np.array([0, 0, 0])
-        self.ground_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0])
+        self.position = kwargs.get('initial_position') or np.array([0, 0, 0], dtype=float)
+        self.air_velocity = kwargs.get('initial_air_velocity') or np.array([0, 0, 0], dtype=float)
+        self.ground_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0], dtype=float)
 
-        self.angular_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0])
-        self.initial_orientation = np.array([0, 0, 1, 0])
+        self.angular_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0], dtype=float)
+        self.initial_orientation = np.array([0, 0, 1, 0], dtype=float)
         self.orientation = np.array(self.initial_orientation, copy=True)
 
 
@@ -77,19 +77,21 @@ class InertialReferenceFrame(Part):
             return
         
         # Get the time step
-        time_delta = self.last_gyro_update - self.gyro.last_update
+        time_delta = self.gyro.last_update - self.last_gyro_update
         
         # Apply angular acceleration changes to angular velocity and orientation
-        np_ang_acc = np.array(current_angular_acc, copy=False)*(time_delta/len(current_angular_acc))
+        np_ang_acc = np.array(current_angular_acc, copy=False, dtype=float)*(time_delta/len(current_angular_acc))
 
         self.angular_velocity += np.sum(np_ang_acc, axis=0)
 
-        angular_velocity_quats = np.append([[0]], np_ang_acc)
+        angular_velocity_quats = np.c_[ np.zeros(len(np_ang_acc), dtype=float), np_ang_acc ] # prepend zeros to all vectors (make them quaternions)
+        
 
         half_delta = time_delta/2
 
         for v in angular_velocity_quats:
-            self.orientation += half_delta * quaternion_multiply(v, self.orientation)
+            quat = quaternion_multiply(v, self.orientation)
+            self.orientation += half_delta * quat
 
         # Update the time of last update
         self.last_gyro_update = self.gyro.last_update
@@ -105,7 +107,7 @@ class InertialReferenceFrame(Part):
             return
         
         # Get the time step
-        time_delta = self.last_accelerometer_update - self.accelerometer.last_update
+        time_delta = self.accelerometer.last_update - self.last_accelerometer_update
 
         # Apply air velocity
         self.air_velocity += np.sum(current_acc, axis=0)*time_delta/len(current_acc)
