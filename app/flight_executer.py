@@ -245,12 +245,16 @@ class FlightExecuter:
 
         # Call update on every part
         for p in self.execution_order:
-            commands = commands_by_part.get(p)
-            # Only update if the part is due for update this iteration or if there are commands for it
-            if (p not in commands_by_part) and (p.last_update is not None) and ((now - p.last_update) < p.min_update_period.total_seconds()):
+
+            commands = commands_by_part.get(p) or []
+
+            # Only update if the part is due for update this iteration
+            if (p.last_update is not None) and ((now - p.last_update) < p.min_update_period.total_seconds()):
+                self.command_buffer.extend(commands) # Re-queue all commands in this case
                 continue
+
             try:
-                generated_commands = p.update(commands or [], now, iteration)
+                generated_commands = p.update(commands, now, iteration)
                 if generated_commands is not None:
                     new_commands.extend(generated_commands)
                     self.add_command_by_part(generated_commands, commands_by_part)
