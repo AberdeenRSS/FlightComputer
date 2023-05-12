@@ -1,12 +1,12 @@
 from datetime import timedelta
-from typing import Collection, Iterable, Sequence, Tuple, Type, Union
+from typing import Collection, Iterable, Sequence, Tuple, Type, Union, cast
 from uuid import UUID
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
 
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
 from app.logic.commands.command import Command
-from app.logic.math.linear import quaternion_multiply, quaternion_scale, rotate_vector_by_quaternion
-from app.logic.rocket_definition import Measurements, Part
+from app.logic.math.linear import quaternion_multiply, rotate_vector_by_quaternion
+from app.logic.rocket_definition import Measurements, Part, Rocket
 
 import numpy as np
 
@@ -47,8 +47,9 @@ class InertialReferenceFrame(Part):
     position: np.ndarray
 
 
-    def __init__(self, accelerometer: PyjiniusAccelerationSensor, gyro: PyjiniusGyroscopeSensor, **kwargs):
-        super.__init__(**kwargs)
+    def __init__(self, accelerometer: PyjiniusAccelerationSensor, gyro: PyjiniusGyroscopeSensor, uuid: UUID, name: str, parent, **kwargs):
+
+        super().__init__(uuid, name, parent, list(), **kwargs)
 
         self.accelerometer = accelerometer
         self.gyro = gyro
@@ -60,6 +61,7 @@ class InertialReferenceFrame(Part):
         self.air_velocity = kwargs.get('initial_air_velocity') or np.array([0, 0, 0])
         self.ground_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0])
 
+        self.angular_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0])
         self.initial_orientation = np.array([0, 0, 1, 0])
         self.orientation = np.array(self.initial_orientation, copy=True)
 

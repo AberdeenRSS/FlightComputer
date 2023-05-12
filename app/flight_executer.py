@@ -236,7 +236,6 @@ class FlightExecuter:
     def control_loop(self, iteration: int, last_update: float):
 
         now = time.time()
-        now_datetime = datetime.fromtimestamp(now)
 
         # Make a list of all new commands sorted by part
         new_commands = self.swap_command_buffer()
@@ -259,8 +258,8 @@ class FlightExecuter:
                     new_commands.extend(generated_commands)
                     self.add_command_by_part(generated_commands, commands_by_part)
                 p.last_update = now
-            except:
-                print(f'Iteration {iteration}: Part {p.name} failed to update')
+            except Exception as e:
+                print(f'Iteration {iteration}: Part {p.name} failed to update {e}')
 
         # Gather all measurements of all parts
         current_measurements = MeasurementsByPart()
@@ -284,15 +283,16 @@ class FlightExecuter:
             except:
                 print(f'Iteration {iteration}: Part {p.name} failed to flush')
 
+
+        # Set all commands to be executed, except those that are currently set to be prossesing
+        self.executed_commands.extend([c for c in new_commands if c.state != 'processing'])
+        self.command_buffer.extend([c for c in new_commands if c.state == 'processing'])
+
         if len(current_measurements) < 1:
             return now
 
         for sink in self.measurement_sinks:
             sink.measurement_buffer.append(current_measurements)
-
-        # Set all commands to be executed, except those that are currently set to be prossesing
-        self.executed_commands.extend([c for c in new_commands if c.state != 'processing'])
-        self.command_buffer.extend([c for c in new_commands if c.state == 'processing'])
 
         return now
 

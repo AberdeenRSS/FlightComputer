@@ -56,7 +56,7 @@ class PyjiniusAccelerationSensor(Part):
 
     accuracy: Union[int, None] = None
 
-    iteration_acceleration: Union[None, list[Tuple[float, float, float]]]
+    iteration_acceleration: Union[None, list[Tuple[float, float, float]]] = None
 
     iteration_accuracy: Union[int, None] = None
 

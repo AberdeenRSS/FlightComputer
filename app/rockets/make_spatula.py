@@ -7,6 +7,7 @@ from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
+from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
 from app.content.sensors.plyer.acceleration_plyer import PlyerAccelerationSensor
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
 
@@ -31,8 +32,9 @@ def make_spatula() -> FlightConfig:
     rocket = Rocket('Spatula')
 
     PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
-    PyjiniusAccelerationSensor(UUID('d91eed66-d699-4816-892d-3e99282966ab'), 'Accelerometer', rocket)
-    PyjiniusGyroscopeSensor(UUID('5159e64a-0f55-4a8c-8d24-596a0118e0be'), 'Gyroscope', rocket)
+    acc = PyjiniusAccelerationSensor(UUID('d91eed66-d699-4816-892d-3e99282966ab'), 'Accelerometer', rocket)
+    gyro = PyjiniusGyroscopeSensor(UUID('5159e64a-0f55-4a8c-8d24-596a0118e0be'), 'Gyroscope', rocket)
+    InertialReferenceFrame(acc, gyro, UUID('27f5d5e0-5fa9-4ae1-88af-8477d80960d7'), 'Intertial Reference Frame', rocket)
     # PlyerAccelerationSensor(UUID('5cefc100-3e52-401c-9dfc-e6331355eb55'), 'Accelerometer', rocket)
     PlyerTemperatureSensor(UUID('db5f474d-2b83-4d38-b438-f94a21510c1e'), 'Temperature', rocket)
     # PlyerGyroscopeSensor(UUID('a2197a9f-37e9-46f4-ac19-32d3ea153d92'), 'Gyroscope', rocket)
