@@ -22,5 +22,5 @@ def topological_sort(commands: Iterable[Part]) -> list[Part]:
     for command in commands:
         if command not in visited:
             dfs(command)
-    return result[::-1]
+    return result
 

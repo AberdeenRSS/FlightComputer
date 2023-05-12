@@ -122,7 +122,7 @@ class ApiClient:
             except TimeoutError:
                 return (False, 'TIMEOUT')
             except  Exception as e:
-                # print(f'Fatal error sending flight data: {e}')
+                print(f'Fatal error sending flight data: {e}')
                 return (False, str(e))
             
     async def try_send_command_responses(self, flight_id: str, commands):
