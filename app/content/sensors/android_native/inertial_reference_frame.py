@@ -1,6 +1,7 @@
 from datetime import timedelta
 from typing import Collection, Iterable, Sequence, Tuple, Type, Union, cast
 from uuid import UUID
+from app.content.general_commands.calibrate import CalibrateZeroCommand
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
 
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
@@ -21,9 +22,9 @@ class InertialReferenceFrame(Part):
 
     dependencies: list 
 
-    min_update_period: timedelta = timedelta(milliseconds=5)
+    min_update_period: timedelta = timedelta(milliseconds=1)
 
-    min_measurement_period: timedelta = timedelta(milliseconds=5)
+    min_measurement_period: timedelta = timedelta(milliseconds=1)
 
     #endregion
 
@@ -67,27 +68,27 @@ class InertialReferenceFrame(Part):
 
 
     def update_angular_velocity(self):
-        current_angular_acc = self.gyro.iteration_angular_acceleration
+        current_angular_velocity = self.gyro.iteration_angular_acceleration
 
         if self.last_gyro_update is None or self.gyro.last_update is None:
             self.last_gyro_update = self.gyro.last_update
             return
     
-        if current_angular_acc is None:
+        if current_angular_velocity is None:
             return
         
         # Get the time step
         time_delta = self.gyro.last_update - self.last_gyro_update
         
         # Apply angular acceleration changes to angular velocity and orientation
-        np_ang_acc = np.array(current_angular_acc, copy=False, dtype=float)*(time_delta/len(current_angular_acc))
+        # np_ang_acc = np.array(current_angular_acc, copy=False, dtype=float)*(time_delta/len(current_angular_acc))
 
-        self.angular_velocity += np.sum(np_ang_acc, axis=0)
+        # self.angular_velocity += np.sum(np_ang_acc, axis=0)
 
-        angular_velocity_quats = np.c_[ np.zeros(len(np_ang_acc), dtype=float), np_ang_acc ] # prepend zeros to all vectors (make them quaternions)
+        angular_velocity_quats = np.c_[ np.zeros(len(current_angular_velocity), dtype=float), current_angular_velocity ] # prepend zeros to all vectors (make them quaternions)
         
 
-        half_delta = time_delta/2
+        half_delta = time_delta/(2*len(angular_velocity_quats))
 
         for v in angular_velocity_quats:
             quat = quaternion_multiply(v, self.orientation)
@@ -110,31 +111,51 @@ class InertialReferenceFrame(Part):
         time_delta = self.accelerometer.last_update - self.last_accelerometer_update
 
         # Apply air velocity
-        self.air_velocity += np.sum(current_acc, axis=0)*time_delta/len(current_acc)
+        acc_sum = np.sum(current_acc, axis=0)
+
+        self.air_velocity += acc_sum * (time_delta/len(current_acc))
 
         # Get inertial velocity
         self.ground_velocity = rotate_vector_by_quaternion(self.air_velocity, self.orientation)
 
+        self.position += self.ground_velocity * time_delta
+
         # Update the time of last update
-        self.last_gyro_update = self.gyro.last_update
+        self.last_accelerometer_update = self.accelerometer.last_update
+
+    def process_calibration(self, c: CalibrateZeroCommand, now: float):
+
+        self.orientation = self.initial_orientation
+        self.air_velocity = np.array([0, 0, 0], dtype=float)
+        self.ground_velocity = np.array([0, 0, 0], dtype=float)
+        self.position = np.array([0, 0, 0], dtype=float)
 
     def update(self, commands: Iterable[Command], now: float, iteration: int) -> Union[None, Collection[Command]]:
+
+        for c in commands:
+            if isinstance(c, CalibrateZeroCommand):
+                self.process_calibration(c, now)
+            else:
+                c.state = 'failed' # Part cannot handle this command
+                c.response_message = f'The nativ gyrocsope can not process commands of type {c.command_type}'
+                continue
+
 
         self.update_angular_velocity()
         self.update_velocity()
 
     def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         return [
-            ('angular_velocity-x', float),
-            ('angular_velocity-y', float),
-            ('angular_velocity-z', float),
+            # ('angular_velocity-x', float),
+            # ('angular_velocity-y', float),
+            # ('angular_velocity-z', float),
             ('orientation-w', float),
             ('orientation-x', float),
             ('orientation-y', float),
             ('orientation-z', float),
             ('air_velocity-x', float),
-            ('air_velocity-x', float),
-            ('air_velocity-x', float),
+            ('air_velocity-y', float),
+            ('air_velocity-z', float),
             ('ground-velocity-x', float),
             ('ground-velocity-y', float),
             ('ground-velocity-z', float),
@@ -144,11 +165,11 @@ class InertialReferenceFrame(Part):
         ]
 
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
-        return []
+        return [CalibrateZeroCommand]
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:
         return [[
-            *self.angular_velocity,
+            # *self.angular_velocity,
             *self.orientation,
             *self.air_velocity,
             *self.ground_velocity,

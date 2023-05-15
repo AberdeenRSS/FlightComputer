@@ -29,4 +29,7 @@ class SimpleCalibrationProcessor3D(CalibrationProcessor3D):
 
     def get_correction(self) -> Tuple[float, float, float]:
 
+        if self.count < 1:
+            return 0, 0, 0
+
         return -self.acc[0]/self.count, -self.acc[1]/self.count, -self.acc[2]/self.count

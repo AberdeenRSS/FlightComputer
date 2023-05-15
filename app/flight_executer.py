@@ -120,7 +120,7 @@ class FlightExecuter:
 
     executed_commands: list[Command]
 
-    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.001) -> None:
+    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.0001) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
@@ -250,6 +250,8 @@ class FlightExecuter:
             # Only update if the part is due for update this iteration
             if (p.last_update is not None) and ((now - p.last_update) < p.min_update_period.total_seconds()):
                 self.command_buffer.extend(commands) # Re-queue all commands in this case
+                if p in commands_by_part:
+                    del commands_by_part[p]
                 continue
 
             try:
@@ -285,8 +287,9 @@ class FlightExecuter:
 
 
         # Set all commands to be executed, except those that are currently set to be prossesing
-        self.executed_commands.extend([c for c in new_commands if c.state != 'processing'])
-        self.command_buffer.extend([c for c in new_commands if c.state == 'processing'])
+        for commands in commands_by_part.values():
+            self.executed_commands.extend([c for c in commands if c.state != 'processing'])
+            self.command_buffer.extend([c for c in commands if c.state == 'processing'])
 
         if len(current_measurements) < 1:
             return now
