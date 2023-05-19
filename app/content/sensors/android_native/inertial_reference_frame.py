@@ -86,7 +86,6 @@ class InertialReferenceFrame(Part):
         # self.angular_velocity += np.sum(np_ang_acc, axis=0)
 
         angular_velocity_quats = np.c_[ np.zeros(len(current_angular_velocity), dtype=float), current_angular_velocity ] # prepend zeros to all vectors (make them quaternions)
-        
 
         half_delta = time_delta/(2*len(angular_velocity_quats))
 
@@ -125,7 +124,9 @@ class InertialReferenceFrame(Part):
 
     def process_calibration(self, c: CalibrateZeroCommand, now: float):
 
-        self.orientation = self.initial_orientation
+        c.state = 'success'
+
+        self.orientation = np.array(self.initial_orientation, dtype=float, copy=True)
         self.air_velocity = np.array([0, 0, 0], dtype=float)
         self.ground_velocity = np.array([0, 0, 0], dtype=float)
         self.position = np.array([0, 0, 0], dtype=float)

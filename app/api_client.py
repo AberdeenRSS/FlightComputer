@@ -170,7 +170,7 @@ class RealtimeApiClient():
 
         token = self.base_client.authenticate()
 
-        self.sio.connect(f"{self.base_client.endpoint}", auth={'token': token}, transports = ['websocket', 'polling'])
+        self.sio.connect(f"{self.base_client.endpoint}", auth={'token': token})
 
     def init_events(self, command_callback: Callable[[Collection[Command]], None]):
 
