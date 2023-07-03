@@ -3,3 +3,5 @@
 /bin
 /.buildozer
 **/__pycache__
+Lib/
+.idea/

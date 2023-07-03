@@ -25,3 +25,14 @@ class DisableCommand(Command):
 
     def set_payload(self, payload):
         pass
+
+class ResetCommand(Command):
+
+    command_type = 'Control.Reset'
+
+    payload_schema = None
+
+    response_schema = BasicErrorResponseSchema()
+
+    def set_payload(self, payload):
+        pass

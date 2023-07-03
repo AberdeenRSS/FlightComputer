@@ -7,7 +7,9 @@ from uuid import UUID
 
 from dataclasses import dataclass
 from app.content.general_commands.enable import DisableCommand, EnableCommand
+from app.content.motor_commands.open import OpenCommand, CloseCommand, IgniteCommand
 from app.logic.commands.command import Command, Command
+from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
 
 from app.logic.rocket_definition import Part, Rocket
 
@@ -33,6 +35,9 @@ class RssPacket:
 
     payload: bytes
 
+    def to_bytes(self):
+        return [*self.index.to_bytes(), *self.command.to_bytes(), *self.payload_size.to_bytes(), *self.payload]
+
 
 class ArduinoSerial(Part):
 
@@ -40,9 +45,9 @@ class ArduinoSerial(Part):
 
     enabled: bool = True
 
-    min_update_period = timedelta(milliseconds=1)
+    min_update_period = timedelta(milliseconds=1000)
 
-    min_measurement_period = timedelta(milliseconds=1)
+    min_measurement_period = timedelta(milliseconds=1000)
 
     device_name_list: Union[Collection[str], None] = None
 
@@ -54,7 +59,23 @@ class ArduinoSerial(Part):
 
     last_message = None
 
+    serial_port = None
+
+    hdlc: Union[tinyproto.Hdlc, None]
+
+    current_message = bytearray([])
+
+    logs = []
+
+    part_activated: Union[bytes, None]
+    part_state:     Union[str, None]
+
+    commands_list = []
+
+
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
+        self.part_state = None
+        self.part_state = None
 
         self.enabled = start_enabled
         super().__init__(_id, name, parent, list()) # type: ignore
@@ -62,6 +83,7 @@ class ArduinoSerial(Part):
         self.port_thread_lock = threading.Lock()
 
         self.try_get_device_list()
+        self.hdlc = None
 
 
 
@@ -121,7 +143,10 @@ class ArduinoSerial(Part):
 
         hdlc = tinyproto.Hdlc()
 
+        self.hdlc = hdlc
+
         def on_read(b: bytes):
+
 
             if len(b) < 3:
                 print('skip')
@@ -133,6 +158,8 @@ class ArduinoSerial(Part):
 
             package = RssPacket(int(b[0]), int(b[1]), payload_size, payload)
 
+            #print(package)
+
             self.last_message = package
 
         hdlc.on_read = on_read
@@ -140,6 +167,7 @@ class ArduinoSerial(Part):
         hdlc.begin()
 
         while True:
+            #print(self.logs)
             try:
                 with self.port_thread_lock:
                     if not self.serial_port.is_open:
@@ -148,30 +176,84 @@ class ArduinoSerial(Part):
                         self.serial_port.in_waiting
                     )
                 if received_msg:
-                    hdlc.rx(received_msg)
+                    print(received_msg)
+#                   hdlc.rx(received_msg)
+
+
+                    for i in received_msg:
+                        if len(self.current_message) and self.current_message[-1] is not 0x7E and i is 0x7E:
+                            self.current_message.append(i)
+                            self.logs.append(self.current_message)
+                            self.parse()
+                            self.current_message = bytearray([])
+                        else:
+                            self.current_message.append(i)
+
+
             except Exception as ex:
                 print(f'crash read thread {ex.args[0]}')
                 raise ex
 
+    def parse(self):
+        print("Self - ", self.current_message)
+        self.part_activated = self.current_message[3]
+        if self.current_message[5] is 0x01:
+            self.part_state = 'success'
+        else:
+            self.part_state = 'failed'
+        print()
+
+    def hz(self, part) -> Union[str, None]:
+        if self.part_activated is part:
+            state = self.part_state
+            self.part_state = None
+            self.part_activated = None
+            return state
+
+        return None
+
     def get_accepted_commands(self) -> list[Type[Command]]:
-        return [EnableCommand, DisableCommand]
-   
+        return [EnableCommand, DisableCommand, ResetCommand]
+
+    def send_message(self, message :bytearray()) -> int:
+        if message[3] is 0x02 and message[4] is 0x01:
+            def kek():  # user defined function which adds +10 to given number
+                self.send_message(bytearray([0x7E, 0xFF, 0x4F, 0x01, 0x04, 0x7E]))
+
+            start_time = threading.Timer(5, kek)
+            start_time.start()
+
+        if self.serial_port is None or self.hdlc is None:
+            return
+
+        self.hdlc.put(message)
+        self.serial_port.write(self.hdlc.tx())
+
+        self.commands_list.append(bytearray([0x7E, 0xFF, 0x4F, 0x01, 0x04, 0x7E]))
+        return len(self.commands_list)
+
+
     def update(self, commands: Iterable[Command], now, iteration):
-        
+
         for c in commands:
-            if c is EnableCommand:
+
+            if isinstance(c, EnableCommand):
                 self.enabled = True
-            elif c is DisableCommand:
+                c.state = "success"
+            elif isinstance(c, DisableCommand):
                 self.enabled = False
+                c.state = "success"
+            elif isinstance(c, ResetCommand):
+                self.send_message(bytearray([0x7E, 0xFF, 0x4F, 0x00, 0x01, 0x7E]))
+                c.state = "success"
             else:
                 c.state = 'failed' # Part cannot handle this command
                 continue
-            
+
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', int),
-            ('communication_failure', int),
-            ('last_packet_index', int)
+            ('open', int),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:

@@ -1,3 +1,4 @@
 {
-    "API_ENDPOINT": "https://flight-management-server.salmonbay-0c45f1b8.uksouth.azurecontainerapps.io"
+    "API_ENDPOINT": "https://flight-management-server.salmonbay-0c45f1b8.uksouth.azurecontainerapps.io",
+    "rocket_id": "44bd6ec1-369d-4ec6-80b3-0a6b4a90ff03"
 }
