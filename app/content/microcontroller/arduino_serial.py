@@ -181,7 +181,7 @@ class ArduinoSerial(Part):
 
 
                     for i in received_msg:
-                        if len(self.current_message) and self.current_message[-1] is not 0x7E and i is 0x7E:
+                        if len(self.current_message) and self.current_message[-1] != 0x7E and i == 0x7E:
                             self.current_message.append(i)
                             self.logs.append(self.current_message)
                             self.parse()
@@ -197,14 +197,14 @@ class ArduinoSerial(Part):
     def parse(self):
         print("Self - ", self.current_message)
         self.part_activated = self.current_message[3]
-        if self.current_message[5] is 0x01:
+        if self.current_message[5] == 0x01:
             self.part_state = 'success'
         else:
             self.part_state = 'failed'
         print()
 
     def hz(self, part) -> Union[str, None]:
-        if self.part_activated is part:
+        if self.part_activated == part:
             state = self.part_state
             self.part_state = None
             self.part_activated = None
@@ -216,7 +216,7 @@ class ArduinoSerial(Part):
         return [EnableCommand, DisableCommand, ResetCommand]
 
     def send_message(self, message :bytearray()) -> int:
-        if message[3] is 0x02 and message[4] is 0x01:
+        if message[3] == 0x02 and message[4] == 0x01:
             def kek():  # user defined function which adds +10 to given number
                 self.send_message(bytearray([0x7E, 0xFF, 0x4F, 0x01, 0x04, 0x7E]))
 
@@ -254,6 +254,7 @@ class ArduinoSerial(Part):
         return [
             ('enabled', int),
             ('open', int),
+            ('last_index', int)
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:

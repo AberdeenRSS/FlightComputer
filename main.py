@@ -44,8 +44,10 @@ async def main():
     ui_coroutine = ui_app.async_run()
     ui_task = asyncio.create_task(ui_coroutine)
 
+    worker_task = asyncio.create_task(worker_process())
+
     # Wait for either the kivy app or the worker to complete/crash
-    done, pending = await asyncio.wait([ui_task, worker_process()], return_when=asyncio.FIRST_COMPLETED)
+    done, pending = await asyncio.wait([ui_task, worker_task], return_when=asyncio.FIRST_COMPLETED)
 
     # Stop the ui in case the worker crashed, so that we can create a new ui with the error
     if not ui_task.done():

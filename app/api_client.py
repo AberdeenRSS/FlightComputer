@@ -17,10 +17,14 @@ from app.models.vessel import Vessel, VesselSchema
 from app.models.flight import Flight, FlightSchema
 from json import dumps
 from kivy.logger import Logger, LOG_LEVELS
+import time
 
 LOGGER_NAME = 'ApiClient'
 
-def format_response(response):
+def format_response(response: Union[httpx.Response, None]):
+
+    if response is None:
+        return f'No response from server'
 
     success = response.status_code >= 200 and response.status_code < 300
 
@@ -50,7 +54,17 @@ class ApiClient:
             client_credential=self._secrets_config["secret"]
         )
 
+    old_token: Union[None, dict[str, Any]] = None
+    old_token_time: Union[None, float] = None
+
     def authenticate(self):
+
+        # try to return a cached token if available
+        if self.old_token is not None and self.old_token_time is not None:
+
+            # Check that the old token does not expire in the next minute
+            if time.time() < (self.old_token_time + self.old_token['expires_in'] - 60):
+                return self.old_token['access_token']
 
         # First, the code looks up a token from the cache.
         # Because we're looking for a token for the current app, not for a user,
@@ -61,10 +75,13 @@ class ApiClient:
             error = result.get("error")
             error_description = result.get("error_description")
             correlation_id = result.get("correlation_id")
-            Logger.info(f'{LOGGER_NAME}: Msal authentication failed: {error}; {error_description}; correlation_id {correlation_id}')
+            Logger.exception(f'{LOGGER_NAME}: Msal authentication failed: {error}; {error_description}; correlation_id {correlation_id}')
             exception = Exception(
                 f'Error: {error} \n Description: {error_description} \n CorrelationID: {correlation_id}')
             raise exception
+        
+        self.old_token = result
+        self.old_token_time = time.time()
 
         return result['access_token']
 
@@ -84,7 +101,7 @@ class ApiClient:
                     Logger.exception(f'{LOGGER_NAME}: Unexpected error while sending response')
 
                 # If successful return
-                if response.status_code >= 200 and response.status_code < 300:
+                if response is not None and response.status_code >= 200 and response.status_code < 300:
                     Logger.info(f'{LOGGER_NAME}: {format_response(response)}')
                     return response
 
@@ -137,16 +154,16 @@ class ApiClient:
                 res = await client.post(f"{self.endpoint}/flight_data/report_compact/{flight_id}", json=serialized,
                                         headers=self.authenticate_and_get_headers(), timeout=timeout)
 
-                success = res.status_code >= 200 or res.status_code < 300
+                success = res.status_code >= 200 and res.status_code < 300
 
                 if not success:
-                    Logger.info(f'{LOGGER_NAME}: Warning error sending flight data: {res.text}')
+                    Logger.warning(f'{LOGGER_NAME}: {format_response(res)}')
 
                 return (success, str(res.status_code))
             except TimeoutError as e:
                 Logger.warning(f'{LOGGER_NAME}: Failed sending measurements due to timeout. Response: {res}')
                 return (False, 'TIMEOUT')
-            except  Exception as e:
+            except  Exception as e:  
                 Logger.exception(f'{LOGGER_NAME}: Unknown error sending flight data. Exception: {e}. Response: {res}')
                 return (False, str(e))
 

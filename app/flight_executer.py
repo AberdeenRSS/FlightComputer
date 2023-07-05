@@ -15,6 +15,9 @@ from app.logic.execution import topological_sort
 from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase, MeasurementsByPart
 from app.logic.rocket_definition import Part, Rocket
 from app.ui.part_ui import PartUi
+from kivy.logger import Logger, LOG_LEVELS
+
+LOGGER_NAME = 'FlightExecutor'
 
 class FlightExecuterUI(BoxLayout):
 
@@ -144,7 +147,9 @@ class FlightExecuter:
     def make_on_new_command(self):
         def on_new_command(models: Collection[CommandModel]):
 
+
             for c in models:
+                Logger.info(f'{LOGGER_NAME}: Received new command of type {c._command_type} with creation time {c.create_time} (ID: {c._id}, PartID: {c._part_id})')
                 c.state = 'received'
 
             self.command_buffer.extend([deserialize_command(self.known_commands, c) for c in models])
@@ -161,21 +166,32 @@ class FlightExecuter:
         
         while(True):
             try:
+
+                Logger.info(f'{LOGGER_NAME}: Starting server setup handshake')
+
                 self.flight = await self.api_client.run_full_setup_handshake(self.rocket, self.flight_config.name)
+
+                Logger.info(f'{LOGGER_NAME}: Successfully registered with server. Setting up realtime API')
 
                 self.realtime_client = RealtimeApiClient(self.api_client, self.flight)
                 self.realtime_client.connect(self.make_on_new_command())
 
+                Logger.info(f'{LOGGER_NAME}: Realtime communication established')
+
                 break
             except Exception as e:
 
-                print(f'Failed connecting to server: {e} {e.args}')
+                Logger.exception(f'{LOGGER_NAME}: Failed connecting to server: {e} {e.args}')
 
                 self.ui.clear_widgets()
                 user_decision_widget = ServerHandshakeDeciderWidget(e)
                 self.ui.add_widget(user_decision_widget)
 
+                Logger.info(f'{LOGGER_NAME}: awaiting user decision on how to proceed')
+
                 user_decision = await user_decision_widget.decision_future
+
+                Logger.info(f'{LOGGER_NAME}: User decided: {user_decision}')
 
                 self.ui.clear_widgets()
 
@@ -192,12 +208,12 @@ class FlightExecuter:
 
         self.ui.clear_widgets()
 
-
         # Get list of all available measurement sinks
         self.measurement_sinks = [p for p in self.rocket.parts if isinstance(p, MeasurementSinkBase)]
 
         for p in self.rocket.parts:
             if isinstance(p, ApiMeasurementSinkBase):
+                Logger.debug(f'{LOGGER_NAME}: Initialized part {p.type} as a measurement sink')
                 p.api_client = self.api_client
                 p.flight = self.flight
         
@@ -213,6 +229,7 @@ class FlightExecuter:
         self.ui.add_widget(self.part_list_widget)
 
         if canceled:
+            Logger.warning(f'{LOGGER_NAME}: Flight execution loop canceled, aborting')
             return
 
         # Run the update loop
@@ -242,6 +259,9 @@ class FlightExecuter:
         commands_by_part = dict[Part, list[Command]]()
         self.add_command_by_part(new_commands, commands_by_part)
 
+        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+            Logger.debug(f'{LOGGER_NAME}: Control loop iteration {iteration}. Time {datetime.fromtimestamp(now)}. {len(new_commands)} pending')
+
         # Call update on every part
         for p in self.execution_order:
 
@@ -256,12 +276,21 @@ class FlightExecuter:
 
             try:
                 generated_commands = p.update(commands, now, iteration)
+
                 if generated_commands is not None:
+
+                    if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+                        Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated. {len(generated_commands)} emitted')
+
                     new_commands.extend(generated_commands)
                     self.add_command_by_part(generated_commands, commands_by_part)
+
+                elif(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+                        Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated')
+
                 p.last_update = now
             except Exception as e:
-                print(f'Iteration {iteration}: Part {p.name} failed to update {e}')
+                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
 
         # Gather all measurements of all parts
         current_measurements = MeasurementsByPart()
@@ -271,19 +300,31 @@ class FlightExecuter:
                 continue
             try:
                 measurements = p.collect_measurements(now, iteration)
+
+                if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+                    Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully collected measurements. New measurements: {len(measurements) if measurements is not None else "None"}')
+                
                 if measurements is None:
                     continue
+
+                shape =  p.get_measurement_shape()
+
+                for m in measurements:
+                    if len(m) <= len(shape):
+                        continue
+                    raise Exception(f'A measurement of length {len(m)} was returned, but the part only supports measurements up to length {len(shape)}. Please verify that the get_measurement_shape method matches what is returned by collect_measurements')
+
                 current_measurements[p] = (p.last_measurement or now, now, measurements)
                 p.last_measurement = now
             except Exception as e:
-                print(f'Iteration {iteration}: Part {p.name} failed to take measurements: {e}')
+                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to take measurements: {e}')
 
         # Flush all parts (free memory)
         for p in self.execution_order:
             try:
                 p.flush()
             except:
-                print(f'Iteration {iteration}: Part {p.name} failed to flush')
+                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to flush')
 
 
         # Set all commands to be executed, except those that are currently set to be prossesing
@@ -343,7 +384,7 @@ class FlightExecuter:
             try:
                 await self.api_client.try_send_command_responses(str(self.flight._id), models)
             except Exception as e:
-                print(f'Failed sending {len(models)} command responses: {e}')
+                Logger.exception(f'{LOGGER_NAME}: Failed sending {len(models)} command responses: {e}')
 
     def __del__(self):
 
