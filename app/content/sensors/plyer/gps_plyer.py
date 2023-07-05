@@ -81,7 +81,7 @@ class PlyerGPSSensor(Part):
             if enable and not self.enabled_confirmed:
                 self.enabled_confirmed = False
                 self._enabled_confirmed = False
-                as_gps.configure(on_location=self.make_on_location(), on_status=self.make_on_status())
+                as_gps.configure(on_location=self.make_on_location())
                 as_gps.start(1, 1)
             elif not enable:
                 as_gps.stop()

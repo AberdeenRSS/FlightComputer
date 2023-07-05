@@ -16,6 +16,18 @@ from app.models.flight_measurement_compact import FlightMeasurementCompact, Flig
 from app.models.vessel import Vessel, VesselSchema
 from app.models.flight import Flight, FlightSchema
 from json import dumps
+from kivy.logger import Logger, LOG_LEVELS
+
+LOGGER_NAME = 'ApiClient'
+
+def format_response(response):
+
+    success = response.status_code >= 200 and response.status_code < 300
+
+    if success:
+        return f'Request to {response.url} was successful (Code {response.status_code})'
+    else:
+        return f'Request to {response.url} failed wit code {response.status_code}: {response.text}'
 
 
 class ApiClient:
@@ -49,7 +61,7 @@ class ApiClient:
             error = result.get("error")
             error_description = result.get("error_description")
             correlation_id = result.get("correlation_id")
-            print(f'Msal authentication failed: {error}; {error_description}; correlation_id {correlation_id}')
+            Logger.info(f'{LOGGER_NAME}: Msal authentication failed: {error}; {error_description}; correlation_id {correlation_id}')
             exception = Exception(
                 f'Error: {error} \n Description: {error_description} \n CorrelationID: {correlation_id}')
             raise exception
@@ -66,14 +78,17 @@ class ApiClient:
             curRetry = 0
             while (curRetry <= retries):
 
-                response = await func(client)
+                try:
+                    response = await func(client)
+                except Exception as e:
+                    Logger.exception(f'{LOGGER_NAME}: Unexpected error while sending response')
 
                 # If successful return
                 if response.status_code >= 200 and response.status_code < 300:
+                    Logger.info(f'{LOGGER_NAME}: {format_response(response)}')
                     return response
 
-                print(
-                    f'Request to {response.url} failed wit code {response.status_code}: {response.text}. (Retry {curRetry})')
+                Logger.warning(f'{LOGGER_NAME}: {format_response(response)} (Retry {curRetry})')
 
                 curRetry += 1
 
@@ -116,6 +131,8 @@ class ApiClient:
 
         async with httpx.AsyncClient() as client:
 
+            res = None
+
             try:
                 res = await client.post(f"{self.endpoint}/flight_data/report_compact/{flight_id}", json=serialized,
                                         headers=self.authenticate_and_get_headers(), timeout=timeout)
@@ -123,13 +140,14 @@ class ApiClient:
                 success = res.status_code >= 200 or res.status_code < 300
 
                 if not success:
-                    print(f'Warning error sending flight data: {res.text}')
+                    Logger.info(f'{LOGGER_NAME}: Warning error sending flight data: {res.text}')
 
                 return (success, str(res.status_code))
-            except TimeoutError:
+            except TimeoutError as e:
+                Logger.warning(f'{LOGGER_NAME}: Failed sending measurements due to timeout. Response: {res}')
                 return (False, 'TIMEOUT')
             except  Exception as e:
-                print(f'Fatal error sending flight data: {e}')
+                Logger.exception(f'{LOGGER_NAME}: Unknown error sending flight data. Exception: {e}. Response: {res}')
                 return (False, str(e))
 
     async def try_send_command_responses(self, flight_id: str, commands):
@@ -183,7 +201,7 @@ class RealtimeApiClient():
             try:
                 self.sio.call('command.subscribe', str(self.flight._id))
             except Exception as e:
-                print(f'Failed to subscribe to command stream: {e}')
+                Logger.info(f'{LOGGER_NAME}: Failed to subscribe to command stream: {e}')
 
         @self.sio.event
         def connect_error(data):
@@ -200,11 +218,11 @@ class RealtimeApiClient():
                 command_callback(commands)
 
             except:
-                print(f'Failed parsing command')
+                Logger.info(f'{LOGGER_NAME}: Failed parsing command')
 
         @self.sio.on('*')
         def catch_all(event, data):
-            print(f'received unknown event {event}')
+            Logger.info(f'{LOGGER_NAME}: received unknown event {event}')
 
 
 

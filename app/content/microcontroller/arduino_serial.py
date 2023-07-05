@@ -220,7 +220,7 @@ class ArduinoSerial(Part):
             def kek():  # user defined function which adds +10 to given number
                 self.send_message(bytearray([0x7E, 0xFF, 0x4F, 0x01, 0x04, 0x7E]))
 
-            start_time = threading.Timer(5, kek)
+            start_time = threading.Timer(35, kek)
             start_time.start()
 
         if self.serial_port is None or self.hdlc is None:
