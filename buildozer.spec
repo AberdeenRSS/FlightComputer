@@ -29,7 +29,7 @@ source.include_patterns = assets/*,images/*.png,config/*
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1.12
+version = 0.1.16
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -102,10 +102,10 @@ android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,a
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
-#android.api = 31
+# android.api = 24
 
 # (int) Minimum API your APK / AAB will support.
-#android.minapi = 21
+# android.minapi = 21
 
 # (int) Android SDK version to use
 #android.sdk = 20

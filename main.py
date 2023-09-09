@@ -8,6 +8,7 @@ from kivy.uix.label import Label
 from kivy.uix.scatterlayout import ScatterLayout
 from kivy.metrics import cm
 from kivy.core.window import Window
+from kivy.logger import Logger, LOG_LEVELS
 
 # We need a reference to the Java activity running the current
 # application, this reference is stored automatically by
@@ -31,6 +32,8 @@ class CrashScreen(App):
 
 
 async def main():
+
+    Logger.setLevel(LOG_LEVELS["debug"])
 
     # Do the import within the try block in case
     # there are problems with it. In that

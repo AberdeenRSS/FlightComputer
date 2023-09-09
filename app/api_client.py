@@ -69,7 +69,15 @@ class ApiClient:
         # First, the code looks up a token from the cache.
         # Because we're looking for a token for the current app, not for a user,
         # use None for the account parameter.
-        result = self.app.acquire_token_for_client(scopes=f'api://{self._secrets_config["client_id_api"]}/.default')
+        try:
+            result = self.app.acquire_token_for_client(scopes=f'api://{self._secrets_config["client_id_api"]}/.default')
+        except Exception as e:
+
+            Logger.exception(f'{LOGGER_NAME}: Failed aquirering msal token: {e.args}')
+
+            raise
+    
+
 
         if "access_token" not in result:
             error = result.get("error")
