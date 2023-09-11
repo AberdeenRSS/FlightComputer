@@ -40,7 +40,7 @@ async def main():
 
     if platform == 'android':
         from android.storage import app_storage_path
-        logging.basicConfig(filename=Path(app_storage_path).joinpath('logs').joinpath(f'{datetime.datetime.now().isoformat()}.log'),
+        logging.basicConfig(filename=Path(app_storage_path()).joinpath('logs').joinpath(f'{datetime.datetime.now().isoformat()}.log'),
                     filemode='a',
                     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
                     datefmt='%H:%M:%S',
