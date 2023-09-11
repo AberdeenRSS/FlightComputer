@@ -1,6 +1,8 @@
 import asyncio
+import datetime
 import traceback
 import kivy
+from pathlib import Path
 kivy.require('2.1.0') # replace with your current kivy version !
 
 from kivy.app import App
@@ -9,6 +11,8 @@ from kivy.uix.scatterlayout import ScatterLayout
 from kivy.metrics import cm
 from kivy.core.window import Window
 from kivy.logger import Logger, LOG_LEVELS
+from kivy.utils import platform
+import logging
 
 # We need a reference to the Java activity running the current
 # application, this reference is stored automatically by
@@ -32,6 +36,15 @@ class CrashScreen(App):
 
 
 async def main():
+
+
+    if platform == 'android':
+        from android.storage import app_storage_path
+        logging.basicConfig(filename=Path(app_storage_path).joinpath('logs').joinpath(f'{datetime.datetime.now().isoformat()}.log'),
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 
     Logger.setLevel(LOG_LEVELS["debug"])
 
