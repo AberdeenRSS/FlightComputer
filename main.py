@@ -12,7 +12,8 @@ from kivy.metrics import cm
 from kivy.core.window import Window
 from kivy.logger import Logger, LOG_LEVELS
 from kivy.utils import platform
-import logging
+from kivy.config import Config
+import os
 
 # We need a reference to the Java activity running the current
 # application, this reference is stored automatically by
@@ -37,16 +38,14 @@ class CrashScreen(App):
 
 async def main():
 
+    os.environ['KIVY_LOG_MODE'] = 'KIVY'
 
-    if platform == 'android':
-        from android.storage import app_storage_path
-        logging.basicConfig(filename=Path(app_storage_path).joinpath('logs').joinpath(f'{datetime.datetime.now().isoformat()}.log'),
-                    filemode='a',
-                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                    datefmt='%H:%M:%S',
-                    level=logging.DEBUG)
+    Config.set('kivy', 'log_level', 'debug')
+    Config.set('kivy', 'log_enable ', 1)
+    Config.set('kivy', 'log_dir ', 'logs')
+    Config.set('kivy', 'log_name', '%y-%m-%d_%_.txt')
 
-    Logger.setLevel(LOG_LEVELS["debug"])
+    # Logger.setLevel(LOG_LEVELS["debug"])
 
     # Do the import within the try block in case
     # there are problems with it. In that
