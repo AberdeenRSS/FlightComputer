@@ -40,10 +40,12 @@ async def main():
 
     os.environ['KIVY_LOG_MODE'] = 'KIVY'
 
-    Config.set('kivy', 'log_level', 'debug')
+    Config.set('kivy', 'log_level', 'info')
     Config.set('kivy', 'log_enable ', 1)
     Config.set('kivy', 'log_dir ', 'logs')
     Config.set('kivy', 'log_name', '%y-%m-%d_%_.txt')
+
+    Logger.setLevel('INFO')
 
     # Logger.setLevel(LOG_LEVELS["debug"])
 

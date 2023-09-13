@@ -47,12 +47,12 @@ class ApiClient:
 
         self.endpoint = self._config['API_ENDPOINT']
 
-        # Create a preferably long-lived app instance that maintains a token cache.
-        self.app = msal.ConfidentialClientApplication(
-            self._secrets_config["client_id"],
-            authority=self._secrets_config["authority"],
-            client_credential=self._secrets_config["secret"]
-        )
+        # # Create a preferably long-lived app instance that maintains a token cache.
+        # self.app = msal.ConfidentialClientApplication(
+        #     self._secrets_config["client_id"],
+        #     authority=self._secrets_config["authority"],
+        #     client_credential=self._secrets_config["secret"]
+        # )
 
     old_token: Union[None, dict[str, Any]] = None
     old_token_time: Union[None, float] = None
@@ -122,6 +122,8 @@ class ApiClient:
                 f'All retries to {response.url} failed with code {response.status_code}: {response.text}')
 
     def authenticate_and_get_headers(self):
+
+        return {}
 
         bearer_token = self.authenticate()
 
@@ -215,16 +217,18 @@ class RealtimeApiClient():
     def connect(self, command_callback: Callable[[Collection[Command]], None]):
         self.init_events(command_callback)
 
-        token = self.base_client.authenticate()
+        # token = self.base_client.authenticate()
 
-        self.sio.connect(f"{self.base_client.endpoint}", auth={'token': token})
+        # self.sio.connect(f"{self.base_client.endpoint}", auth={'token': token})
+        self.sio.connect(f"{self.base_client.endpoint}")
+        
 
     def init_events(self, command_callback: Callable[[Collection[Command]], None]):
 
         @self.sio.event
         def connect():
             try:
-                self.sio.call('command.subscribe', str(self.flight._id))
+                self.sio.call('command.subscribe_as_vessel', str(self.flight._id))
             except Exception as e:
                 Logger.info(f'{LOGGER_NAME}: Failed to subscribe to command stream: {e}')
 
