@@ -29,7 +29,7 @@ source.include_patterns = assets/*,images/*.png,config/*
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1.16
+version = 0.1.25
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -37,7 +37,7 @@ version = 0.1.16
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,anyio,bidict,certifi,cffi,charset-normalizer,chardet,cryptography,docutils,h11,httpcore,httpx,idna,Kivy,msal,plyer,pycparser,Pygments,PyJWT,python-engineio,python-socketio,socketio,requests,rfc3986,sniffio,urllib3,websocket-client,zope.event,zope.interface,marshmallow, jsonschema, typing_extensions, marshmallow-jsonschema, packaging, pyrsistent, attrs, pyjnius, six, usbserial4a, usb4a, tinyproto, numpy
+requirements = python3,anyio,bidict,certifi,cffi,charset-normalizer,chardet,cryptography,docutils,h11,httpcore,httpx,idna,Kivy,msal,plyer,pycparser,Pygments,PyJWT,python-engineio,python-socketio,socketio,requests,rfc3986,sniffio,urllib3,websocket-client,zope.event,zope.interface,marshmallow, jsonschema, typing_extensions, marshmallow-jsonschema, packaging, pyrsistent, attrs, pyjnius, six, usbserial4a, usb4a, tinyproto, numpy, PyYAML
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -102,10 +102,10 @@ android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,a
 #android.features = android.hardware.usb.host
 
 # (int) Target Android API, should be as high as possible.
-# android.api = 24
+#android.api = 24
 
 # (int) Minimum API your APK / AAB will support.
-# android.minapi = 21
+#android.minapi = 21
 
 # (int) Android SDK version to use
 #android.sdk = 20
@@ -322,7 +322,7 @@ android.no-byte-compile-python = False
 #p4a.fork = kivy
 
 # (str) python-for-android branch to use, defaults to master
-#p4a.branch = master
+p4a.branch = develop
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
 #p4a.commit = HEAD
