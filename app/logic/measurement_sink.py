@@ -7,7 +7,6 @@ from app.api_client import ApiClient
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Measurements, Part, Rocket
-from plyer.facades.battery import Battery
 from random import random
 
 from app.models.flight import Flight

@@ -187,8 +187,6 @@ class ApiClient:
 
     async def run_full_setup_handshake(self, rocket: Rocket, flight_name: str) -> Flight:
 
-        rocket.id = UUID(self._config['rocket_id'])
-
         vessel, flight = to_vessel_and_flight(rocket)
 
         vessel_res = await self.register_vessel(VesselSchema().dump(vessel))
