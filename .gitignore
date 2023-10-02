@@ -5,3 +5,5 @@
 **/__pycache__
 Lib/
 .idea/
+
+vessel_info.json

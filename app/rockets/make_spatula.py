@@ -1,5 +1,5 @@
 # from app.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
-# from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
+from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
 # from app.content.microcontroller.arduino_serial import ArduinoSerial
 # from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 # from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
@@ -16,7 +16,7 @@ from app.content.sensors.plyer.framerate import FramerateSensor
 # from app.content.sensors.plyer.gyroscope_plyer import PlyerGyroscopeSensor 
 # from app.content.sensors.plyer.light_plyer import PlyerLightSensor 
 # from app.content.sensors.plyer.gravity_plyer import PlyerGravitySensor
-# from app.content.sensors.plyer.battery_plyer import PlyerBatterySensor
+from app.content.sensors.plyer.battery_plyer import PlyerBatterySensor
 
 # from app.content.sensors.arduino.servo import ServoSensor
 # from app.content.sensors.arduino.igniter import IgniterSensor
@@ -37,10 +37,10 @@ def make_spatula() -> FlightConfig:
 
     # Computer status parts
     FramerateSensor(UUID('8d45c8e7-7ae2-4496-a5e0-047a631ef17c'), 'Framerate', rocket)
-    # measurement_sink = ApiMeasurementSink(UUID('fa9eac88-5d2f-41a6-aeab-85c1591433a2'), 'Measurement dispatch', rocket)
+    measurement_sink = ApiMeasurementSink(UUID('fa9eac88-5d2f-41a6-aeab-85c1591433a2'), 'Measurement dispatch', rocket)
 
     # # Plyer sensors
-    # PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
+    PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
     # PlyerAccelerationSensor(UUID('5cefc100-3e52-401c-9dfc-e6331355eb55'), 'Accelerometer', rocket)
     # PlyerTemperatureSensor(UUID('db5f474d-2b83-4d38-b438-f94a21510c1e'), 'Temperature', rocket)
     # PlyerGyroscopeSensor(UUID('a2197a9f-37e9-46f4-ac19-32d3ea153d92'), 'Gyroscope', rocket)
