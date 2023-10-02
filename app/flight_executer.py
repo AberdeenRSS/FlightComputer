@@ -123,7 +123,7 @@ class FlightExecuter:
 
     executed_commands: list[Command]
 
-    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.0001) -> None:
+    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.05) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
