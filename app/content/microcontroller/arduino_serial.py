@@ -215,7 +215,7 @@ class ArduinoSerial(Part):
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand, ResetCommand]
 
-    def send_message(self, message :bytearray()) -> int:
+    def send_message(self, message: bytearray) -> int:
         if message[3] == 0x02 and message[4] == 0x01:
             def kek():  # user defined function which adds +10 to given number
                 self.send_message(bytearray([0x7E, 0xFF, 0x4F, 0x01, 0x04, 0x7E]))

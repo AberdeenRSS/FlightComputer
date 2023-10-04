@@ -123,7 +123,7 @@ class FlightExecuter:
 
     executed_commands: list[Command]
 
-    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.05) -> None:
+    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.001) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
@@ -143,6 +143,9 @@ class FlightExecuter:
         self.control_loop_task = asyncio.get_event_loop().create_task(self.run_control_loop())
 
         self.send_command_responses_task = asyncio.get_event_loop().create_task(self.send_command_responses())
+
+        self.last_iteration_time = 0
+        self.cur_wait_time = 0
 
     def make_on_new_command(self):
         def on_new_command(models: Collection[CommandModel]):
@@ -241,18 +244,32 @@ class FlightExecuter:
         flight_loop_iteration = 0
         last_update: float = time.time()
         while True:
+
+            update_start_time = time.time()
+            
             update_end_time = self.control_loop(flight_loop_iteration, last_update)
             self.part_list_widget.update_cur_part()
             flight_loop_iteration += 1
-            time_passed = update_end_time - last_update
+
             last_update = update_end_time
 
-            wait_time = self.max_frame_time - time_passed
-            if wait_time < 0:
-               continue
-        
+            update_time = update_end_time - update_start_time
+
+            # Try to keep the maximum frame times but to also give
+            # time to other processes. 
+            # If it took longer for the last iteration to run
+            # increase the waiting time by a 10th as well .
+            # If it was shorter decrease it by a 10th
+            if self.last_iteration_time > update_time:
+                self.cur_wait_time += update_time/10
+            else:
+                self.cur_wait_time -= (self.last_iteration_time-update_time)/10
+            
+
             # cast(Label, app.label).text = f'Frame Time: {str((time_passed if time_passed > MAX_FRAME_TIME else MAX_FRAME_TIME)*1000)}ms'
-            await asyncio.sleep(wait_time)
+            await asyncio.sleep(self.cur_wait_time)
+
+            self.last_iteration_time = update_time
             # await draw()
 
     def control_loop(self, iteration: int, last_update: float):
