@@ -227,17 +227,12 @@ class FlightExecuter:
         # Before starting the control loop wait for the flight to init
         canceled = await self.init_flight_task
 
-        # Add debug status label
-        self.debug_status_label = Label(text = 'Flight initialized')
-        self.ui.add_widget(self.debug_status_label)
-
         # Add the part list to the ui
         self.part_list_widget = PartListWidget(self.flight_config.part_uis)
         self.ui.add_widget(self.part_list_widget)
 
         if canceled:
             Logger.warning(f'{LOGGER_NAME}: Flight execution loop canceled, aborting')
-            self.debug_status_label.text = 'Flight execution loop canceled, aborting'
             return
 
         # Run the update loop
@@ -261,13 +256,16 @@ class FlightExecuter:
             # increase the waiting time by a 10th as well .
             # If it was shorter decrease it by a 10th
             if self.last_iteration_time > update_time:
-                self.cur_wait_time += update_time/10
+                self.cur_wait_time += update_time/2
             else:
-                self.cur_wait_time -= (self.last_iteration_time-update_time)/10
+                self.cur_wait_time -= (self.last_iteration_time-update_time)/1.5
             
 
-            # cast(Label, app.label).text = f'Frame Time: {str((time_passed if time_passed > MAX_FRAME_TIME else MAX_FRAME_TIME)*1000)}ms'
-            await asyncio.sleep(self.cur_wait_time)
+            if self.cur_wait_time > 0:
+                await asyncio.sleep(self.cur_wait_time)
+
+            # await asyncio.sleep(1)
+
 
             self.last_iteration_time = update_time
             # await draw()
@@ -282,7 +280,6 @@ class FlightExecuter:
         self.add_command_by_part(new_commands, commands_by_part)
 
         if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            self.debug_status_label.text = f'{LOGGER_NAME}: Control loop iteration {iteration}. Time {datetime.fromtimestamp(now)}. {len(new_commands)} pending'
             Logger.debug(f'{LOGGER_NAME}: Control loop iteration {iteration}. Time {datetime.fromtimestamp(now)}. {len(new_commands)} pending')
 
         # Call update on every part
