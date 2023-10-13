@@ -70,6 +70,8 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
     
     async def send_last_measurements(self, now: float):
 
+        await asyncio.sleep(0.5)
+
         # Swap measurement buffer
         old_buffer = self.measurement_buffer
         self.measurement_buffer = list()
