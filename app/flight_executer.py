@@ -123,6 +123,8 @@ class FlightExecuter:
 
     executed_commands: list[Command]
 
+    deleted: bool = False
+
     def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.001) -> None:
     
         self.command_buffer = list()
@@ -380,10 +382,13 @@ class FlightExecuter:
 
         abort = await self.init_flight_task
 
-        if(abort):
+        if abort:
             return
 
-        while(True):
+        while True:
+
+            if self.deleted:
+                return
 
             if len(self.executed_commands) < 1:
                 await asyncio.sleep(0.01)
@@ -419,3 +424,5 @@ class FlightExecuter:
 
         if not self.send_command_responses_task.done():
             self.send_command_responses_task.cancel()
+
+        self.deleted = True

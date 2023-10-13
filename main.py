@@ -70,6 +70,9 @@ async def main():
     if not ui_task.done():
         ui_app.stop()
 
+    if not worker_task.done():
+        worker_task.cancel()
+
     # Throw exceptions if any where produced
     for d in done:
         if d.exception() is None:

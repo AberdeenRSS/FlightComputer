@@ -251,5 +251,6 @@ class RealtimeApiClient():
         def catch_all(event, data):
             Logger.info(f'{LOGGER_NAME}: received unknown event {event}')
 
-
-
+    def __del__(self):
+        if self.sio.connected:
+            self.sio.disconnect() 
