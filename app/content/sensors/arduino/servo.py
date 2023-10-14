@@ -19,7 +19,7 @@ class ServoSensor(Part):
 
     enabled: bool = True
 
-    min_update_period = timedelta(milliseconds=1000)
+    min_update_period = timedelta(milliseconds=20)
 
     min_measurement_period = timedelta(milliseconds=1000)
 
@@ -27,7 +27,9 @@ class ServoSensor(Part):
 
     state: str
 
-    current_command: Union[None, Command] = None
+    last_ignite_future: Union[Future, None] = None
+
+    last_command: Union[None, Command] = None
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
         self.arduino = arduino_parent
@@ -42,34 +44,39 @@ class ServoSensor(Part):
     def update(self, commands: Iterable[Command], now, iteration):
 
         for c in commands:
-            if self.state == 'processing' and c.state == 'received':
-                c.response_message = "Too fast update"
+
+            if self.arduino is None:
                 c.state = 'failed'
-                return
+                c.response_message = 'No arduino connected'
+                continue
+
+            if c.state == 'processing' and self.last_command != c:
+                c.state = 'failed'
+                c.response_message = 'Another ignite command was send, this command will no longer be processed'
+                continue
+
+            if c.state == 'processing' and self.last_ignite_future is not None and self.last_ignite_future.done():
+                exception = self.last_ignite_future.exception()
+                if exception is not None:
+                    c.state = 'failed'
+                    c.response_message = exception.args[0]
+                    continue
+                c.state = 'success'
+                c.response_message = 'Servo actuated'
 
             if isinstance(c, CloseCommand):
-                if c.state == 'received':
-                    self.arduino.send_message(bytearray([0x7E, 0xFF, 0x4F, 0x01, 0x03, 0x7E]))
-                    c.state = self.state =  'processing'
-                    self.current_command = c
 
-                elif c.state == 'processing':
-                    state = self.arduino.hz(0x01)
-                    if state:
-                        c.state = self.state = state
-                        self.current_command = None
+                if c.state == 'received':
+                    self.last_command = c
+                    self.last_ignite_future = self.arduino.send_message(0x01, 0x03)
+                    c.state = 'processing'
 
             elif isinstance(c, OpenCommand):
-                if c.state == 'received':
-                    self.arduino.send_message(bytearray([0x7E, 0xFF, 0x4F, 0x01, 0x04, 0x7E]))
-                    c.state = self.state = 'processing'
-                    self.current_command = c
 
-                elif c.state == 'processing':
-                    state = self.arduino.hz(0x01)
-                    if state:
-                        c.state = self.state= state
-                        self.current_command = None
+                if c.state == 'received':
+                    self.last_command = c
+                    self.last_ignite_future = self.arduino.send_message(0x01, 0x04)
+                    c.state = 'processing'
 
             else:
                 c.state = 'failed'  # Part cannot handle this command
