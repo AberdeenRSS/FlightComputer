@@ -21,6 +21,8 @@ from app.content.sensors.plyer.battery_plyer import PlyerBatterySensor
 
 from app.content.sensors.arduino.servo import ServoSensor
 from app.content.sensors.arduino.igniter import IgniterSensor
+from app.content.sensors.arduino.temperaturesensor import TemperatureSensor
+from app.content.sensors.arduino.photoresistor import PhotoresistorSensor
 
 from app.content.sensors.plyer.spatial_orientation_plyer import PlyerSpatialOrientationSensor
 
@@ -61,7 +63,8 @@ def make_spatula() -> FlightConfig:
     arduino_serial = ArduinoSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
     parachute = ServoSensor(UUID('9f86acb1-9795-46fc-b083-e6451f214d1f'), 'Servo', rocket, arduino_serial)
     igniter = IgniterSensor(UUID('f309669d-6bd7-4ee3-90a5-45a0e1bdd60e'), 'Igniter', rocket, arduino_serial, parachute)
-
+    temperature = TemperatureSensor(UUID('ac93964a-6bb0-11ee-b962-0242ac120002'), 'Temperature', rocket, arduino_serial)
+    photoresistor = PhotoresistorSensor(UUID('158314cc-6d1f-11ee-b962-0242ac120002'), 'Photoresistor', rocket, arduino_serial)
     # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame)
 
     return FlightConfig(rocket, [ArduinoSerialSelectUI(arduino_serial), ArduinoSerialMonitorUI(arduino_serial)], True)
