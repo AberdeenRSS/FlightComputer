@@ -45,16 +45,20 @@ class ResponseM(AReceivedMessage):
 class SensorDataMessage(AReceivedMessage):
     data     : float
     partCode : float
+    dataPart : float
 
     def __init__(self, message : bytearray):
         super().__init__(message[3])
 
-        dataSize = int(message[4])
-        self.data = float(message[5: dataSize + 5])
+        dataSize = int(message[5])
+        self.data = float(message[6: dataSize + 6])
+        self.dataPart = message[4]
 
     def get_data(self):
         return self.data
 
+    def get_data_part(self):
+        return self.dataPart
 
 class ArduinoStateMessage(AReceivedMessage):
 

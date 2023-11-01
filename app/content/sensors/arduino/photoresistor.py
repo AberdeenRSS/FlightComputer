@@ -30,7 +30,10 @@ class PhotoresistorSensor(Part):
 
     last_command: Union[None, Command] = None
 
-    lightVal : int
+
+    xOrientation : float
+    yOrientation : float
+    zOrientation : float
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
         self.arduino = arduino_parent
@@ -38,7 +41,7 @@ class PhotoresistorSensor(Part):
 
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        self.lightVal = 0
+        self.xOrientation = self.yOrientation = self.zOrientation = 0.0
 
 
     def get_accepted_commands(self) -> list[Type[Command]]:
@@ -57,13 +60,18 @@ class PhotoresistorSensor(Part):
                 c.state = "success"
 
 
-        self.lightVal = self.arduino.lightValue
+        self.xOrientation = self.arduino.xOrientation
+        self.yOrientation = self.arduino.yOrientation
+        self.zOrientation = self.arduino.zOrientation
+
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('light', float),
+            ('X', float),
+            ('Y', float),
+            ('Z', float),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
-        return [[self.lightVal]]
+        return [[self.xOrientation, self.yOrientation, self.zOrientation]]
 

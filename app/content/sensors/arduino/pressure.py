@@ -15,8 +15,8 @@ from kivy.utils import platform
 
 from app.content.messages.smessages import AMessageList
 
-class TemperatureSensor(Part):
-    type = 'Temperature'
+class PressureSensor(Part):
+    type = 'Pressure'
 
     enabled: bool = True
 
@@ -31,7 +31,7 @@ class TemperatureSensor(Part):
 
     last_command: Union[None, Command] = None
 
-    temperature : float
+    pressure : float
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
         self.arduino = arduino_parent
@@ -39,10 +39,7 @@ class TemperatureSensor(Part):
 
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        self.temperature = 0.0
-
-
-
+        self.pressure = 0.0
 
 
     def get_accepted_commands(self) -> list[Type[Command]]:
@@ -60,13 +57,13 @@ class TemperatureSensor(Part):
                 self.enabled = False
                 c.state = "success"
 
-        self.temperature = self.arduino.temperature
+        self.pressure = self.arduino.pressure
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('temperature', float),
+            ('pressure', float),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
-        return [[self.temperature]]
+        return [[self.pressure]]
 

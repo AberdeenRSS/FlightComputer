@@ -99,7 +99,15 @@ class ArduinoSerial(Part):
 
     temperature : float
 
-    lightValue : int
+    pressure : float
+
+    altitude : float
+
+    xOrientation : float
+
+    yOrientation : float
+
+    zOrientation : float
 
     launchPhase : str
 
@@ -121,8 +129,9 @@ class ArduinoSerial(Part):
         self.messageList.addCommandMessage('Liftoff', 0x03)
         self.messageList.addCommandMessage('Recovery', 0x04)
 
-        self.temperature = 0.0
-        self.lightValue = 0
+        self.temperature = self.pressure =  self.altitude = 0.0
+        self.xOrientation = self.yOrientation = self.zOrientation = 0.0
+
         self.launchPhase = 'Preparation'
 
 
@@ -285,10 +294,27 @@ class ArduinoSerial(Part):
                 self.response_future.set_exception(Exception(result))
 
         elif isinstance(response, SensorDataMessage):
-            if response.partCode == 0x50:
-                self.temperature = response.get_data()
-            elif response.partCode == 0x52:
-                self.lightValue = int(response.get_data())
+            dataPart = response.get_data_part()
+            if response.partCode == 0x53:
+                if dataPart == 0x01:
+                    self.temperature = response.get_data()
+
+                elif dataPart == 0x02:
+                    self.pressure = response.get_data()
+
+                elif dataPart == 0x03:
+                    self.altitude = response.get_data()
+
+
+            elif response.partCode == 0x54:
+                if dataPart == 0x01:
+                    self.xOrientation = response.get_data()
+
+                elif dataPart == 0x02:
+                    self.yOrientation = response.get_data()
+
+                elif dataPart == 0x03:
+                    self.zOrientation = response.get_data()
 
         elif isinstance(response, ArduinoStateMessage):
             self.send_message_hdlc(self.messageList[self.launchPhase])
