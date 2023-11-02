@@ -13,6 +13,7 @@ from app.logic.rocket_definition import Part, Rocket
 
 from kivy.utils import platform
 
+from app.content.messages.smessages import AMessageList
 
 class ServoSensor(Part):
     type = 'Servo'
@@ -31,11 +32,17 @@ class ServoSensor(Part):
 
     last_command: Union[None, Command] = None
 
+    messageList : AMessageList
+
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
         self.arduino = arduino_parent
         self.enabled = start_enabled
         self.state = 'close'
         super().__init__(_id, name, parent, list())  # type: ignore
+
+        self.messageList = AMessageList(0x01)
+        self.messageList.addCommandMessage('Close', 0x00)
+        self.messageList.addCommandMessage('Open', 0x01)
 
 
     def get_accepted_commands(self) -> list[Type[Command]]:
@@ -61,21 +68,23 @@ class ServoSensor(Part):
                     c.state = 'failed'
                     c.response_message = exception.args[0]
                     continue
-                c.state = 'success'
-                c.response_message = 'Servo actuated'
+                if self.last_ignite_future.result() == "Success":
+                    c.state = 'success'
+                    c.response_message = 'Servo activated'
+
 
             if isinstance(c, CloseCommand):
 
                 if c.state == 'received':
                     self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(0x01, 0x03)
+                    self.last_ignite_future = self.arduino.send_message(self.messageList["Close"])
                     c.state = 'processing'
 
             elif isinstance(c, OpenCommand):
 
                 if c.state == 'received':
                     self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(0x01, 0x04)
+                    self.last_ignite_future = self.arduino.send_message(self.messageList["Open"])
                     c.state = 'processing'
 
             else:

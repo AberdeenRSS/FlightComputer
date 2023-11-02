@@ -10,12 +10,18 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.content.motor_commands.open import OpenCommand, CloseCommand, IgniteCommand
 from app.logic.commands.command import Command, Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from app.content.motor_commands.open import SetIgnitionPhaseCommand, SetLiftoffPhaseCommand, SetRecoveryPhaseCommand
+from app.content.motor_commands.open import SetPreparationPhaseCommand
 
 from app.logic.rocket_definition import Part, Rocket
 
 from kivy.utils import platform
 
 import tinyproto
+from app.content.messages.response_message import ResponseM, ArduinoStateMessage, SensorDataMessage, ResponseMessage
+
+
+from app.content.messages.smessages import AMessageList
 
 if platform == 'android':
     from usb4a import usb
@@ -37,6 +43,8 @@ class RssPacket:
 
     def to_bytes(self):
         return [*self.index.to_bytes(), *self.command.to_bytes(), *self.payload_size.to_bytes(), *self.payload]
+
+
 
 
 class ArduinoSerial(Part):
@@ -87,6 +95,21 @@ class ArduinoSerial(Part):
 
     commands_list = []
 
+    messageList : AMessageList
+
+    temperature : float
+
+    pressure : float
+
+    altitude : float
+
+    xOrientation : float
+
+    yOrientation : float
+
+    zOrientation : float
+
+    launchPhase : str
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
         self.part_state = None
@@ -99,6 +122,17 @@ class ArduinoSerial(Part):
 
         self.hdlc = None
 
+        self.messageList = AMessageList(0x00)
+        self.messageList.addCommandMessage('Reset', 0x00)
+        self.messageList.addCommandMessage('Preparation', 0x01)
+        self.messageList.addCommandMessage('Ignition', 0x02)
+        self.messageList.addCommandMessage('Liftoff', 0x03)
+        self.messageList.addCommandMessage('Recovery', 0x04)
+
+        self.temperature = self.pressure =  self.altitude = 0.0
+        self.xOrientation = self.yOrientation = self.zOrientation = 0.0
+
+        self.launchPhase = 'Preparation'
 
 
     def try_get_device_list(self):
@@ -211,9 +245,14 @@ class ArduinoSerial(Part):
 
             self.last_message = package
 
+
+        message =  ResponseMessage()
+
         hdlc.on_read = on_read
         hdlc.crc = 8
         hdlc.begin()
+
+
 
         try:
 
@@ -226,18 +265,9 @@ class ArduinoSerial(Part):
                             self.serial_port.in_waiting
                         )
                     if received_msg:
-                        print(received_msg)
-    #                   hdlc.rx(received_msg)
-
-
-                        for i in received_msg:
-                            if len(self.current_message) and self.current_message[-1] != 0x7E and i == 0x7E:
-                                self.current_message.append(i)
-                                self.logs.append(self.current_message)
-                                self.parse()
-                                self.current_message = bytearray([])
-                            else:
-                                self.current_message.append(i)
+                        response = message.parse(received_msg)
+                        if response:
+                            self.action(response)
 
         except Exception as ex:
             self.connected = False
@@ -248,27 +278,50 @@ class ArduinoSerial(Part):
             print(f'crash read thread {ex.args[0]}')
             raise ex
 
-    def parse(self):
 
-        part = self.current_message[3]
-        command = self.current_message[4]
-        success_bit = self.current_message[5]
-        success = success_bit == 0x01
+    def action(self, response):
 
-        if self.response_future is None or self.response_future.done():
-            return
+        if isinstance(response, ResponseM):
+            self.part_state = 'success'
 
-        if part != self.expected_next_response_part:
-            self.response_future.set_exception(Exception('Received response from arduino for wrong part (commands where send to fast)'))
-        elif command != self.expected_next_response_command:
-            self.response_future.set_exception(Exception('Received response from arduino for wrong command (commands where send to fast)'))
-        elif not success:
-            self.response_future.set_exception(Exception('The arduino send back that execution of the command was unsuccessful'))
-        else:
-            self.response_future.set_result(None)
+            if self.response_future is None or self.response_future.done():
+                return
+
+            result = response.get_result()
+            if result == 'Success':
+                self.response_future.set_result(result)
+            else:
+                self.response_future.set_exception(Exception(result))
+
+        elif isinstance(response, SensorDataMessage):
+            dataPart = response.get_data_part()
+            if response.partCode == 0x53:
+                if dataPart == 0x01:
+                    self.temperature = response.get_data()
+
+                elif dataPart == 0x02:
+                    self.pressure = response.get_data()
+
+                elif dataPart == 0x03:
+                    self.altitude = response.get_data()
+
+
+            elif response.partCode == 0x54:
+                if dataPart == 0x01:
+                    self.xOrientation = response.get_data()
+
+                elif dataPart == 0x02:
+                    self.yOrientation = response.get_data()
+
+                elif dataPart == 0x03:
+                    self.zOrientation = response.get_data()
+
+        elif isinstance(response, ArduinoStateMessage):
+            self.send_message_hdlc(self.messageList[self.launchPhase])
+
 
     def get_accepted_commands(self) -> list[Type[Command]]:
-        return [EnableCommand, DisableCommand, ResetCommand]
+        return [EnableCommand, DisableCommand, ResetCommand, SetPreparationPhaseCommand, SetIgnitionPhaseCommand, SetLiftoffPhaseCommand, SetRecoveryPhaseCommand]
     
     def send_message_hdlc(self, message: bytearray):
         if self.serial_port is None or self.hdlc is None:
@@ -277,7 +330,7 @@ class ArduinoSerial(Part):
         self.hdlc.put(message)
         self.serial_port.write(self.hdlc.tx())
 
-    def send_message(self, part: int, command: int):
+    def send_message(self, message : bytearray):
         '''Sends the given message to the arduino and returns a future that will be
         completed if the command got processed. If the command did not get processed or
         the connection dies the future will throw'''
@@ -287,22 +340,40 @@ class ArduinoSerial(Part):
 
         future = asyncio.Future()
         self.response_future = future
-        self.expected_next_response_part = part
-        self.expected_next_response_command = command
 
         try:
-            self.send_message_hdlc(bytearray([0x7E, 0xFF, 0x4F, part, command, 0x7E]))
+            self.send_message_hdlc(message)
         except Exception as e:
             future.set_exception(e)
 
         return future
 
-    def reset_arduino(self):
-        return self.send_message(0x00, 0x01)
 
     def update(self, commands: Iterable[Command], now, iteration):
 
         for c in commands:
+
+            if c.state == 'processing' and self.last_command != c:
+                c.state = 'failed'
+                c.response_message = 'Another ignite command was send, this command will no longer be processed'
+                continue
+
+            if c.state == 'processing' and self.last_ignite_future is not None and self.last_ignite_future.done():
+                exception = self.last_ignite_future.exception()
+                if exception is not None:
+                    c.state = 'failed'
+                    c.response_message = exception.args[0]
+                    continue
+
+                if self.last_ignite_future.result() == "Success":
+                    c.state = 'success'
+                    c.response_message = 'success'
+
+                    if isinstance(c, SetIgnitionPhaseCommand):
+                        self.launchPhase = 'Ignition'
+                    elif isinstance(c, SetPreparationPhaseCommand):
+                        self.launchPhase = 'Preparation'
+
 
             if isinstance(c, EnableCommand):
                 self.enabled = True
@@ -310,9 +381,24 @@ class ArduinoSerial(Part):
             elif isinstance(c, DisableCommand):
                 self.enabled = False
                 c.state = "success"
+
             elif isinstance(c, ResetCommand):
-                self.reset_arduino()
+                self.send_message(self.messageList['Reset'])
                 c.state = "success"
+
+            elif isinstance(c, SetPreparationPhaseCommand):
+                if c.state == 'received':
+                    self.last_command = c
+                    self.last_ignite_future = self.send_message(self.messageList['Preparation'])
+                    c.state = 'processing'
+
+
+            elif isinstance(c, SetIgnitionPhaseCommand):
+                if c.state == 'received':
+                    self.last_command = c
+                    self.last_ignite_future = self.send_message(self.messageList['Ignition'])
+                    c.state = 'processing'
+
             else:
                 c.state = 'failed' # Part cannot handle this command
                 continue
