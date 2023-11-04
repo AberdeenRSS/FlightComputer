@@ -153,7 +153,7 @@ class FlightDirector(Part):
 
         if self.state != 'Armed':
             c.state = 'failed'
-            c.response_message = 'Can only arm director if armed'
+            c.response_message = 'Can only start countdown director if armed'
             return []
         
         if c.state == 'received':
