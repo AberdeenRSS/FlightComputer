@@ -10,6 +10,7 @@ from app.content.sensors.arduino.servo import ServoSensor
 from app.logic.commands.command import Command, Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
 from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.logic.commands.command_helper import is_new_command
 from app.logic.rocket_definition import Part, Rocket
 
 from kivy.utils import platform
@@ -58,7 +59,7 @@ class IgniterSensor(Part):
                     c.response_message = 'No arduino connected'
                     continue
 
-                if c.state == 'received':
+                if is_new_command(c):
                     self.last_command = c
                     self.last_ignite_future = self.arduino.send_message(0x02, 0x01)
                     self.last_ignited = now

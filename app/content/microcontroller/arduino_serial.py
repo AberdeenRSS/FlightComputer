@@ -14,6 +14,8 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand, R
 from app.logic.rocket_definition import Part, Rocket
 
 from kivy.utils import platform
+from kivy.logger import Logger, LOG_LEVELS
+
 
 import tinyproto
 
@@ -218,35 +220,41 @@ class ArduinoSerial(Part):
         try:
 
             while True:
-                #print(self.logs)
-                    with self.port_thread_lock:
-                        if not self.serial_port.is_open:
-                            break
-                        received_msg = self.serial_port.read(
-                            self.serial_port.in_waiting
-                        )
-                    if received_msg:
-                        print(received_msg)
-    #                   hdlc.rx(received_msg)
 
+                if platform == 'android':
+                    if not self.serial_port.isOpen():
+                        break
+                else:
+                    if not self.serial_port.is_open:
+                        break
 
-                        for i in received_msg:
-                            if len(self.current_message) and self.current_message[-1] != 0x7E and i == 0x7E:
-                                self.current_message.append(i)
-                                self.logs.append(self.current_message)
-                                self.parse()
-                                self.current_message = bytearray([])
-                            else:
-                                self.current_message.append(i)
+                with self.port_thread_lock:
+                    received_msg = self.serial_port.read(
+                        self.serial_port.in_waiting
+                    )
+
+                if received_msg:
+                    # hdlc.rx(received_msg)
+
+                    for i in received_msg:
+                        if len(self.current_message) and self.current_message[-1] != 0x7E and i == 0x7E:
+                            self.current_message.append(i)
+                            self.logs.append(self.current_message)
+                            self.parse()
+                            self.current_message = bytearray([])
+                        else:
+                            self.current_message.append(i)
 
         except Exception as ex:
+            
+            print(f'crash read thread {ex.args[0]}')
+            raise ex
+        finally:
             self.connected = False
             self.hdlc = None
             self.serial_port = None
             if self.response_future is not None and not self.response_future.done():
                 self.response_future.set_exception(Exception('Lost connection to arduino'))
-            print(f'crash read thread {ex.args[0]}')
-            raise ex
 
     def parse(self):
 
@@ -293,6 +301,7 @@ class ArduinoSerial(Part):
         try:
             self.send_message_hdlc(bytearray([0x7E, 0xFF, 0x4F, part, command, 0x7E]))
         except Exception as e:
+            Logger.warning(f'Failed sending serial message: {e}')
             future.set_exception(e)
 
         return future

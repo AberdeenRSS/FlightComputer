@@ -8,7 +8,7 @@ from kivy.uix.button import Button
 from app.api_client import ApiClient, RealtimeApiClient
 from app.flight_config import FlightConfig
 from app.logic.commands.command import Command, Command
-from app.logic.commands.command_helper import deserialize_command, gather_known_commands, make_command_schemas
+from app.logic.commands.command_helper import deserialize_command, gather_known_commands, is_completed_command, make_command_schemas
 from app.logic.to_vessel_and_flight import to_vessel_and_flight
 from app.models.command import Command as CommandModel, CommandSchema
 from app.logic.execution import topological_sort
@@ -125,14 +125,14 @@ class FlightExecuter:
 
     deleted: bool = False
 
-    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.001) -> None:
+    def __init__(self, flight_config: FlightConfig, min_frame_time: float = 0.004) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
 
         self.flight_config = flight_config
         self.rocket = flight_config.rocket
-        self.max_frame_time = max_frame_time
+        self.min_frame_time = min_frame_time
 
         self.execution_order = topological_sort(self.rocket.parts)
         self.known_commands = gather_known_commands(self.rocket)
@@ -248,28 +248,30 @@ class FlightExecuter:
             self.part_list_widget.update_cur_part()
             flight_loop_iteration += 1
 
+            time_passed = update_end_time - last_update
             last_update = update_end_time
 
-            update_time = update_end_time - update_start_time
+            wait_time = self.min_frame_time - time_passed
+            if wait_time < 0:
+               continue
+        
+            # cast(Label, app.label).text = f'Frame Time: {str((time_passed if time_passed > MAX_FRAME_TIME else MAX_FRAME_TIME)*1000)}ms'
+            await asyncio.sleep(wait_time)
 
             # Try to keep the maximum frame times but to also give
             # time to other processes. 
             # If it took longer for the last iteration to run
             # increase the waiting time by a 10th as well .
             # If it was shorter decrease it by a 10th
-            if self.last_iteration_time > update_time:
-                self.cur_wait_time += update_time/2
-            else:
-                self.cur_wait_time -= (self.last_iteration_time-update_time)/1.5
+            # if self.last_iteration_time > update_time:
+            #     self.cur_wait_time += update_time/2
+            # else:
+            #     self.cur_wait_time -= (self.last_iteration_time-update_time)/1.5
             
-
-            if self.cur_wait_time > 0:
-                await asyncio.sleep(self.cur_wait_time)
-
-            # await asyncio.sleep(1)
+            # if self.cur_wait_time > 0:
+            #     await asyncio.sleep(self.cur_wait_time)
 
 
-            self.last_iteration_time = update_time
             # await draw()
 
     def control_loop(self, iteration: int, last_update: float):
@@ -351,8 +353,8 @@ class FlightExecuter:
 
         # Set all commands to be executed, except those that are currently set to be prossesing
         for commands in commands_by_part.values():
-            self.executed_commands.extend([c for c in commands if c.state != 'processing'])
-            self.command_buffer.extend([c for c in commands if c.state == 'processing'])
+            self.executed_commands.extend([c for c in commands if is_completed_command(c)])
+            self.command_buffer.extend([c for c in commands if not is_completed_command(c)])
 
         if len(current_measurements) < 1:
             return now

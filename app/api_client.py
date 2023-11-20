@@ -77,8 +77,6 @@ class ApiClient:
 
             raise
     
-
-
         if "access_token" not in result:
             error = result.get("error")
             error_description = result.get("error_description")
@@ -209,7 +207,7 @@ class RealtimeApiClient():
         self.base_client = base_client
         self.flight = flight
 
-        self.sio = socketio.Client(logger=True)
+        self.sio = socketio.Client(logger=False)
         self.commands_buffer = list[Command]()
 
     def connect(self, command_callback: Callable[[Collection[Command]], None]):
