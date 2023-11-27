@@ -1,26 +1,19 @@
-from asyncio import Future, Task
-import asyncio
 from datetime import datetime, timedelta
-import threading
-import time
-from typing import Collection, Iterable, Tuple, Type, Union, cast
+from typing import Iterable, Tuple, Type, Union
 from uuid import UUID, uuid4
 
-from dataclasses import dataclass
 from app.content.flight_director.abort_command import AbortCommand
 from app.content.flight_director.arm_director_command import ArmDirectorCommand
 from app.content.flight_director.start_countdown_command import StartCountDownCommand
 from app.content.general_commands.calibrate import CalibrateZeroCommand
-from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.content.motor_commands.open import IgniteCommand, OpenCommand
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
 from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
-from app.content.sensors.arduino.igniter import IgniterSensor
-from app.content.sensors.arduino.servo import ServoSensor
-from app.logic.commands.command import Command, Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from app.content.microcontroller.arduino.parts.igniter import IgniterSensor
+from app.content.microcontroller.arduino.parts.servo import ServoSensor
+from app.logic.commands.command import Command
 
 from app.logic.rocket_definition import Part, Rocket
 
@@ -139,7 +132,7 @@ class FlightDirector(Part):
         
         if not self.calibrated:
             c.state = 'failed'
-            c.response_message = 'Sensors not yet calibrated'
+            c.response_message = 'sensors not yet calibrated'
             return
         
         if not self.arduino.connected:

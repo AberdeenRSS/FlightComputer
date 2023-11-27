@@ -5,22 +5,18 @@ from uuid import UUID
 
 from dataclasses import dataclass
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.content.motor_commands.open import OpenCommand, CloseCommand, IgniteCommand
-from app.logic.commands.command import Command, Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from app.content.motor_commands.open import OpenCommand, CloseCommand
+from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.logic.rocket_definition import Part, Rocket
 
-from kivy.utils import platform
-
-from app.content.messages.smessages import AMessageList
 
 class ServoSensor(Part):
     type = 'Servo'
 
     enabled: bool = True
 
-    min_update_period = timedelta(milliseconds=20)
+    min_update_period = timedelta(milliseconds=200)
 
     min_measurement_period = timedelta(milliseconds=1000)
 
@@ -32,7 +28,11 @@ class ServoSensor(Part):
 
     last_command: Union[None, Command] = None
 
-    messageList : AMessageList
+    commandList : dict()
+
+    commandProccessingDict : dict()
+
+    partID : chr
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
         self.arduino = arduino_parent
@@ -40,13 +40,26 @@ class ServoSensor(Part):
         self.state = 'close'
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        self.messageList = AMessageList(0x01)
-        self.messageList.addCommandMessage('Close', 0x00)
-        self.messageList.addCommandMessage('Open', 0x01)
+        self.partID = 1
+        self.commandList = { 'Close' : 0, 'Open' : 1 }
+        self.commandProccessingDict = dict()
+        self.arduino.addCallback(self.partID, self.proccessCommand)
+
+    def proccessCommand(self, index : int, result : int):
+        print(index, result)
+        command = self.commandProccessingDict[index]
+        if result == 0:
+            command.state = 'success'
+            command.response_message = 'Servo activated'
+        else:
+            command.state = 'failed'
+            command.response_message = self.arduino.errorMessageDict[result]
+
+        self.commandProccessingDict.pop(index)
 
 
     def get_accepted_commands(self) -> list[Type[Command]]:
-        return [OpenCommand, CloseCommand]
+        return [DisableCommand, EnableCommand, OpenCommand, CloseCommand]
 
     def update(self, commands: Iterable[Command], now, iteration):
 
@@ -62,36 +75,35 @@ class ServoSensor(Part):
                 c.response_message = 'Another ignite command was send, this command will no longer be processed'
                 continue
 
-            if c.state == 'processing' and self.last_ignite_future is not None and self.last_ignite_future.done():
-                exception = self.last_ignite_future.exception()
-                if exception is not None:
-                    c.state = 'failed'
-                    c.response_message = exception.args[0]
-                    continue
-                if self.last_ignite_future.result() == "Success":
-                    c.state = 'success'
-                    c.response_message = 'Servo activated'
+            if c.state == 'processing':
+                print("jas")
+                continue
+
 
 
             if isinstance(c, CloseCommand):
 
                 if c.state == 'received':
                     self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(self.messageList["Close"])
+                    self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Close"])
+
+                    self.commandProccessingDict[self.last_ignite_future.result()] = c
                     c.state = 'processing'
 
             elif isinstance(c, OpenCommand):
 
                 if c.state == 'received':
                     self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(self.messageList["Open"])
+                    self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Open"])
+
+                    self.commandProccessingDict[self.last_ignite_future.result()] = c
                     c.state = 'processing'
+
 
             else:
                 c.state = 'failed'  # Part cannot handle this command
                 continue
 
-    # def add_command_to_queue(command_code: int, payload):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [

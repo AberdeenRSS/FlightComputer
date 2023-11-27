@@ -74,7 +74,7 @@ class PartListWidget(BoxLayout):
 
         self.clear_widgets()
 
-        self.add_widget(Label(text='Parts', size_hint=(1, 0.3)))
+        self.add_widget(Label(text='parts', size_hint=(1, 0.3)))
 
         for ui in self.part_uis:
 

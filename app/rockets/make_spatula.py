@@ -1,35 +1,27 @@
 # from app.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
-from app.content.flight_director.flight_director import FlightDirector
 from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
 from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
 from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
-from app.content.sensors.plyer.acceleration_plyer import PlyerAccelerationSensor
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
 
 from app.content.sensors.plyer.framerate import FramerateSensor
 
 from app.content.sensors.plyer.gps_plyer import PlyerGPSSensor
-from app.content.sensors.plyer.temperature_plyer import PlyerTemperatureSensor
-from app.content.sensors.plyer.barometer_plyer import PlyerBarometerSensor
-from app.content.sensors.plyer.gyroscope_plyer import PlyerGyroscopeSensor 
-from app.content.sensors.plyer.light_plyer import PlyerLightSensor 
-from app.content.sensors.plyer.gravity_plyer import PlyerGravitySensor
 from app.content.sensors.plyer.battery_plyer import PlyerBatterySensor
 
-from app.content.sensors.arduino.servo import ServoSensor
-from app.content.sensors.arduino.igniter import IgniterSensor
-from app.content.sensors.arduino.temperaturesensor import TemperatureSensor
-from app.content.sensors.arduino.pressure import PressureSensor
-from app.content.sensors.arduino.altitude import AltitudeSensor
+from app.content.microcontroller.arduino.parts.servo import ServoSensor
+from app.content.microcontroller.arduino.parts.igniter import IgniterSensor
 
-from app.content.sensors.arduino.photoresistor import PhotoresistorSensor
+from app.content.microcontroller.arduino.sensors.pressure.temperature_arduino import TemperatureSensor
+from app.content.microcontroller.arduino.sensors.pressure.pressure_arduino import PressureSensor
+from app.content.microcontroller.arduino.sensors.pressure.altitude_arduino import AltitudeSensor
+from app.content.microcontroller.arduino.sensors.pressure.pressure_sensor_arduino import PressureArduinoSensor
+from app.content.microcontroller.arduino.sensors.orientation_arduino import OrientationSensor
 
-from app.content.sensors.plyer.spatial_orientation_plyer import PlyerSpatialOrientationSensor
-
-from app.flight_config import FlightConfig 
+from app.flight_config import FlightConfig
 from app.logic.rocket_definition import Rocket
 
 # from app.ui.part_ui import PartUi
@@ -63,13 +55,20 @@ def make_spatula() -> FlightConfig:
     inertialFrame = InertialReferenceFrame(acc, gyro, UUID('27f5d5e0-5fa9-4ae1-88af-8477d80960d7'), 'Intertial Reference Frame', rocket)
 
     # # Serial communication
+    # Arduino parts
     arduino_serial = ArduinoSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
     parachute = ServoSensor(UUID('9f86acb1-9795-46fc-b083-e6451f214d1f'), 'Servo', rocket, arduino_serial)
     igniter = IgniterSensor(UUID('f309669d-6bd7-4ee3-90a5-45a0e1bdd60e'), 'Igniter', rocket, arduino_serial, parachute)
-    temperature = TemperatureSensor(UUID('ac93964a-6bb0-11ee-b962-0242ac120002'), 'Temperature', rocket, arduino_serial)
-    photoresistor = PhotoresistorSensor(UUID('158314cc-6d1f-11ee-b962-0242ac120002'), 'Orientation', rocket, arduino_serial)
-    pressure = PressureSensor(UUID('eedd649e-78c7-11ee-b962-0242ac120002'), 'Pressure', rocket, arduino_serial)
-    altitude = AltitudeSensor(UUID('f526cb42-78c7-11ee-b962-0242ac120002'), 'Altitude', rocket, arduino_serial)
+
+    # Arduino sensors
+    orientation = OrientationSensor(UUID('158314cc-6d1f-11ee-b962-0242ac120002'), 'Orientation', rocket, arduino_serial)
+
+    # Pressure arduino sensor
+    temperature = TemperatureSensor(UUID('ac93964a-6bb0-11ee-b962-0242ac120002'), 'Temperature', rocket)
+    pressure = PressureSensor(UUID('eedd649e-78c7-11ee-b962-0242ac120002'), 'Pressure', rocket)
+    altitude = AltitudeSensor(UUID('f526cb42-78c7-11ee-b962-0242ac120002'), 'Altitude', rocket)
+    pressureArduino = PressureArduinoSensor(UUID('8ed5e972-8cb3-11ee-b9d1-0242ac120002'), 'Pressure Sensor', rocket,
+                                            arduino_serial, temperature, pressure, altitude)
 
     # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame)
 

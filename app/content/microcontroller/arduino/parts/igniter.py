@@ -1,20 +1,13 @@
-from asyncio import Future, Task
+from asyncio import Future
 from datetime import timedelta
-from typing import Collection, Iterable, Tuple, Type, Union, cast
+from typing import Iterable, Tuple, Type, Union
 from uuid import UUID
 
-from dataclasses import dataclass
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.content.motor_commands.open import OpenCommand, CloseCommand, IgniteCommand
-from app.content.sensors.arduino.servo import ServoSensor
-from app.logic.commands.command import Command, Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from app.content.motor_commands.open import IgniteCommand
+from app.content.microcontroller.arduino.parts.servo import ServoSensor
+from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.logic.rocket_definition import Part, Rocket
-
-from kivy.utils import platform
-
-from app.content.messages.smessages import AMessageList
 
 
 class IgniterSensor(Part):
@@ -22,7 +15,7 @@ class IgniterSensor(Part):
 
     enabled: bool = True
 
-    min_update_period = timedelta(milliseconds=20)
+    min_update_period = timedelta(milliseconds=100)
 
     min_measurement_period = timedelta(milliseconds=1000)
 
@@ -40,8 +33,11 @@ class IgniterSensor(Part):
 
     state: str
 
-    messageList : AMessageList
+    commandList : dict()
 
+    commandProccessingDict : dict()
+
+    partID : chr
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None], parachute: ServoSensor, start_enabled=True):
         self.arduino = arduino_parent
@@ -50,11 +46,25 @@ class IgniterSensor(Part):
         self.parachute = parachute
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        self.messageList = AMessageList(0x02)
-        self.messageList.addCommandMessage('Ignite', 0x00)
+        self.partID = 2
+        self.commandList = { 'Ignite' : 0 }
 
-        self.messageList2 = AMessageList(0x01)
-        self.messageList2.addCommandMessage('Open', 0x01)
+        self.commandProccessingDict = dict()
+        self.arduino.addCallback(self.partID, self.proccessCommand)
+
+    def proccessCommand(self, index : int, result : int):
+        print(index, result)
+        command = self.commandProccessingDict[index]
+        if result == 0:
+            command.state = 'success'
+            command.response_message = 'Ignited'
+
+            self.arduino.launchPhase = 'LiftOff'
+        else:
+            command.state = 'failed'
+            command.response_message = self.arduino.errorMessageDict[result]
+
+        self.commandProccessingDict.pop(index)
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [IgniteCommand]
@@ -70,25 +80,20 @@ class IgniterSensor(Part):
 
                 if c.state == 'received':
                     self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(self.messageList['Ignite'])
+                    self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList['Ignite'])
                     self.last_ignited = now
                     self.parachute_triggered = False
+
+                    self.commandProccessingDict[self.last_ignite_future.result()] = c
                     c.state = 'processing'
+
 
                 if c.state == 'processing' and self.last_command != c:
                     c.state = 'failed'
                     c.response_message = 'Another ignite command was send, this command will no longer be processed'
                     continue
 
-                if c.state == 'processing' and self.last_ignite_future is not None and self.last_ignite_future.done():
-                    exception = self.last_ignite_future.exception()
-                    if exception is not None:
-                        c.state = 'failed'
-                        c.response_message = exception.args[0]
-                        continue
-                    c.state = 'success'
-                    c.response_message = 'Igniter triggered'
-                    self.arduino.launchPhase = 'Liftoff'
+
 
             else:
                 c.state = 'failed'  # Part cannot handle this command
@@ -97,7 +102,7 @@ class IgniterSensor(Part):
         if self.arduino is not None and self.last_ignited is not None and not self.parachute_triggered and (now - self.last_ignited) >= self.deploy_parachute_delay:
 
             self.parachute_triggered = True
-            self.arduino.send_message(self.messageList['Open'])
+            self.arduino.send_message(self.parachute.partID, self.parachute.commandList['Open'])
 
 
     # def add_command_to_queue(command_code: int, payload):

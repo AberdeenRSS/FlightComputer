@@ -11,7 +11,7 @@ from app.logic.commands.command import Command, Command
 #Maybe
 
 # PART_CATEGORY_SENSOR = 'SENSOR'
-# ''' Meant for any input data, i.e. sensors. Sensors will always be called first in the update order'''
+# ''' Meant for any input data, i.e. sensors. sensors will always be called first in the update order'''
 
 # PART_CATEGORY_DIRECTOR = 'DIRECTOR'
 
@@ -79,7 +79,7 @@ class Part(ABC):
 
     def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None], dependencies: Iterable[Self]):
         '''
-        :param dependencies: Parts that will be updated before this part
+        :param dependencies: parts that will be updated before this part
         '''
         self._id = _id
         self.name = name

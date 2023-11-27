@@ -5,18 +5,12 @@ from uuid import UUID
 
 from dataclasses import dataclass
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.content.motor_commands.open import OpenCommand, CloseCommand, IgniteCommand
-from app.logic.commands.command import Command, Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.logic.commands.command import Command
 from app.logic.rocket_definition import Part, Rocket
 
-from kivy.utils import platform
 
-from app.content.messages.smessages import AMessageList
-
-class TemperatureSensor(Part):
-    type = 'Temperature'
+class PressureSensor(Part):
+    type = 'Pressure'
 
     enabled: bool = True
 
@@ -24,25 +18,14 @@ class TemperatureSensor(Part):
 
     min_measurement_period = timedelta(milliseconds=1000)
 
-    arduino: Union[ArduinoSerial, None]
+    pressure : float
 
-
-    last_ignite_future: Union[Future, None] = None
-
-    last_command: Union[None, Command] = None
-
-    temperature : float
-
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
-        self.arduino = arduino_parent
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled=True):
         self.enabled = start_enabled
 
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        self.temperature = 0.0
-
-
-
+        self.pressure = 0.0
 
 
     def get_accepted_commands(self) -> list[Type[Command]]:
@@ -60,13 +43,12 @@ class TemperatureSensor(Part):
                 self.enabled = False
                 c.state = "success"
 
-        self.temperature = self.arduino.temperature
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('temperature', float),
+            ('pressure', float),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
-        return [[self.temperature]]
+        return [[self.pressure]]
 

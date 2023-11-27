@@ -5,18 +5,12 @@ from uuid import UUID
 
 from dataclasses import dataclass
 from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.content.motor_commands.open import OpenCommand, CloseCommand, IgniteCommand
-from app.logic.commands.command import Command, Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.logic.rocket_definition import Part, Rocket
 
-from kivy.utils import platform
-
-from app.content.messages.smessages import AMessageList
-
-class PhotoresistorSensor(Part):
-    type = 'Photoresistor'
+class OrientationSensor(Part):
+    type = 'Orientation'
 
     enabled: bool = True
 
@@ -26,14 +20,9 @@ class PhotoresistorSensor(Part):
 
     arduino: Union[ArduinoSerial, None]
 
-    last_ignite_future: Union[Future, None] = None
-
-    last_command: Union[None, Command] = None
-
-
-    xOrientation : float
-    yOrientation : float
-    zOrientation : float
+    OrientationX : float
+    OrientationY : float
+    OrientationZ : float
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
         self.arduino = arduino_parent
@@ -41,8 +30,14 @@ class PhotoresistorSensor(Part):
 
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        self.xOrientation = self.yOrientation = self.zOrientation = 0.0
+        partID = 0x54
+        self.OrientationX = self.OrientationY = self.OrientationZ = 0.0
+        self.arduino.addCallback(partID, self.set_measurements)
 
+    def set_measurements(self, dataList : list[int]):
+        self.OrientationX = dataList[0]
+        self.OrientationY = dataList[1]
+        self.OrientationZ = dataList[2]
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
@@ -59,12 +54,6 @@ class PhotoresistorSensor(Part):
                 self.enabled = False
                 c.state = "success"
 
-
-        self.xOrientation = self.arduino.xOrientation
-        self.yOrientation = self.arduino.yOrientation
-        self.zOrientation = self.arduino.zOrientation
-
-
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('X', float),
@@ -73,5 +62,5 @@ class PhotoresistorSensor(Part):
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
-        return [[self.xOrientation, self.yOrientation, self.zOrientation]]
+        return [[self.OrientationX, self.OrientationY, self.OrientationZ]]
 
