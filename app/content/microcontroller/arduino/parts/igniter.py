@@ -35,8 +35,6 @@ class IgniterSensor(Part):
 
     commandList : dict()
 
-    commandProccessingDict : dict()
-
     partID : chr
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None], parachute: ServoSensor, start_enabled=True):
@@ -49,22 +47,12 @@ class IgniterSensor(Part):
         self.partID = 2
         self.commandList = { 'Ignite' : 0 }
 
-        self.commandProccessingDict = dict()
         self.arduino.addCallback(self.partID, self.proccessCommand)
 
-    def proccessCommand(self, index : int, result : int):
-        print(index, result)
-        command = self.commandProccessingDict[index]
-        if result == 0:
-            command.state = 'success'
-            command.response_message = 'Ignited'
+    def proccessCommand(self, command : Command):
+        command.response_message = 'Ignited'
 
-            self.arduino.launchPhase = 'LiftOff'
-        else:
-            command.state = 'failed'
-            command.response_message = self.arduino.errorMessageDict[result]
-
-        self.commandProccessingDict.pop(index)
+        self.arduino.launchPhase = 'LiftOff'
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [IgniteCommand]
@@ -84,7 +72,7 @@ class IgniterSensor(Part):
                     self.last_ignited = now
                     self.parachute_triggered = False
 
-                    self.commandProccessingDict[self.last_ignite_future.result()] = c
+                    self.arduino.commandProccessingDict[self.last_ignite_future.result()] = c
                     c.state = 'processing'
 
 

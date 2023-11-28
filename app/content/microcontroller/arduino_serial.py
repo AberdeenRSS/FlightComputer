@@ -120,23 +120,14 @@ class ArduinoSerial(Part):
 
 
 
-    def proccessCommand(self, index: int, result: int):
-        print(index, result)
-        command = self.commandProccessingDict[index]
-        if result == 0:
-            command.state = 'success'
-            command.response_message = 'Command activated'
+    def proccessCommand(self, command : Command):
+        command.response_message = 'Command activated'
 
-            if isinstance(command, SetIgnitionPhaseCommand):
-                self.launchPhase = 'Ignition'
+        if isinstance(command, SetIgnitionPhaseCommand):
+            self.launchPhase = 'Ignition'
 
-            elif isinstance(command, SetPreparationPhaseCommand):
-                self.launchPhase = 'Preparation'
-        else:
-            command.state = 'failed'
-            command.response_message = self.arduino.errorMessageDict[result]
-
-        self.commandProccessingDict.pop(index)
+        elif isinstance(command, SetPreparationPhaseCommand):
+            self.launchPhase = 'Preparation'
 
     def addCallback(self, key : chr, fun):
         self.sensorsCallBack[key] = fun
@@ -236,14 +227,32 @@ class ArduinoSerial(Part):
 
             if a[0] >> 7 | 0 == 1:
                 response = ResponseMessage(a)
+
                 if response.getResponseRequestByte() == 1:
-                    try:
-                        self.sensorsCallBack[response.getPart()](response.getIndex(), response.getResult())
-                    except Exception as ex:
-                        pass
+                    index = response.getIndex()
+                    result = response.getResult()
+
+
+                    if index in self.commandProccessingDict:
+                        print(index, result)
+
+                        command = self.commandProccessingDict[index]
+
+                        if result == 0:
+                            command.state = 'success'
+                            self.sensorsCallBack[response.getPart()](command)
+
+                        else:
+                            command.state = 'failed'
+                            command.response_message = self.errorMessageDict[result]
+
+                        self.commandProccessingDict.pop(index)
+
+
                 else:
                     message, _ = sendCommand(self.partID, self.commandList[self.launchPhase])
                     self.send_message_hdlc(message)
+
             else:
                 sensorData = SensorData(a)
                 self.sensorsCallBack[sensorData.getPart()](sensorData.getData())

@@ -30,8 +30,6 @@ class ServoSensor(Part):
 
     commandList : dict()
 
-    commandProccessingDict : dict()
-
     partID : chr
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
@@ -42,21 +40,12 @@ class ServoSensor(Part):
 
         self.partID = 1
         self.commandList = { 'Close' : 0, 'Open' : 1 }
-        self.commandProccessingDict = dict()
         self.arduino.addCallback(self.partID, self.proccessCommand)
 
-    def proccessCommand(self, index : int, result : int):
-        print(index, result)
-        command = self.commandProccessingDict[index]
-        if result == 0:
-            command.state = 'success'
-            command.response_message = 'Servo activated'
-        else:
-            command.state = 'failed'
-            command.response_message = self.arduino.errorMessageDict[result]
+    def proccessCommand(self, command : Command):
+        command.response_message = 'Servo activated'
 
-        self.commandProccessingDict.pop(index)
-
+        print("ssssssssss")
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [DisableCommand, EnableCommand, OpenCommand, CloseCommand]
@@ -87,7 +76,7 @@ class ServoSensor(Part):
                     self.last_command = c
                     self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Close"])
 
-                    self.commandProccessingDict[self.last_ignite_future.result()] = c
+                    self.arduino.commandProccessingDict[self.last_ignite_future.result()] = c
                     c.state = 'processing'
 
             elif isinstance(c, OpenCommand):
@@ -96,7 +85,7 @@ class ServoSensor(Part):
                     self.last_command = c
                     self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Open"])
 
-                    self.commandProccessingDict[self.last_ignite_future.result()] = c
+                    self.arduino.commandProccessingDict[self.last_ignite_future.result()] = c
                     c.state = 'processing'
 
 
