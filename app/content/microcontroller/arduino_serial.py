@@ -49,7 +49,7 @@ class ArduinoSerial(Part):
 
     connected: bool = False
 
-    min_update_period = timedelta(milliseconds=1000)
+    min_update_period = timedelta(milliseconds=50)
 
     min_measurement_period = timedelta(milliseconds=1000)
 
