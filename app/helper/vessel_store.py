@@ -1,4 +1,4 @@
-from typing import cast
+from typing import Union, cast
 # from plyer import uniqueid
 # from plyer.facades import UniqueID
 from kivy.storage.jsonstore import JsonStore
@@ -25,3 +25,12 @@ def get_vessel_name():
 
 def set_vessel_name(name: str):
     store.put('vessel_name', name=name)
+
+def get_vessel_auth_code() -> Union[str, None]:
+    if not store.exists('auth_code'):
+        return None
+    
+    return store.get('auth_code')['auth_code']
+
+def set_vessel_auth_code(code: str):
+    store.put('auth_code', auth_code = code)

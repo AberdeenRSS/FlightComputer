@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Union
 from uuid import UUID, uuid4
 from marshmallow import Schema, fields
@@ -62,6 +62,16 @@ class Flight:
     List of available commands and their json schemas. The keys have to be the part the command is issued to
     """
 
+    permissions: dict[str, str] = field(default_factory=dict)
+    """
+    User id permission pairs of who has what permission on the vessel
+    """
+
+    no_auth_permission: Union[None, str] = 'owner'
+    """
+    The permission everyone has regardless of if they are logged in or not
+    """
+
 class FlightSchema(make_safe_schema(Flight)):
 
     _id = fields.UUID(required = False)
@@ -83,12 +93,12 @@ class FlightSchema(make_safe_schema(Flight)):
 
     name = fields.Str()
 
-    start = fields.DateTime(required = True)
+    start = fields.AwareDateTime(required = True, default_timezone=timezone.utc, )
     """
     When the flight started
     """
 
-    end = fields.DateTime(allow_none= True)
+    end = fields.AwareDateTime(allow_none = True, default_timezone=timezone.utc)
     """
     When the flight ended
     """
@@ -101,4 +111,14 @@ class FlightSchema(make_safe_schema(Flight)):
     available_commands = fields.Dict(keys= fields.Str(), values= fields.Nested(CommandInfoSchema))
     """
     List of available commands and their json schemas. The keys have to be the part the command is issued to
+    """
+
+    permissions = fields.Dict(keys=fields.String(), values=fields.String())
+    """
+    User id permission pairs of who has what permission on the vessel
+    """
+
+    no_auth_permission = fields.String()
+    """
+    The permission everyone has regardless of if they are logged in or not
     """

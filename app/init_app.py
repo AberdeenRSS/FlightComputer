@@ -10,7 +10,7 @@ from datetime import datetime
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 
-from app.helper.vessel_store import get_vessel_id, get_vessel_name, set_vessel_name
+from app.helper.vessel_store import get_vessel_auth_code, set_vessel_auth_code
 
 class FlightCreator(BoxLayout):
 
@@ -20,10 +20,10 @@ class FlightCreator(BoxLayout):
 
         self.creation_complete_future = asyncio.Future()
 
-        old_vessel_name = get_vessel_name()
+        old_auth_code = get_vessel_auth_code()
 
-        self.vessel_name_input = TextInput(text=old_vessel_name or 'Vessel Name')
-        self.add_widget(self.vessel_name_input)
+        self.vessel_auth_code_input = TextInput(text=old_auth_code or 'Auth Code')
+        self.add_widget(self.vessel_auth_code_input)
 
         self.flight_name_input = TextInput(text=f'Flight {datetime.now().isoformat()}')
         self.add_widget(self.flight_name_input)
@@ -34,7 +34,7 @@ class FlightCreator(BoxLayout):
 
     def make_create_flight_callback(self):
         def create_flight(instance):
-            set_vessel_name(self.vessel_name_input.text)
+            set_vessel_auth_code(self.vessel_auth_code_input.text)
             self.creation_complete_future.set_result({'name': self.flight_name_input.text})
         return create_flight
 
@@ -66,8 +66,7 @@ async def run_loop():
         app.root_layout.remove_widget(flight_creator)
 
         flight_config = make_spatula()
-        flight_config.rocket.id = get_vessel_id()
-        flight_config.rocket.name = get_vessel_name() or 'Unknown Vessel'
+        flight_config.auth_code = str(get_vessel_auth_code())
 
         flight_config.name = create_result['name']
 

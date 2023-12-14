@@ -138,7 +138,7 @@ class FlightExecuter:
         self.known_commands = gather_known_commands(self.rocket)
         self.command_schemas = make_command_schemas(self.known_commands)
 
-        self.api_client = ApiClient()
+        self.api_client = ApiClient(self.flight_config.auth_code)
         self.ui = FlightExecuterUI()
 
         self.init_flight_task = asyncio.get_event_loop().create_task(self.init_flight())
@@ -179,7 +179,7 @@ class FlightExecuter:
                 Logger.info(f'{LOGGER_NAME}: Successfully registered with server. Setting up realtime API')
 
                 self.realtime_client = RealtimeApiClient(self.api_client, self.flight)
-                self.realtime_client.connect(self.make_on_new_command())
+                await self.realtime_client.connect(self.make_on_new_command())
 
                 Logger.info(f'{LOGGER_NAME}: Realtime communication established')
 

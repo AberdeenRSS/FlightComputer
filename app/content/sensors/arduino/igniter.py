@@ -41,6 +41,7 @@ class IgniterSensor(Part):
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None], parachute: ServoSensor, start_enabled=True):
         self.arduino = arduino_parent
+        
         self.enabled = start_enabled
         self.state = 'ready'
         self.parachute = parachute
