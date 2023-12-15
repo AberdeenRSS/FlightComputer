@@ -269,7 +269,7 @@ class ArduinoSerial(Part):
 
                 with self.port_thread_lock:
                     received_msg = self.serial_port.read(
-                        self.serial_port.in_waiting
+                        1
                     )
 
                 if received_msg:
@@ -277,7 +277,7 @@ class ArduinoSerial(Part):
 
                     with self.port_thread_lock:
                         received_msg = self.serial_port.read(
-                            self.serial_port.in_waiting
+                            1
                         )
                     if received_msg:
                         response = message.parse(received_msg)
