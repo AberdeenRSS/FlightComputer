@@ -15,6 +15,8 @@ from app.logic.rocket_definition import Part, Rocket
 
 from kivy.utils import platform
 
+from app.content.messages.smessages import AMessageList
+
 
 class IgniterSensor(Part):
     type = 'Igniter'
@@ -39,6 +41,9 @@ class IgniterSensor(Part):
 
     state: str
 
+    messageList : AMessageList
+
+
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None], parachute: ServoSensor, start_enabled=True):
         self.arduino = arduino_parent
         
@@ -47,6 +52,8 @@ class IgniterSensor(Part):
         self.parachute = parachute
         super().__init__(_id, name, parent, list())  # type: ignore
 
+        self.messageList = AMessageList(0x02)
+        self.messageList.addCommandMessage('Ignite', 0x00)
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [IgniteCommand]
@@ -62,7 +69,7 @@ class IgniterSensor(Part):
 
                 if is_new_command(c):
                     self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(0x02, 0x01)
+                    self.last_ignite_future = self.arduino.send_message(self.messageList['Ignite'])
                     self.last_ignited = now
                     self.parachute_triggered = False
                     c.state = 'processing'
@@ -80,6 +87,7 @@ class IgniterSensor(Part):
                         continue
                     c.state = 'success'
                     c.response_message = 'Igniter triggered'
+                    self.arduino.launchPhase = 'Liftoff'
 
             else:
                 c.state = 'failed'  # Part cannot handle this command
@@ -88,7 +96,7 @@ class IgniterSensor(Part):
         if self.arduino is not None and self.last_ignited is not None and not self.parachute_triggered and (now - self.last_ignited) >= self.deploy_parachute_delay:
 
             self.parachute_triggered = True
-            self.arduino.send_message(0x01, 0x04)
+            self.arduino.send_message(self.messageList['Ignite'])
 
 
     # def add_command_to_queue(command_code: int, payload):

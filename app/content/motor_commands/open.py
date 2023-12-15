@@ -36,3 +36,47 @@ class IgniteCommand(Command):
 
     def set_payload(self, payload):
         pass
+
+class SetPreparationPhaseCommand(Command):
+
+    command_type = 'Control.SetPreparationPhase'
+
+    payload_schema = None
+
+    response_schema = BasicErrorResponseSchema()
+
+    def set_payload(self, payload):
+        pass
+
+class SetIgnitionPhaseCommand(Command):
+
+    command_type = 'Control.SetIgnitionPhasePhase'
+
+    payload_schema = None
+
+    response_schema = BasicErrorResponseSchema()
+
+    def set_payload(self, payload):
+        pass
+
+class SetLiftoffPhaseCommand(Command):
+
+    command_type = 'Control.SetLiftoffPhase'
+
+    payload_schema = None
+
+    response_schema = BasicErrorResponseSchema()
+
+    def set_payload(self, payload):
+        pass
+
+class SetRecoveryPhaseCommand(Command):
+
+    command_type = 'Control.SetRecoveryPhase'
+
+    payload_schema = None
+
+    response_schema = BasicErrorResponseSchema()
+
+    def set_payload(self, payload):
+        pass
