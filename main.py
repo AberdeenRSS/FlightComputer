@@ -3,6 +3,8 @@ import datetime
 import traceback
 import kivy
 from pathlib import Path
+
+from app.helper.global_data_dir import set_user_data_dir
 kivy.require('2.1.0') # replace with your current kivy version !
 
 from kivy.app import App
@@ -15,7 +17,6 @@ from kivy.utils import platform
 from kivy.config import Config
 import os
 import logging
-
 
 # We need a reference to the Java activity running the current
 # application, this reference is stored automatically by
@@ -39,6 +40,8 @@ class CrashScreen(App):
 
 
 async def main():
+
+    global user_data_dir
 
     logging.disable()
 
@@ -65,6 +68,8 @@ async def main():
     from app.init_app import init_app
 
     ui_app, worker_process = init_app()
+
+    set_user_data_dir(ui_app.user_data_dir)
 
     # Call run first, so the build process
     # is complete, before the worker process is initialized

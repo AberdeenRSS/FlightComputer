@@ -1,6 +1,7 @@
 # from app.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
 from app.content.flight_director.flight_director import FlightDirector
 from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
+from app.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from app.content.microcontroller.arduino_serial import ArduinoSerial
 from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
@@ -39,6 +40,7 @@ def make_spatula() -> FlightConfig:
     # Computer status parts
     FramerateSensor(UUID('8d45c8e7-7ae2-4496-a5e0-047a631ef17c'), 'Framerate', rocket)
     measurement_sink = ApiMeasurementSink(UUID('fa9eac88-5d2f-41a6-aeab-85c1591433a2'), 'Measurement dispatch', rocket)
+    FileMeasurementSink(UUID('ebcf7ca3-9757-42f8-b972-af769e5d0d75'), 'Measurement File Storage', rocket)
 
     # # Plyer sensors
     PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
