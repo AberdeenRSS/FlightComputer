@@ -55,7 +55,7 @@ def make_spatula() -> FlightConfig:
     # Native sensors
     acc = PyjiniusAccelerationSensor(UUID('d91eed66-d699-4816-892d-3e99282966ab'), 'Accelerometer', rocket)
     gyro = PyjiniusGyroscopeSensor(UUID('5159e64a-0f55-4a8c-8d24-596a0118e0be'), 'Gyroscope', rocket)
-    # inertialFrame = InertialReferenceFrame(acc, gyro, UUID('27f5d5e0-5fa9-4ae1-88af-8477d80960d7'), 'Intertial Reference Frame', rocket)
+    inertialFrame = InertialReferenceFrame(acc, gyro, UUID('27f5d5e0-5fa9-4ae1-88af-8477d80960d7'), 'Intertial Reference Frame', rocket)
 
     # # Serial communication
     arduino_serial = ArduinoSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
