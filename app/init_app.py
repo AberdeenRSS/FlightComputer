@@ -34,7 +34,8 @@ class FlightCreator(BoxLayout):
 
     def make_create_flight_callback(self):
         def create_flight(instance):
-            set_vessel_auth_code(self.vessel_auth_code_input.text)
+            without_line_breaks = self.vessel_auth_code_input.text.replace('\n', '').replace('\r', '').replace(' ', '')
+            set_vessel_auth_code(without_line_breaks)
             self.creation_complete_future.set_result({'name': self.flight_name_input.text})
         return create_flight
 

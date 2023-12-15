@@ -4,6 +4,7 @@ from typing import Collection, Iterable, cast
 from datetime import datetime
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from app.api_client import ApiClient, RealtimeApiClient
 from app.flight_config import FlightConfig
@@ -34,7 +35,7 @@ class ServerHandshakeDeciderWidget(BoxLayout):
 
         self.decision_future = asyncio.Future()
 
-        self.add_widget(Label(text=f'Server Handshake failed: {exception}', size_hint=(1, 0.25)))
+        self.add_widget(TextInput(text=f'Server Handshake failed: {exception}'))
 
         def on_retry(instance):
             self.decision_future.set_result('RETRY')

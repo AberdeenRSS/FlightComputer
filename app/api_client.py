@@ -23,15 +23,21 @@ LOGGER_NAME = 'ApiClient'
 
 def format_response(response: Union[httpx.Response, None]):
 
-    if response is None:
-        return f'No response from server'
 
-    success = response.status_code >= 200 and response.status_code < 300
+    try:
 
-    if success:
-        return f'Request to {response.url} was successful (Code {response.status_code})'
-    else:
-        return f'Request to {response.url} failed wit code {response.status_code}: {response.text}'
+        if response is None:
+            return f'No response from server'
+
+        success = response.status_code >= 200 and response.status_code < 300
+
+        if success:
+            return f'Request to {response.url} was successful (Code {response.status_code})'
+        else:
+            return f'Request to {response.url} failed wit code {response.status_code}: {response.text}'
+    
+    except:
+        return 'Response could not be formatted'
 
 
 class ApiClient:
