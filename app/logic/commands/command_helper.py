@@ -5,6 +5,22 @@ from app.logic.rocket_definition import Rocket
 from app.models.command import Command as CommandModel, CommandSchema
 from marshmallow import fields
 
+def is_completed_command(c: Command):
+    if c.state == 'failed':
+        return True
+    if c.state == 'success':
+        return True
+    return False
+
+
+def is_new_command(c: Command):
+    '''True if the command was just recieved or created'''
+    if c.state == 'new':
+        return True
+    if c.state == 'dispatched':
+        return True
+    if c.state == 'received':
+        return True
 
 def gather_known_commands(rocket: Rocket):
     res = dict[str, type[Command]]()

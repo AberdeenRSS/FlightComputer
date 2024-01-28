@@ -9,7 +9,6 @@ from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import accelerometer
 from plyer.facades.accelerometer import Accelerometer
 
-
 class PlyerAccelerationSensor(Part):
 
     type = 'Sensor.Acceleration'

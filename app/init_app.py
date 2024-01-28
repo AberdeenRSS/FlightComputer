@@ -1,28 +1,16 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from random import random
-from typing import Collection, Iterable, Sequence, Tuple, Union, cast
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
-from plyer.facades.accelerometer import Accelerometer
-from kivy.core.window import Window
-from plyer import accelerometer
-from uuid import uuid4
 from app.flight_executer import FlightExecuter
-from app.logic.commands.command import Command
-from app.logic.execution import topological_sort
-from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase, MeasurementsByPart
-from app.logic.rocket_definition import Measurements, Part
-from app.models.flight_measurement import FlightMeasurement, FlightMeasurementSchema
 from app.rockets.make_spatula import make_spatula
-from app.models.flight import Flight
-from app.models.command import Command as CommandModel
-from app.logic.rocket_definition import Rocket
 from datetime import datetime
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
+
+from app.helper.vessel_store import get_vessel_auth_code, set_vessel_auth_code
 
 class FlightCreator(BoxLayout):
 
@@ -31,6 +19,11 @@ class FlightCreator(BoxLayout):
         super().__init__(**kwargs)
 
         self.creation_complete_future = asyncio.Future()
+
+        old_auth_code = get_vessel_auth_code()
+
+        self.vessel_auth_code_input = TextInput(text=old_auth_code or 'Auth Code')
+        self.add_widget(self.vessel_auth_code_input)
 
         self.flight_name_input = TextInput(text=f'Flight {datetime.now().isoformat()}')
         self.add_widget(self.flight_name_input)
@@ -41,6 +34,8 @@ class FlightCreator(BoxLayout):
 
     def make_create_flight_callback(self):
         def create_flight(instance):
+            without_line_breaks = self.vessel_auth_code_input.text.replace('\n', '').replace('\r', '').replace(' ', '')
+            set_vessel_auth_code(without_line_breaks)
             self.creation_complete_future.set_result({'name': self.flight_name_input.text})
         return create_flight
 
@@ -72,6 +67,7 @@ async def run_loop():
         app.root_layout.remove_widget(flight_creator)
 
         flight_config = make_spatula()
+        flight_config.auth_code = str(get_vessel_auth_code())
 
         flight_config.name = create_result['name']
 

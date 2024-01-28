@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar, Union, cast
 from uuid import UUID
 from marshmallow import Schema, fields, post_load
 from app.models.vessel_part import VesselPart
@@ -33,6 +33,16 @@ class Vessel:
     All the parts (components) of the vessel
     """
 
+    permissions: dict[str, str] = field(default_factory=dict)
+    """
+    User id permission pairs of who has what permission on the vessel
+    """
+
+    no_auth_permission: Union[None, str] = 'owner'
+    """
+    The permission everyone has regardless of if they are logged in or not
+    """
+
 class VesselSchema(make_safe_schema(Vessel)):
 
     _id = fields.UUID(required=True)
@@ -56,6 +66,16 @@ class VesselSchema(make_safe_schema(Vessel)):
     parts = fields.List(fields.Nested(VesselPartSchema), load_default=[], dump_default=[])
     """
     All the parts (components) of the vessel. The parts have hierarchy by linking between each other
+    """
+
+    permissions = fields.Dict(keys=fields.String(), values=fields.String())
+    """
+    User id permission pairs of who has what permission on the vessel
+    """
+
+    no_auth_permission = fields.String()
+    """
+    The permission everyone has regardless of if they are logged in or not
     """
 
 

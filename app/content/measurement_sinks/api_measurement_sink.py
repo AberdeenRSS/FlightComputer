@@ -11,8 +11,11 @@ from app.logic.rocket_definition import Measurements, Part, Rocket
 from app.models.flight import Flight
 from app.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
+from kivy.logger import Logger, LOG_LEVELS
 
 from app.models.flight_measurement_compact import FlightMeasurementCompact
+
+LOGGER_NAME = 'Measurement_Sink'
 
 class ApiMeasurementSink(ApiMeasurementSinkBase):
      
@@ -67,9 +70,14 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
     
     async def send_last_measurements(self, now: float):
 
+        await asyncio.sleep(0.1)
+
         # Swap measurement buffer
         old_buffer = self.measurement_buffer
         self.measurement_buffer = list()
+
+        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+            Logger.debug(f'{LOGGER_NAME}: Starting measurment dispatch. {len(old_buffer)} in curent buffer')
 
         # A drop rate of 1 means every measurement is send
         # 2 only every second, etc.
@@ -126,6 +134,9 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         
         # print(f'Sending measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
 
+        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+            Logger.debug(f'{LOGGER_NAME}: Prepared measurements to be send over the Api. Trying to send measurements for {len(flight_measurements)} parts. Drop Rate: {drop_rate}')
+
         send_start = time.time()
 
         (send_success, reason) = await self.api_client.try_report_flight_data_compact(self.flight._id, flight_measurements, self.send_timeout.total_seconds())
@@ -133,15 +144,23 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         self.drop_rate = drop_rate
         self.last_send_attempt_time = now
 
+        send_end = time.time()
+
+        send_duration = send_end - send_start
+
         # Data was not send, therefore return old send date
         if not send_success:
+
+            Logger.warning(f'{LOGGER_NAME}: Failed sending measurements. Reason: {reason}. Took {send_duration:02}ms')
+
             self.last_send_success = False
             if reason == 'TIMEOUT':
                 self.last_send_duration = self.send_timeout.total_seconds()
             return
         
-        send_end = time.time()
+        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+            Logger.debug(f'{LOGGER_NAME}: Successfully send  measurements. Took {send_duration:02}ms')
 
         self.last_send_success = True
         self.last_send_success_time = send_end
-        self.last_send_duration = send_end - send_start
+        self.last_send_duration = send_duration

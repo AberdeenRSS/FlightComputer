@@ -4,17 +4,21 @@ from typing import Collection, Iterable, cast
 from datetime import datetime
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from app.api_client import ApiClient, RealtimeApiClient
 from app.flight_config import FlightConfig
 from app.logic.commands.command import Command, Command
-from app.logic.commands.command_helper import deserialize_command, gather_known_commands, make_command_schemas
+from app.logic.commands.command_helper import deserialize_command, gather_known_commands, is_completed_command, make_command_schemas
 from app.logic.to_vessel_and_flight import to_vessel_and_flight
 from app.models.command import Command as CommandModel, CommandSchema
 from app.logic.execution import topological_sort
 from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase, MeasurementsByPart
 from app.logic.rocket_definition import Part, Rocket
 from app.ui.part_ui import PartUi
+from kivy.logger import Logger, LOG_LEVELS
+
+LOGGER_NAME = 'FlightExecutor'
 
 class FlightExecuterUI(BoxLayout):
 
@@ -31,7 +35,7 @@ class ServerHandshakeDeciderWidget(BoxLayout):
 
         self.decision_future = asyncio.Future()
 
-        self.add_widget(Label(text=f'Server Handshake failed: {exception}', size_hint=(1, 0.25)))
+        self.add_widget(TextInput(text=f'Server Handshake failed: {exception}'))
 
         def on_retry(instance):
             self.decision_future.set_result('RETRY')
@@ -120,20 +124,22 @@ class FlightExecuter:
 
     executed_commands: list[Command]
 
-    def __init__(self, flight_config: FlightConfig, max_frame_time: float = 0.0001) -> None:
+    deleted: bool = False
+
+    def __init__(self, flight_config: FlightConfig, min_frame_time: float = 0.1) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
 
         self.flight_config = flight_config
         self.rocket = flight_config.rocket
-        self.max_frame_time = max_frame_time
+        self.min_frame_time = min_frame_time
 
         self.execution_order = topological_sort(self.rocket.parts)
         self.known_commands = gather_known_commands(self.rocket)
         self.command_schemas = make_command_schemas(self.known_commands)
 
-        self.api_client = ApiClient()
+        self.api_client = ApiClient(self.flight_config.auth_code)
         self.ui = FlightExecuterUI()
 
         self.init_flight_task = asyncio.get_event_loop().create_task(self.init_flight())
@@ -141,10 +147,15 @@ class FlightExecuter:
 
         self.send_command_responses_task = asyncio.get_event_loop().create_task(self.send_command_responses())
 
+        self.last_iteration_time = 0
+        self.cur_wait_time = 0
+
     def make_on_new_command(self):
         def on_new_command(models: Collection[CommandModel]):
 
+
             for c in models:
+                Logger.info(f'{LOGGER_NAME}: Received new command of type {c._command_type} with creation time {c.create_time} (ID: {c._id}, PartID: {c._part_id})')
                 c.state = 'received'
 
             self.command_buffer.extend([deserialize_command(self.known_commands, c) for c in models])
@@ -161,21 +172,32 @@ class FlightExecuter:
         
         while(True):
             try:
+
+                Logger.info(f'{LOGGER_NAME}: Starting server setup handshake')
+
                 self.flight = await self.api_client.run_full_setup_handshake(self.rocket, self.flight_config.name)
 
+                Logger.info(f'{LOGGER_NAME}: Successfully registered with server. Setting up realtime API')
+
                 self.realtime_client = RealtimeApiClient(self.api_client, self.flight)
-                self.realtime_client.connect(self.make_on_new_command())
+                await self.realtime_client.connect(self.make_on_new_command())
+
+                Logger.info(f'{LOGGER_NAME}: Realtime communication established')
 
                 break
             except Exception as e:
 
-                print(f'Failed connecting to server: {e} {e.args}')
+                Logger.exception(f'{LOGGER_NAME}: Failed connecting to server: {e} {e.args}')
 
                 self.ui.clear_widgets()
                 user_decision_widget = ServerHandshakeDeciderWidget(e)
                 self.ui.add_widget(user_decision_widget)
 
+                Logger.info(f'{LOGGER_NAME}: awaiting user decision on how to proceed')
+
                 user_decision = await user_decision_widget.decision_future
+
+                Logger.info(f'{LOGGER_NAME}: User decided: {user_decision}')
 
                 self.ui.clear_widgets()
 
@@ -192,12 +214,12 @@ class FlightExecuter:
 
         self.ui.clear_widgets()
 
-
         # Get list of all available measurement sinks
         self.measurement_sinks = [p for p in self.rocket.parts if isinstance(p, MeasurementSinkBase)]
 
         for p in self.rocket.parts:
             if isinstance(p, ApiMeasurementSinkBase):
+                Logger.debug(f'{LOGGER_NAME}: Initialized part {p.type} as a measurement sink')
                 p.api_client = self.api_client
                 p.flight = self.flight
         
@@ -213,24 +235,44 @@ class FlightExecuter:
         self.ui.add_widget(self.part_list_widget)
 
         if canceled:
+            Logger.warning(f'{LOGGER_NAME}: Flight execution loop canceled, aborting')
             return
 
         # Run the update loop
         flight_loop_iteration = 0
         last_update: float = time.time()
         while True:
+
+            update_start_time = time.time()
+            
             update_end_time = self.control_loop(flight_loop_iteration, last_update)
             self.part_list_widget.update_cur_part()
             flight_loop_iteration += 1
+
             time_passed = update_end_time - last_update
             last_update = update_end_time
 
-            wait_time = self.max_frame_time - time_passed
+            wait_time = self.min_frame_time - time_passed
             if wait_time < 0:
                continue
         
             # cast(Label, app.label).text = f'Frame Time: {str((time_passed if time_passed > MAX_FRAME_TIME else MAX_FRAME_TIME)*1000)}ms'
             await asyncio.sleep(wait_time)
+
+            # Try to keep the maximum frame times but to also give
+            # time to other processes. 
+            # If it took longer for the last iteration to run
+            # increase the waiting time by a 10th as well .
+            # If it was shorter decrease it by a 10th
+            # if self.last_iteration_time > update_time:
+            #     self.cur_wait_time += update_time/2
+            # else:
+            #     self.cur_wait_time -= (self.last_iteration_time-update_time)/1.5
+            
+            # if self.cur_wait_time > 0:
+            #     await asyncio.sleep(self.cur_wait_time)
+
+
             # await draw()
 
     def control_loop(self, iteration: int, last_update: float):
@@ -241,6 +283,9 @@ class FlightExecuter:
         new_commands = self.swap_command_buffer()
         commands_by_part = dict[Part, list[Command]]()
         self.add_command_by_part(new_commands, commands_by_part)
+
+        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+            Logger.debug(f'{LOGGER_NAME}: Control loop iteration {iteration}. Time {datetime.fromtimestamp(now)}. {len(new_commands)} pending')
 
         # Call update on every part
         for p in self.execution_order:
@@ -256,12 +301,21 @@ class FlightExecuter:
 
             try:
                 generated_commands = p.update(commands, now, iteration)
+
                 if generated_commands is not None:
+
+                    if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+                        Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated. {len(generated_commands)} emitted')
+
                     new_commands.extend(generated_commands)
                     self.add_command_by_part(generated_commands, commands_by_part)
+
+                elif(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+                        Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated')
+
                 p.last_update = now
             except Exception as e:
-                print(f'Iteration {iteration}: Part {p.name} failed to update {e}')
+                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
 
         # Gather all measurements of all parts
         current_measurements = MeasurementsByPart()
@@ -271,25 +325,37 @@ class FlightExecuter:
                 continue
             try:
                 measurements = p.collect_measurements(now, iteration)
+
+                if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
+                    Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully collected measurements. New measurements: {len(measurements) if measurements is not None else "None"}')
+                
                 if measurements is None:
                     continue
+
+                shape =  p.get_measurement_shape()
+
+                for m in measurements:
+                    if len(m) <= len(shape):
+                        continue
+                    raise Exception(f'A measurement of length {len(m)} was returned, but the part only supports measurements up to length {len(shape)}. Please verify that the get_measurement_shape method matches what is returned by collect_measurements')
+
                 current_measurements[p] = (p.last_measurement or now, now, measurements)
                 p.last_measurement = now
             except Exception as e:
-                print(f'Iteration {iteration}: Part {p.name} failed to take measurements: {e}')
+                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to take measurements: {e}')
 
         # Flush all parts (free memory)
         for p in self.execution_order:
             try:
                 p.flush()
             except:
-                print(f'Iteration {iteration}: Part {p.name} failed to flush')
+                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to flush')
 
 
         # Set all commands to be executed, except those that are currently set to be prossesing
         for commands in commands_by_part.values():
-            self.executed_commands.extend([c for c in commands if c.state != 'processing'])
-            self.command_buffer.extend([c for c in commands if c.state == 'processing'])
+            self.executed_commands.extend([c for c in commands if is_completed_command(c)])
+            self.command_buffer.extend([c for c in commands if not is_completed_command(c)])
 
         if len(current_measurements) < 1:
             return now
@@ -316,10 +382,13 @@ class FlightExecuter:
 
         abort = await self.init_flight_task
 
-        if(abort):
+        if abort:
             return
 
-        while(True):
+        while True:
+
+            if self.deleted:
+                return
 
             if len(self.executed_commands) < 1:
                 await asyncio.sleep(0.01)
@@ -343,7 +412,7 @@ class FlightExecuter:
             try:
                 await self.api_client.try_send_command_responses(str(self.flight._id), models)
             except Exception as e:
-                print(f'Failed sending {len(models)} command responses: {e}')
+                Logger.exception(f'{LOGGER_NAME}: Failed sending {len(models)} command responses: {e}')
 
     def __del__(self):
 
@@ -355,3 +424,5 @@ class FlightExecuter:
 
         if not self.send_command_responses_task.done():
             self.send_command_responses_task.cancel()
+
+        self.deleted = True

@@ -3,21 +3,9 @@ from app.logic.rocket_definition import Command
 
 
 
-class EnableCommand(Command):
+class OpenCommand(Command):
 
-    command_type = 'Control.Enable'
-
-    payload_schema = None
-
-    response_schema = BasicErrorResponseSchema()
-
-    def set_payload(self, payload):
-        pass
-
-
-class DisableCommand(Command):
-
-    command_type = 'Control.Disable'
+    command_type = 'Control.Open'
 
     payload_schema = None
 
@@ -26,9 +14,21 @@ class DisableCommand(Command):
     def set_payload(self, payload):
         pass
 
-class ResetCommand(Command):
 
-    command_type = 'Control.Reset'
+class CloseCommand(Command):
+
+    command_type = 'Control.Close'
+
+    payload_schema = None
+
+    response_schema = BasicErrorResponseSchema()
+
+    def set_payload(self, payload):
+        pass
+
+class IgniteCommand(Command):
+
+    command_type = 'Control.Ignite'
 
     payload_schema = None
 

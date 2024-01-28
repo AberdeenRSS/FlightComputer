@@ -1,7 +1,7 @@
 import json
 from typing import cast
 from marshmallow import fields, ValidationError
-from jsonschema import Validator
+# from jsonschema import Validator
 
 class JSON_Schema_Field(fields.Field):
     def _deserialize(self, value, attr, data, **kwargs):
@@ -12,6 +12,6 @@ class JSON_Schema_Field(fields.Field):
             except:
                 ValidationError('Invalid json')
 
-        Validator.check_schema(cast(dict, value))
+        # Validator.check_schema(cast(dict, value))
 
         return value

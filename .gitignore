@@ -3,3 +3,7 @@
 /bin
 /.buildozer
 **/__pycache__
+Lib/
+.idea/
+
+vessel_info.json

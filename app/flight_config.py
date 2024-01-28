@@ -13,6 +13,7 @@ class FlightConfig():
 
     rocket: Rocket
 
+
     part_uis: Iterable[PartUi]
 
     should_add_default_uis: bool
@@ -20,6 +21,7 @@ class FlightConfig():
 
     name: str = ''
 
+    auth_code: str = ''
 
     def add_default_uis(self):
 
