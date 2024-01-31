@@ -8,6 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.content.motor_commands.open import OpenCommand, CloseCommand
 from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.logic.commands.command_helper import is_new_command
 from app.logic.rocket_definition import Part, Rocket
 
 
@@ -72,7 +73,7 @@ class ServoSensor(Part):
 
             if isinstance(c, CloseCommand):
 
-                if c.state == 'received':
+                if is_new_command(c):
                     self.last_command = c
                     self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Close"])
 
@@ -81,7 +82,7 @@ class ServoSensor(Part):
 
             elif isinstance(c, OpenCommand):
 
-                if c.state == 'received':
+                if is_new_command(c):
                     self.last_command = c
                     self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Open"])
 

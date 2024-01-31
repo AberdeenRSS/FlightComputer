@@ -7,7 +7,7 @@ from app.models.vessel import Vessel
 from app.models.vessel_part import VesselPart
 from app.models.flight import Flight
 from app.logic.rocket_definition import Rocket
-from datetime import datetime
+from datetime import datetime, timezone
 from marshmallow_jsonschema import JSONSchema
 
 def to_vessel_and_flight(rocket: Rocket) -> tuple[Vessel, Flight]:
@@ -15,6 +15,7 @@ def to_vessel_and_flight(rocket: Rocket) -> tuple[Vessel, Flight]:
     vessel = Vessel(_id=rocket.id or UUID(), _version=rocket.version, name=rocket.name, parts=get_all_parts(rocket))
 
     now = datetime.utcnow()
+    now = now.replace(tzinfo=timezone.utc)
 
     flight = Flight(start=now, _vessel_id=vessel._id, _vessel_version=rocket.version, name=f'FLight at {now.isoformat()}', measured_parts=get_measured_parts(rocket), available_commands=get_commands(rocket))
 

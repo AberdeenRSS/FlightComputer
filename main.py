@@ -3,6 +3,8 @@ import datetime
 import traceback
 import kivy
 from pathlib import Path
+
+from app.helper.global_data_dir import set_user_data_dir
 kivy.require('2.1.0') # replace with your current kivy version !
 
 from kivy.app import App
@@ -14,6 +16,7 @@ from kivy.logger import Logger, LOG_LEVELS
 from kivy.utils import platform
 from kivy.config import Config
 import os
+import logging
 
 # We need a reference to the Java activity running the current
 # application, this reference is stored automatically by
@@ -38,16 +41,26 @@ class CrashScreen(App):
 
 async def main():
 
-    os.environ['KIVY_LOG_MODE'] = 'KIVY'
+    global user_data_dir
 
-    Config.set('kivy', 'log_level', 'info')
+    logging.disable()
+
+    # logging.basicConfig(level=logging.WARN)
+
+    # logging.getLogger('httpx').setLevel(level=logging.WARN)
+    # logging.getLogger('httpcore').setLevel(level=logging.WARN)
+    # logging.getLogger('urllib3').setLevel(level=logging.WARN)
+    # logging.getLogger('requests').setLevel(level=logging.WARN)
+
+    # os.environ['KIVY_LOG_MODE'] = 'KIVY'
+
+    Config.set('kivy', 'log_level', 'debug')
     Config.set('kivy', 'log_enable ', 1)
-    Config.set('kivy', 'log_dir ', 'logs')
-    Config.set('kivy', 'log_name', '%y-%m-%d_%_.txt')
+    # Config.set('kivy', 'log_dir ', 'logs')
+    # Config.set('kivy', 'log_name', '%y-%m-%d_%_.txt')
 
-    Logger.setLevel('INFO')
+    Logger.setLevel('DEBUG')
 
-    # Logger.setLevel(LOG_LEVELS["debug"])
 
     # Do the import within the try block in case
     # there are problems with it. In that
@@ -55,6 +68,8 @@ async def main():
     from app.init_app import init_app
 
     ui_app, worker_process = init_app()
+
+    set_user_data_dir(ui_app.user_data_dir)
 
     # Call run first, so the build process
     # is complete, before the worker process is initialized

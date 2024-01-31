@@ -14,6 +14,8 @@ from app.content.motor_commands.open import SetPreparationPhaseCommand
 from app.logic.rocket_definition import Part, Rocket
 
 from kivy.utils import platform
+from kivy.logger import Logger, LOG_LEVELS
+
 
 import tinyproto
 from app.content.microcontroller.arduino.messages.messages import SensorData, ResponseMessage, sendCommand
@@ -82,17 +84,17 @@ class ArduinoSerial(Part):
 
     logs = []
 
-    launchPhase : str
+    launchPhase: str
 
-    sensorsCallBack : dict()
+    sensorsCallBack: dict
 
-    partID : chr
+    partID: int
 
-    commandProccessingDict : dict()
+    commandProccessingDict: dict
 
-    commandList : dict()
+    commandList: dict
 
-    errorMessageDict : dict()
+    errorMessageDict: dict
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
         self.enabled = start_enabled
@@ -129,7 +131,7 @@ class ArduinoSerial(Part):
         elif isinstance(command, SetPreparationPhaseCommand):
             self.launchPhase = 'Preparation'
 
-    def addCallback(self, key : chr, fun):
+    def addCallback(self, key: int, fun):
         self.sensorsCallBack[key] = fun
 
     def try_get_device_list(self):
@@ -264,21 +266,45 @@ class ArduinoSerial(Part):
         try:
 
             while True:
-                    with self.port_thread_lock:
-                        if not self.serial_port.is_open:
-                            break
-                        received_msg = self.serial_port.read(1)
-                        if received_msg:
-                            hdlc.rx(received_msg)
+
+                if self.serial_port is None:
+                    break
+
+                if platform == 'android':
+                    if not self.serial_port.isOpen():
+                        break
+                else:
+                    if not self.serial_port.is_open:
+                        break
+
+                with self.port_thread_lock:
+                    received_msg = self.serial_port.read(
+                        1
+                        # self.serial_port.in_waiting
+                    )
+
+                if received_msg:
+                    hdlc.rx(received_msg)
+
+                    # for i in received_msg:
+                    #     if len(self.current_message) and self.current_message[-1] != 0x7E and i == 0x7E:
+                    #         self.current_message.append(i)
+                    #         self.logs.append(self.current_message)
+                    #         self.parse()
+                    #         self.current_message = bytearray([])
+                    #     else:
+                    #         self.current_message.append(i)
 
         except Exception as ex:
+            
+            print(f'crash read thread {ex.args[0]}')
+            raise ex
+        finally:
             self.connected = False
             self.hdlc = None
             self.serial_port = None
             if self.response_future is not None and not self.response_future.done():
                 self.response_future.set_exception(Exception('Lost connection to arduino'))
-            print(f'crash read thread {ex.args[0]}')
-            raise ex
 
 
     def get_accepted_commands(self) -> list[Type[Command]]:
@@ -291,7 +317,7 @@ class ArduinoSerial(Part):
         self.hdlc.put(message)
         self.serial_port.write(self.hdlc.tx())
 
-    def send_message(self, partID : chr,  commandID : chr):
+    def send_message(self, partID: int,  commandID : int):
         '''Sends the given message to the arduino and returns a future that will be
         completed if the command got processed. If the command did not get processed or
         the connection dies the future will throw'''
@@ -308,6 +334,7 @@ class ArduinoSerial(Part):
         try:
             self.send_message_hdlc(message)
         except Exception as e:
+            Logger.warning(f'Failed sending serial message: {e}')
             future.set_exception(e)
 
         return future

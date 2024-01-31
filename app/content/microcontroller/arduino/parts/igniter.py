@@ -7,6 +7,7 @@ from app.content.motor_commands.open import IgniteCommand
 from app.content.microcontroller.arduino.parts.servo import ServoSensor
 from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.logic.commands.command_helper import is_new_command
 from app.logic.rocket_definition import Part, Rocket
 
 
@@ -39,6 +40,7 @@ class IgniterSensor(Part):
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None], parachute: ServoSensor, start_enabled=True):
         self.arduino = arduino_parent
+        
         self.enabled = start_enabled
         self.state = 'ready'
         self.parachute = parachute
@@ -66,7 +68,7 @@ class IgniterSensor(Part):
                     c.response_message = 'No arduino connected'
                     continue
 
-                if c.state == 'received':
+                if is_new_command(c):
                     self.last_command = c
                     self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList['Ignite'])
                     self.last_ignited = now

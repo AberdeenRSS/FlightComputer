@@ -14,8 +14,13 @@ from app.content.sensors.android_native.inertial_reference_frame import Inertial
 from app.content.microcontroller.arduino.parts.igniter import IgniterSensor
 from app.content.microcontroller.arduino.parts.servo import ServoSensor
 from app.logic.commands.command import Command
+from app.logic.commands.command import Command, Command
+from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from app.logic.commands.command_helper import is_completed_command, is_new_command
 
 from app.logic.rocket_definition import Part, Rocket
+from kivy.logger import Logger, LOG_LEVELS
+
 
 
 class FlightDirector(Part):
@@ -39,6 +44,8 @@ class FlightDirector(Part):
     current_calibrate_base_sensor_commands: Union[None, list[CalibrateZeroCommand]] = None
 
     calibrate_inertial_frame_command: Union[None, CalibrateZeroCommand] = None
+
+    initial_countdown = 15
 
     countdown: Union[None, float] = None
 
@@ -66,7 +73,7 @@ class FlightDirector(Part):
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [CalibrateZeroCommand, ArmDirectorCommand, StartCountDownCommand, AbortCommand]
     
-    def run_calibrate(self, c: CalibrateZeroCommand) -> Iterable[Command]:
+    def run_calibrate(self, c: CalibrateZeroCommand, now) -> Iterable[Command]:
 
         if self.state != 'Idle':
             c.state = 'failed'
@@ -78,7 +85,10 @@ class FlightDirector(Part):
             c.response_message = 'Already calibrating'
             return []
         
-        if c.state == 'received':
+        if is_new_command(c):
+            Logger.info(f'FLIGHT_DIRECTOR: starting calibration')
+
+            self.calibrate_inertial_frame_command = None
             c.state = 'processing'
 
             calibrate_acc = CalibrateZeroCommand()
@@ -98,11 +108,20 @@ class FlightDirector(Part):
             if self.current_calibrate_base_sensor_commands is None:
                 c.state = 'failed'
                 return []
-            if True in [c.state == 'failed' for c in self.current_calibrate_base_sensor_commands]:
-                c.state = 'failed'
-                c.response_message = 'Failure to calibrate one of the parts'
-                return []
-            if all(c.state == 'success' for c in self.current_calibrate_base_sensor_commands):
+            
+            any_incomplete = False
+
+            for base_cal in self.current_calibrate_base_sensor_commands:
+                if base_cal.state == 'failed':
+                    c.state = 'failed'
+                    c.response_message = 'Failure to calibrate one of the parts'
+                    return []
+                
+                if not is_completed_command(base_cal):
+                    any_incomplete = True
+                
+            if not any_incomplete:
+
                 if self.calibrate_inertial_frame_command is None:
                     calibrate_inertial = CalibrateZeroCommand()
                     calibrate_inertial._id = uuid4()
@@ -114,14 +133,23 @@ class FlightDirector(Part):
                 
                 if self.calibrate_inertial_frame_command.state == 'failed':
                     c.state = 'failed'
+                    c.response_message = 'Failure to calibrate intertial frame'
                     return []
                 
-                if self.calibrate_inertial_frame_command == 'success':
+                if self.calibrate_inertial_frame_command.state == 'success':
                     c.state = 'success'
                     self.calibrated = True
                     return []
                 
-        return []
+            if now > c.create_time.timestamp() + 30:
+                c.state = 'failed'
+                c.response_message = 'calibartion timeout'
+                return []
+            
+            return []
+                
+        c.state = 'failed'
+        c.response_message = 'Unknown error'
                 
     def run_arm(self, c: ArmDirectorCommand):
 
@@ -138,27 +166,32 @@ class FlightDirector(Part):
         if not self.arduino.connected:
             c.state = 'failed'
             c.response_message = 'Arduino not connected'
+            return
 
         c.state = 'success'
         self.state = 'Armed'
 
     def run_countdown(self, c: StartCountDownCommand, now: float) -> Iterable[Command]:
 
-        if self.state != 'Armed':
+        if self.state != 'Armed' and c.state != 'processing':
             c.state = 'failed'
-            c.response_message = 'Can only arm director if armed'
+            c.response_message = 'Can only start countdown director if armed'
             return []
+        
+        if self.state == 'Idle':
+            c.state = 'failed'
+            c.response_message = 'Countdown abroted'
         
         if c.state == 'received':
             self.state = 'countdown'
             c.state = 'processing'
-            self.countdown = 15
+            self.countdown = self.initial_countdown
             self.countdown_start_time = now
             return []
 
-        if c.state != 'processing':
+        if c.state == 'processing':
 
-            self.countdown =  now - self.countdown_start_time
+            self.countdown = self.initial_countdown - (now - self.countdown_start_time)
 
             if self.countdown > 0:
                 return []
@@ -176,6 +209,8 @@ class FlightDirector(Part):
 
             return [ignite_command]
         
+        c.state = 'failed'
+        c.response_message = 'Unknown error'
         return []
         
     def run_abort(self, c: AbortCommand):
@@ -200,7 +235,7 @@ class FlightDirector(Part):
         for c in commands:
             
             if isinstance(c, CalibrateZeroCommand):
-                new_commands.extend(self.run_calibrate(c))
+                new_commands.extend(self.run_calibrate(c, now))
                 continue
 
             if isinstance(c, ArmDirectorCommand):
