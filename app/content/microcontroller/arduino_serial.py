@@ -86,7 +86,11 @@ class ArduinoSerial(Part):
 
     launchPhase: str
 
-    sensorsCallBack: dict
+    partCallBack: dict
+    '''
+    Callbacks for other parts to register on. If a command is received for that part it
+    gets forwarded to that part.
+    '''
 
     partID: int
 
@@ -105,7 +109,7 @@ class ArduinoSerial(Part):
         self.hdlc = None
 
         self.launchPhase = 'Preparation'
-        self.sensorsCallBack = dict()
+        self.partCallBack = dict()
 
         self.partID = 0
         self.commandList = { 'Reset' : 0, 'Preparation' : 1, 'Ignition' : 2, 'LiftOff' : 3 }
@@ -120,8 +124,6 @@ class ArduinoSerial(Part):
         self.errorMessageDict[3] = "Failed : Incorrect Command Byte"
         self.errorMessageDict[4] = "Failed"
 
-
-
     def proccessCommand(self, command : Command):
         command.response_message = 'Command activated'
 
@@ -132,7 +134,7 @@ class ArduinoSerial(Part):
             self.launchPhase = 'Preparation'
 
     def addCallback(self, key: int, fun):
-        self.sensorsCallBack[key] = fun
+        self.partCallBack[key] = fun
 
     def try_get_device_list(self):
         if platform == 'android':
@@ -224,13 +226,16 @@ class ArduinoSerial(Part):
 
         self.hdlc = hdlc
 
-        def on_read(a):
+        def on_read(a: bytearray):
             print(a)
 
-            if a[0] >> 7 | 0 == 1:
+            # Check that the 8th bit is set (indicating response message)
+            if a[0] & 0b0000_0001 == 1:
+
                 response = ResponseMessage(a)
 
                 if response.getResponseRequestByte() == 1:
+
                     index = response.getIndex()
                     result = response.getResult()
 
@@ -242,22 +247,19 @@ class ArduinoSerial(Part):
 
                         if result == 0:
                             command.state = 'success'
-                            self.sensorsCallBack[response.getPart()](command)
+                            self.partCallBack[response.getPart()](command)
 
                         else:
                             command.state = 'failed'
                             command.response_message = self.errorMessageDict[result]
 
                         self.commandProccessingDict.pop(index)
-
-
                 else:
-                    message, _ = sendCommand(self.partID, self.commandList[self.launchPhase])
-                    self.send_message_hdlc(message)
+                    raise RuntimeError('Received request from Arduino, the arduino should only send responses')
 
             else:
                 sensorData = SensorData(a)
-                self.sensorsCallBack[sensorData.getPart()](sensorData.getData())
+                self.partCallBack[sensorData.getPart()](sensorData.getData())
 
         hdlc.crc = 8
         hdlc.on_read = on_read
@@ -317,7 +319,7 @@ class ArduinoSerial(Part):
         self.hdlc.put(message)
         self.serial_port.write(self.hdlc.tx())
 
-    def send_message(self, partID: int,  commandID : int):
+    def send_message(self, partID: int, commandID: int):
         '''Sends the given message to the arduino and returns a future that will be
         completed if the command got processed. If the command did not get processed or
         the connection dies the future will throw'''

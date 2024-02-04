@@ -1,54 +1,54 @@
 from typing import Collection, Iterable, Tuple, Type, Union, cast
 
 class ResponseMessage:
-    arr: bytearray()
+    arr: bytearray
 
-    def __init__(self, arr):
+    def __init__(self, arr: bytearray):
         self.arr = arr
 
-    def getPart(self) -> chr:
-        mask = 63;
+    def getPart(self) -> int:
+        mask = 63
 
-        return self.arr[0] & mask;
+        return self.arr[0] & mask
 
-    def getCommand(self) -> chr:
-        mask = 15;
+    def getCommand(self) -> int:
+        mask = 15
 
         return (self.arr[2] >> 4) & mask
 
-    def getIndex(self) -> chr:
+    def getIndex(self) -> int:
         return self.arr[1]
 
-    def getResponseRequestByte(self) -> chr:
+    def getResponseRequestByte(self) -> int:
         mask = 1
         return self.arr[0] >> 6 & mask
 
-    def getResult(self) -> chr:
-        mask = 15;
+    def getResult(self) -> int:
+        mask = 15
 
-        return self.arr[2] & mask;
+        return self.arr[2] & mask
 
 
 class SensorData:
-    arr: bytearray()
+    arr: bytearray
 
     def __init__(self, arr):
         self.arr = arr
 
-    def getPart(self) -> chr:
-        mask = 127;
+    def getPart(self) -> int:
+        mask = 127
 
-        return self.arr[0] & mask;
+        return self.arr[0] & mask
 
-    def getType(self) -> chr:
-        mask = 15;
+    def getType(self) -> int:
+        mask = 15
 
-        return (self.arr[1] >> 4) & mask;
+        return (self.arr[1] >> 4) & mask
 
     def getPayloadLength(self) -> int:
-        mask = 15;
+        mask = 15
 
-        return self.arr[1] & mask;
+        return self.arr[1] & mask
 
     def getData(self) -> list[int]:
         arr = []
@@ -59,7 +59,7 @@ class SensorData:
 
 
 messageIndex = 1
-def sendCommand(partID : chr, commandID : chr, pl : chr = 0):
+def sendCommand(partID : int, commandID : int, pl : int = 0):
     global messageIndex
     arr = bytearray(0 for x in range(3))
 
