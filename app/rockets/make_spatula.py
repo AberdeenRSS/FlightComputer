@@ -1,4 +1,5 @@
 # from app.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
+from app.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
 from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
 from app.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from app.content.microcontroller.arduino_serial import ArduinoSerial
@@ -69,13 +70,14 @@ def make_spatula() -> FlightConfig:
     temperature = TemperatureSensor(UUID('ac93964a-6bb0-11ee-b962-0242ac120002'), 'Temperature', rocket)
     pressure = PressureSensor(UUID('eedd649e-78c7-11ee-b962-0242ac120002'), 'Pressure', rocket)
     altitude = AltitudeSensor(UUID('f526cb42-78c7-11ee-b962-0242ac120002'), 'Altitude', rocket)
-    pressureArduino = PressureArduinoSensor(UUID('8ed5e972-8cb3-11ee-b9d1-0242ac120002'), 'Pressure Sensor', rocket,
-                                            arduino_serial, temperature, pressure, altitude)
+    # pressureArduino = PressureArduinoSensor(UUID('8ed5e972-8cb3-11ee-b9d1-0242ac120002'), 'Pressure Sensor', rocket,
+    #                                         arduino_serial, temperature, pressure, altitude)
 
     # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame)
     # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame)
 
+    PositiveAttitudeAnalyzer(UUID('cc53cfb9-05bd-4ca7-bba5-202039636b48'), 'Attitude Analyzer', rocket, orientation)
     
 
-    return FlightConfig(rocket, [ArduinoSerialSelectUI(arduino_serial), ArduinoSerialMonitorUI(arduino_serial)], True)
+    return FlightConfig(rocket, [ArduinoSerialSelectUI(arduino_serial)], True)
     # return FlightConfig(rocket, [], True)

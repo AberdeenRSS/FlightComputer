@@ -63,7 +63,7 @@ class InertialReferenceFrame(Part):
         self.ground_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0], dtype=float)
 
         self.angular_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0], dtype=float)
-        self.initial_orientation = np.array([0, 0, -1, 0], dtype=float)
+        self.initial_orientation = np.array([0, 0, 0, 1], dtype=float)
         self.orientation = np.array(self.initial_orientation, copy=True)
 
 

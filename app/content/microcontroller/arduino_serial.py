@@ -2,7 +2,8 @@ from asyncio import Future, Task
 import asyncio
 from datetime import timedelta
 import threading
-from typing import Collection, Iterable, Tuple, Type, Union
+from time import sleep
+from typing import Callable, Collection, Iterable, Tuple, Type, Union
 from uuid import UUID
 
 from dataclasses import dataclass
@@ -42,6 +43,18 @@ class RssPacket:
     def to_bytes(self):
         return [*self.index.to_bytes(), *self.command.to_bytes(), *self.payload_size.to_bytes(), *self.payload]
 
+def make_default_command_callback(c: Command):
+
+    def default_command_callback(res: Future[int]):
+        exception = res.exception()
+        if exception is not None:
+            c.state = 'failure'
+            c.response_message  = exception.args[0]
+            return
+        
+        c.state = 'success'
+    
+    return default_command_callback
 
 class ArduinoSerial(Part):
 
@@ -76,25 +89,19 @@ class ArduinoSerial(Part):
 
     hdlc: Union[tinyproto.Hdlc, None]
 
-    expected_next_response_part: Union[int, None] = None
-
-    expected_next_response_command: Union[int, None] = None
-
-    response_future: Union[Future, None] = None
-
     logs = []
 
     launchPhase: str
 
-    partCallBack: dict
+    dataCallbacks: dict[int, Callable[[int, bytearray], None]]
     '''
     Callbacks for other parts to register on. If a command is received for that part it
     gets forwarded to that part.
     '''
 
-    partID: int
+    command_futures: dict[int, Future[int]]
 
-    commandProccessingDict: dict
+    partID: int
 
     commandList: dict
 
@@ -109,13 +116,12 @@ class ArduinoSerial(Part):
         self.hdlc = None
 
         self.launchPhase = 'Preparation'
-        self.partCallBack = dict()
+        self.dataCallbacks = dict()
 
         self.partID = 0
         self.commandList = { 'Reset' : 0, 'Preparation' : 1, 'Ignition' : 2, 'LiftOff' : 3 }
 
-        self.commandProccessingDict = dict()
-        self.addCallback(self.partID, self.proccessCommand)
+        self.command_futures = dict()
 
         self.errorMessageDict = dict()
         self.errorMessageDict[0] = "Success"
@@ -124,7 +130,10 @@ class ArduinoSerial(Part):
         self.errorMessageDict[3] = "Failed : Incorrect Command Byte"
         self.errorMessageDict[4] = "Failed"
 
-    def proccessCommand(self, command : Command):
+    def addDataCallback(self, part: int, callback: Callable[[int, bytearray], None]):
+        self.dataCallbacks[part] = callback
+
+    def proccessCommand(self, command: Command):
         command.response_message = 'Command activated'
 
         if isinstance(command, SetIgnitionPhaseCommand):
@@ -132,9 +141,6 @@ class ArduinoSerial(Part):
 
         elif isinstance(command, SetPreparationPhaseCommand):
             self.launchPhase = 'Preparation'
-
-    def addCallback(self, key: int, fun):
-        self.partCallBack[key] = fun
 
     def try_get_device_list(self):
         if platform == 'android':
@@ -227,39 +233,45 @@ class ArduinoSerial(Part):
         self.hdlc = hdlc
 
         def on_read(a: bytearray):
-            print(a)
 
-            # Check that the 8th bit is set (indicating response message)
-            if a[0] & 0b0000_0001 == 1:
+            try:
+                # Check that the 8th bit is set (indicating response message)
+                if a[0] & 0b1000_0000 > 0:
 
-                response = ResponseMessage(a)
+                    response = ResponseMessage(a)
 
-                if response.getResponseRequestByte() == 1:
+                    if response.getResponseRequestByte() == 1:
 
-                    index = response.getIndex()
-                    result = response.getResult()
+                        if response.getIndex() not in self.command_futures:
+                            return
+                            
+                        future = self.command_futures.pop(response.getIndex())
 
+                        result = response.getResult()
+                        
+                        try:
+                            future.set_result(result)
+                        except Exception as e:
+                            print(f'Cannot set response future: {e}')
 
-                    if index in self.commandProccessingDict:
-                        print(index, result)
+                    else:
+                        raise RuntimeError('Received request from Arduino, the arduino should only send responses')
 
-                        command = self.commandProccessingDict[index]
-
-                        if result == 0:
-                            command.state = 'success'
-                            self.partCallBack[response.getPart()](command)
-
-                        else:
-                            command.state = 'failed'
-                            command.response_message = self.errorMessageDict[result]
-
-                        self.commandProccessingDict.pop(index)
                 else:
-                    raise RuntimeError('Received request from Arduino, the arduino should only send responses')
+                    sensorData = SensorData(a)
+                    part = sensorData.getPart()
+                    data = sensorData.getData()
 
-            else:
-                sensorData = SensorData(a)
-                self.partCallBack[sensorData.getPart()](sensorData.getData())
+                    if part not in self.dataCallbacks:
+                        return
+
+                    try:
+                        self.dataCallbacks[part](part, data)
+                    except Exception as e:
+                        print(f'Data callback for part {part} failed: {e.args[0]}')
+
+            except Exception as e:
+                print(f'Failed parsing package {a}: {e.args[0]}')
 
         hdlc.crc = 8
         hdlc.on_read = on_read
@@ -273,20 +285,24 @@ class ArduinoSerial(Part):
                     break
 
                 if platform == 'android':
-                    if not self.serial_port.isOpen():
+                    if not self.serial_port.isOpen(): # type: ignore
                         break
                 else:
                     if not self.serial_port.is_open:
                         break
 
                 with self.port_thread_lock:
-                    received_msg = self.serial_port.read(
-                        1
-                        # self.serial_port.in_waiting
-                    )
-
-                if received_msg:
+                    received_msg = None
+                    in_waiting = self.serial_port.in_waiting
+                    if in_waiting > 0:
+                        received_msg = self.serial_port.read(
+                            in_waiting
+                        )
+                    
+                if received_msg and len(received_msg) > 0:
                     hdlc.rx(received_msg)
+
+                # self.serial_port.read()
 
                     # for i in received_msg:
                     #     if len(self.current_message) and self.current_message[-1] != 0x7E and i == 0x7E:
@@ -305,9 +321,10 @@ class ArduinoSerial(Part):
             self.connected = False
             self.hdlc = None
             self.serial_port = None
-            if self.response_future is not None and not self.response_future.done():
-                self.response_future.set_exception(Exception('Lost connection to arduino'))
 
+            for future in self.command_futures.values():
+                if not future.done():
+                    future.set_exception(Exception('Lost connection to arduino'))
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand, ResetCommand, SetPreparationPhaseCommand, SetIgnitionPhaseCommand]
@@ -320,18 +337,17 @@ class ArduinoSerial(Part):
         self.serial_port.write(self.hdlc.tx())
 
     def send_message(self, partID: int, commandID: int):
-        '''Sends the given message to the arduino and returns a future that will be
+        '''
+        Sends the given message to the arduino and returns a future that will be
         completed if the command got processed. If the command did not get processed or
-        the connection dies the future will throw'''
-
-        if self.response_future is not None and not self.response_future.done():
-            self.response_future.set_exception(Exception('Another message was send before the arduino could process the last message'))
+        the connection dies the future will throw
+        '''
 
         future = asyncio.Future()
-        self.response_future = future
 
         message, index = sendCommand(partID, commandID)
-        future.set_result(index)
+
+        self.command_futures[index] = future
 
         try:
             self.send_message_hdlc(message)
@@ -341,44 +357,44 @@ class ArduinoSerial(Part):
 
         return future
 
-
     def update(self, commands: Iterable[Command], now, iteration):
 
         for c in commands:
 
-            if c.state == 'processing' and self.last_command != c:
-                c.state = 'failed'
-                c.response_message = 'Another ignite command was send, this command will no longer be processed'
-                continue
-
+            # if c.state == 'processing' and self. != c:
+            #     c.state = 'failed'
+            #     c.response_message = 'Another ignite command was send, this command will no longer be processed'
+            #     continue
 
             if isinstance(c, EnableCommand):
                 self.enabled = True
                 c.state = "success"
-            elif isinstance(c, DisableCommand):
+
+            if isinstance(c, DisableCommand):
                 self.enabled = False
                 c.state = "success"
 
-            elif isinstance(c, ResetCommand):
-                self.send_message(self.partID, self.commandList['Reset'])
+            if isinstance(c, ResetCommand):
+                future = self.send_message(self.partID, self.commandList['Reset'])
+                future.add_done_callback(make_default_command_callback(c))
                 c.state = "success"
 
-            elif isinstance(c, SetPreparationPhaseCommand):
-                if c.state == 'received':
-                    self.last_command = c
-                    self.last_ignite_future = self.send_message(self.partID, self.commandList['Preparation'])
+            # elif isinstance(c, SetPreparationPhaseCommand):
+            #     if c.state == 'received':
+            #         self.last_command = c
+            #         self.last_ignite_future = self.send_message(self.partID, self.commandList['Preparation'])
 
-                    self.commandProccessingDict[self.last_ignite_future.result()] = c
-                    c.state = 'processing'
+            #         self.commandProccessingDict[self.last_ignite_future.result()] = c
+            #         c.state = 'processing'
 
 
-            elif isinstance(c, SetIgnitionPhaseCommand):
-                if c.state == 'received':
-                    self.last_command = c
-                    self.last_ignite_future = self.send_message(self.partID, self.commandList['Ignition'])
+            # elif isinstance(c, SetIgnitionPhaseCommand):
+            #     if c.state == 'received':
+            #         self.last_command = c
+            #         self.last_ignite_future = self.send_message(self.partID, self.commandList['Ignition'])
 
-                    self.commandProccessingDict[self.last_ignite_future.result()] = c
-                    c.state = 'processing'
+            #         self.commandProccessingDict[self.last_ignite_future.result()] = c
+            #         c.state = 'processing'
 
             else:
                 c.state = 'failed' # Part cannot handle this command

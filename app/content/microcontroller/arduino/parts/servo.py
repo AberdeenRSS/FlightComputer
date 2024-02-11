@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.content.motor_commands.open import OpenCommand, CloseCommand
 from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial import ArduinoSerial, make_default_command_callback
 from app.logic.commands.command_helper import is_new_command
 from app.logic.rocket_definition import Part, Rocket
 
@@ -25,23 +25,16 @@ class ServoSensor(Part):
 
     state: str
 
-    last_ignite_future: Union[Future, None] = None
+    commandList: dict = { 'Close' : 0, 'Open' : 1 }
 
-    last_command: Union[None, Command] = None
+    partID: int = 1
 
-    commandList : dict()
-
-    partID : chr
-
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: Union[ArduinoSerial, None],start_enabled=True):
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoSerial, start_enabled=True):
         self.arduino = arduino_parent
         self.enabled = start_enabled
         self.state = 'close'
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        self.partID = 1
-        self.commandList = { 'Close' : 0, 'Open' : 1 }
-        self.arduino.addCallback(self.partID, self.proccessCommand)
 
     def proccessCommand(self, command : Command):
         command.response_message = 'Servo activated'
@@ -50,6 +43,19 @@ class ServoSensor(Part):
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [DisableCommand, EnableCommand, OpenCommand, CloseCommand]
+    
+    def make_command_callback(self, c: Command):
+
+        def reset_callback(res: Future[int]):
+            exception = res.exception()
+            if exception is not None:
+                c.state = 'failure'
+                c.response_message  = exception.args[0]
+                return
+            
+            c.state = 'success'
+        
+        return reset_callback
 
     def update(self, commands: Iterable[Command], now, iteration):
 
@@ -60,35 +66,19 @@ class ServoSensor(Part):
                 c.response_message = 'No arduino connected'
                 continue
 
-            if c.state == 'processing' and self.last_command != c:
-                c.state = 'failed'
-                c.response_message = 'Another ignite command was send, this command will no longer be processed'
-                continue
-
-            if c.state == 'processing':
-                print("jas")
-                continue
-
-
-
             if isinstance(c, CloseCommand):
 
                 if is_new_command(c):
-                    self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Close"])
-
-                    self.arduino.commandProccessingDict[self.last_ignite_future.result()] = c
+                    future = self.arduino.send_message(self.partID, self.commandList["Close"])
+                    future.add_done_callback(make_default_command_callback(c))
                     c.state = 'processing'
 
             elif isinstance(c, OpenCommand):
 
                 if is_new_command(c):
-                    self.last_command = c
-                    self.last_ignite_future = self.arduino.send_message(self.partID, self.commandList["Open"])
-
-                    self.arduino.commandProccessingDict[self.last_ignite_future.result()] = c
+                    future = self.arduino.send_message(self.partID, self.commandList["Open"])
+                    future.add_done_callback(make_default_command_callback(c))
                     c.state = 'processing'
-
 
             else:
                 c.state = 'failed'  # Part cannot handle this command

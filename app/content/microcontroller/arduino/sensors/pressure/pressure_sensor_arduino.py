@@ -36,7 +36,7 @@ class PressureArduinoSensor(Part):
         self.sensorsList.append(pressureSensor)
         self.sensorsList.append(altitudeSensor)
 
-        arduino.addCallback(partID, self.set_measurements)
+        arduino.addDataCallback(partID, self.set_measurements)
 
 
     def set_measurements(self, dataList : list[int]):
