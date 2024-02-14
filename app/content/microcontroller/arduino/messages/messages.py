@@ -68,16 +68,4 @@ class SensorData:
         return self.arr[2:payload_length+2]
 
 
-messageIndex = 1
-def sendCommand(partID : int, commandID : int, pl : int = 0):
-    global messageIndex
-    arr = bytearray(0 for x in range(3))
 
-    arr[0] |= 1 << 7
-    arr[0] |= partID
-    arr[1] |= messageIndex
-    arr[2] |= commandID << 4
-    arr[2] |= pl
-
-    messageIndex += 1
-    return arr, messageIndex - 1

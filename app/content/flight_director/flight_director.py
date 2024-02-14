@@ -6,7 +6,7 @@ from app.content.flight_director.abort_command import AbortCommand
 from app.content.flight_director.arm_director_command import ArmDirectorCommand
 from app.content.flight_director.start_countdown_command import StartCountDownCommand
 from app.content.general_commands.calibrate import CalibrateZeroCommand
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.content.motor_commands.open import IgniteCommand, OpenCommand
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
@@ -59,7 +59,7 @@ class FlightDirector(Part):
 
     deploy_parachute_countdown: Union[None, float] = None
 
-    def __init__(self, _id: UUID, name: str, rocket: Rocket, arduino: ArduinoSerial, igniter: IgniterSensor, parachute: ServoSensor, acc: PyjiniusAccelerationSensor, gryo: PyjiniusGyroscopeSensor, inertialFrame: InertialReferenceFrame):
+    def __init__(self, _id: UUID, name: str, rocket: Rocket, arduino: ArduinoOverSerial, igniter: IgniterSensor, parachute: ServoSensor, acc: PyjiniusAccelerationSensor, gryo: PyjiniusGyroscopeSensor, inertialFrame: InertialReferenceFrame):
 
         super().__init__(_id, name, rocket, [arduino, igniter, parachute, acc, gryo, inertialFrame]) # type: ignore
 

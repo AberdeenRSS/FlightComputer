@@ -1,6 +1,7 @@
 
 from typing import Iterable, Sized, Collection, Union
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
+from app.content.microcontroller.arduino_serial_common import ArduinoHwSelectable
 from app.ui.part_ui import PartUi
 
 from kivy.uix.boxlayout import BoxLayout
@@ -8,7 +9,7 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 
-class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoSerial]):
+class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoHwSelectable]):
 
     name = 'Select Serial Device'
 
@@ -16,7 +17,7 @@ class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoSerial]):
 
     old_state = ''
 
-    def __init__(self, part: ArduinoSerial,  **kwargs):
+    def __init__(self, part: ArduinoHwSelectable, **kwargs):
         kwargs['orientation'] = 'vertical'
         super().__init__(**kwargs)
 
@@ -26,7 +27,7 @@ class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoSerial]):
         self.add_widget(self.selected_part_label)
 
         self.device_options_scroll = ScrollView(do_scroll_x=False, size_hint=(1, None), always_overscroll=True)
-        self.device_options_list = BoxLayout(size_hint=(1, None))
+        self.device_options_list = BoxLayout(size_hint=(1, None), orientation='vertical')
         self.device_options_scroll.add_widget(self.device_options_list)
         self.add_widget(self.device_options_scroll)
 

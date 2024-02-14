@@ -5,9 +5,10 @@ from uuid import UUID
 
 from dataclasses import dataclass
 from app.content.general_commands.enable import DisableCommand, EnableCommand
+from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
 from app.content.motor_commands.open import OpenCommand, CloseCommand
 from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoSerial, make_default_command_callback
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial, make_default_command_callback
 from app.logic.commands.command_helper import is_new_command
 from app.logic.rocket_definition import Part, Rocket
 
@@ -21,7 +22,7 @@ class ServoSensor(Part):
 
     min_measurement_period = timedelta(milliseconds=1000)
 
-    arduino: Union[ArduinoSerial, None]
+    arduino: Union[ArduinoHwBase, None]
 
     state: str
 
@@ -29,7 +30,7 @@ class ServoSensor(Part):
 
     partID: int = 1
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoSerial, start_enabled=True):
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoHwBase, start_enabled=True):
         self.arduino = arduino_parent
         self.enabled = start_enabled
         self.state = 'close'
@@ -69,14 +70,14 @@ class ServoSensor(Part):
             if isinstance(c, CloseCommand):
 
                 if is_new_command(c):
-                    future = self.arduino.send_message(self.partID, self.commandList["Close"])
+                    future = self.arduino.serial_adapter.send_message(self.partID, self.commandList["Close"])
                     future.add_done_callback(make_default_command_callback(c))
                     c.state = 'processing'
 
             elif isinstance(c, OpenCommand):
 
                 if is_new_command(c):
-                    future = self.arduino.send_message(self.partID, self.commandList["Open"])
+                    future = self.arduino.serial_adapter.send_message(self.partID, self.commandList["Open"])
                     future.add_done_callback(make_default_command_callback(c))
                     c.state = 'processing'
 

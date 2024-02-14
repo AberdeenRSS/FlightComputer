@@ -2,7 +2,8 @@
 from app.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
 from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
 from app.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_over_bluetooth import ArduinoOverBluetooth
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
@@ -59,7 +60,9 @@ def make_spatula() -> FlightConfig:
 
     # # Serial communication
     # Arduino parts
-    arduino_serial = ArduinoSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
+    # arduino_serial = ArduinoOverSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
+    arduino_serial = ArduinoOverBluetooth(UUID('10b87ad8-497a-4d9f-8944-4499856a35e4'), 'Serial Port', rocket)
+
     parachute = ServoSensor(UUID('9f86acb1-9795-46fc-b083-e6451f214d1f'), 'Servo', rocket, arduino_serial)
     igniter = IgniterSensor(UUID('f309669d-6bd7-4ee3-90a5-45a0e1bdd60e'), 'Igniter', rocket, arduino_serial, parachute)
 

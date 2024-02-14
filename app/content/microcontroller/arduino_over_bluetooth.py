@@ -7,7 +7,7 @@ from typing import Callable, Collection, Iterable, Tuple, Type, Union
 from uuid import UUID
 
 from dataclasses import dataclass
-from app.content.microcontroller.arduino_serial_common import ArduinoHwBase, ArduinoSerialAdapter, make_default_command_callback
+from app.content.microcontroller.arduino_serial_common import ArduinoHwBase, ArduinoHwSelectable, ArduinoSerialAdapter, make_default_command_callback
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
 from app.content.motor_commands.open import SetIgnitionPhaseCommand
@@ -20,20 +20,21 @@ from kivy.logger import Logger, LOG_LEVELS
 
 
 import tinyproto
-from app.content.microcontroller.arduino.messages.messages import SensorData, ResponseMessage
 
 
 if platform == 'android':
-    from usb4a import usb
-    from usbserial4a import serial4a
-else:
-    from serial.tools import list_ports
-    from serial import Serial
+    from jnius import autoclass
+    from android.permissions import request_permissions, Permission
+
+    BluetoothAdapter = autoclass('android.bluetooth.BluetoothAdapter')
+    BluetoothDevice = autoclass('android.bluetooth.BluetoothDevice')
+    BluetoothSocket = autoclass('android.bluetooth.BluetoothSocket')
 
 
-class ArduinoOverSerial(Part, ArduinoHwBase):
 
-    type = 'Microcontroller.Arduino.Serial'
+class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
+
+    type = 'Microcontroller.Arduino.Bluetooth'
 
     enabled: bool = True
 
@@ -43,12 +44,12 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
     min_measurement_period = timedelta(milliseconds=1000)
 
-    device_name_list: Union[Collection[str], None] = None
+    device_name_list: Collection[str] | None = None
 
     last_get_device_list_time: Union[float, None] = None
 
     get_device_list_period = 2.5
-    '''2.5 s period to check for available devices automatically'''
+    '''2.5s period to check for available devices automatically'''
 
     selected_device: Union[None, Task[str]] = None
 
@@ -60,13 +61,16 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
     last_message = None
 
-    serial_port = None
+    socket = None
 
     hdlc: Union[tinyproto.Hdlc, None]
 
     partID: int
 
+    commandList: dict
+
     serial_adapter: ArduinoSerialAdapter
+
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
         self.enabled = start_enabled
@@ -76,21 +80,21 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
         self.hdlc = None
 
-        self.serial_adapter = ArduinoSerialAdapter(self.send_message_hdlc)
-
         self.partID = 0
         self.commandList = { 'Reset' : 0, 'Preparation' : 1, 'Ignition' : 2, 'LiftOff' : 3 }
 
+        if platform != 'android':
+            raise NotImplementedError(f'Arduino over Bluetooth unavailable on {platform}')
+        
+        self.serial_adapter = ArduinoSerialAdapter(self.send_message_hdlc)
+
+        # Request the android permission so that the app gets bluetooth access
+        request_permissions([Permission.BLUETOOTH, Permission.BLUETOOTH_ADMIN, Permission.BLUETOOTH_CONNECT])
 
     def try_get_device_list(self):
-        if platform == 'android':
-            usb_device_list = usb.get_usb_device_list()
-            self.device_name_list = [
-                device.getDeviceName() for device in usb_device_list
-            ]
-        else:
-            usb_device_list = list_ports.comports()
-            self.device_name_list = [port.device for port in usb_device_list]
+        paired_devices = BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
+        self.device_name_list = [d.getName() for d in paired_devices]
+
 
     def try_connect_device_in_background(self, device_name: str):
 
@@ -126,89 +130,82 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
         self.connected = False
 
-        if platform == 'android':
-            device = usb.get_usb_device(device_name)
-            if not device:
-                raise Exception(
-                    f"Device {device_name} not present!"
-                )
-            if not usb.has_usb_permission(device):
-                usb.request_usb_permission(device)
-                raise Exception('Permission not yet granted, try again')
-            self.serial_port = serial4a.get_serial_port(
-                device_name,
-                9600,
-                8,
-                'N',
-                1,
-                timeout=1
-            )
-        else:
-            self.serial_port = Serial(
-                device_name,
-                9600,
-                8,
-                'N',
-                1,
-                timeout=1
-            )
+        paired_devices = BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
+        self.socket = None
+        for device in paired_devices:
+            if device.getName() == device_name:
+                self.socket = device.createInsecureRfcommSocketToServiceRecord(
+                    UUID("00001101-0000-1000-8000-00805F9B34FB"))
+                break
 
-        if self.serial_port.closed:
+        if self.socket is None:
+            raise Exception(f'Device {device_name} no longer connected')
+        
+        try:
+            self.socket.connect()
+        except Exception as e:
             self.connected = False
-            return device_name
+            self.socket = None
+            raise e
+        
+        if not self.socket.isConnected():
+            self.connected = False
+            self.socket = None
+            raise Exception('Connection lost')
+        
+        if self.read_thread is None or not self.read_thread.is_alive():
+            self.connected = False
+            self.socket = None
+            raise Exception('Old connection still established')
         
         self.connected = True
         self.last_selected_device = device_name
 
-        if self.serial_port.is_open and (not self.read_thread or not self.read_thread.is_alive()):
-            self.read_thread = threading.Thread(target = self.read_msg_thread)
-            self.read_thread.start()
+        self.read_thread = threading.Thread(target = self.read_msg_thread)
+        self.read_thread.start()
         
         return device_name
 
     def read_msg_thread(self):
 
         hdlc = tinyproto.Hdlc()
-
         self.hdlc = hdlc
-
         hdlc.crc = 8
-        hdlc.on_read = self.serial_adapter.on_read
+        hdlc.on_read = self
         hdlc.begin()
 
         try:
 
+            if self.socket is None:
+                raise Exception('Not connected')
+
+            recv_stream = self.socket.getInputStream()
+
+
             while True:
 
-                if self.serial_port is None:
+                if self.socket is None:
                     break
 
-                if platform == 'android':
-                    if not self.serial_port.isOpen(): # type: ignore
-                        break
-                else:
-                    if not self.serial_port.is_open:
-                        break
+                if not self.serial_port.isConnected(): # type: ignore
+                    break
 
                 with self.port_thread_lock:
                     received_msg = None
-                    in_waiting = self.serial_port.in_waiting
+                    in_waiting = recv_stream.available() # Gets the number of bytes available to be read
                     if in_waiting > 0:
-                        received_msg = self.serial_port.read(
-                            in_waiting
-                        )
+                        received_msg = recv_stream.readNBytes(in_waiting)
                     
                 if received_msg and len(received_msg) > 0:
                     hdlc.rx(received_msg)
 
         except Exception as ex:
-            
             print(f'crash read thread {ex.args[0]}')
             raise ex
         finally:
             self.connected = False
             self.hdlc = None
-            self.serial_port = None
+            self.socket = None
 
             self.serial_adapter.flush_command_futures('Lost connection')
 
@@ -216,15 +213,23 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
         return [EnableCommand, DisableCommand, ResetCommand, SetPreparationPhaseCommand, SetIgnitionPhaseCommand]
     
     def send_message_hdlc(self, message: bytearray):
-        if self.serial_port is None or self.hdlc is None:
+        if self.socket is None or self.hdlc is None or not self.socket.isConnected():
             raise Exception('No serial device connected, message cannot be send')
         
+        output_stream = self.socket.getOutputStream()
+        
         self.hdlc.put(message)
-        self.serial_port.write(self.hdlc.tx())
+        output_stream.write(self.hdlc.tx())
+
 
     def update(self, commands: Iterable[Command], now, iteration):
 
         for c in commands:
+
+            # if c.state == 'processing' and self. != c:
+            #     c.state = 'failed'
+            #     c.response_message = 'Another ignite command was send, this command will no longer be processed'
+            #     continue
 
             if isinstance(c, EnableCommand):
                 self.enabled = True

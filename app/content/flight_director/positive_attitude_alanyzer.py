@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.logic.rocket_definition import Part, Rocket
 
 class PositiveAttitudeAnalyzer(Part):

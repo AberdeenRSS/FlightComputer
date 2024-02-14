@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.content.microcontroller.arduino.sensors.pressure.temperature_arduino import TemperatureSensor
 from app.content.microcontroller.arduino.sensors.pressure.pressure_arduino import PressureSensor
 from app.content.microcontroller.arduino.sensors.pressure.altitude_arduino import AltitudeSensor
@@ -21,7 +21,7 @@ class PressureArduinoSensor(Part):
 
     sensorsList : list()
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino : ArduinoSerial,
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino : ArduinoOverSerial,
                  temperatureSensor : TemperatureSensor, pressureSensor : PressureSensor,
                  altitudeSensor : AltitudeSensor, start_enabled=True):
 
@@ -36,7 +36,7 @@ class PressureArduinoSensor(Part):
         self.sensorsList.append(pressureSensor)
         self.sensorsList.append(altitudeSensor)
 
-        arduino.addDataCallback(partID, self.set_measurements)
+        arduino.serial_adapter.addDataCallback(partID, self.set_measurements)
 
 
     def set_measurements(self, dataList : list[int]):

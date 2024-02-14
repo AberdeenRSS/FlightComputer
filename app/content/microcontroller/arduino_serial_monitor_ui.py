@@ -1,6 +1,7 @@
 
 from typing import Iterable, Sized, Collection, Union
-from app.content.microcontroller.arduino_serial import ArduinoSerial, RssPacket
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
+from app.content.microcontroller.arduino_serial_common import RssPacket
 from app.ui.part_ui import PartUi
 
 from time import time
@@ -11,7 +12,7 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 
-class ArduinoSerialMonitorUI(BoxLayout, PartUi[ArduinoSerial]):
+class ArduinoSerialMonitorUI(BoxLayout, PartUi[ArduinoOverSerial]):
 
     name = 'Serial Monitor'
 
@@ -20,7 +21,7 @@ class ArduinoSerialMonitorUI(BoxLayout, PartUi[ArduinoSerial]):
     messages: list[RssPacket]
 
 
-    def __init__(self, part: ArduinoSerial, max_messages: int = 10,  **kwargs):
+    def __init__(self, part: ArduinoOverSerial, max_messages: int = 10,  **kwargs):
         kwargs['orientation'] = 'vertical'
         super().__init__(**kwargs)
 

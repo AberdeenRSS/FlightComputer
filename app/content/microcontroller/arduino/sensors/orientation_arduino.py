@@ -7,8 +7,9 @@ from uuid import UUID
 from dataclasses import dataclass
 from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
 from app.content.general_commands.enable import DisableCommand, EnableCommand
+from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
 from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoSerial
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.logic.rocket_definition import Part, Rocket
 
 class OrientationSensor(Part,  IOrientationSensor):
@@ -20,7 +21,7 @@ class OrientationSensor(Part,  IOrientationSensor):
 
     min_measurement_period = timedelta(milliseconds=50)
 
-    arduino: ArduinoSerial
+    arduino: ArduinoHwBase
 
     w: float
     x: float
@@ -30,14 +31,14 @@ class OrientationSensor(Part,  IOrientationSensor):
 
     partID = 10
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoSerial,start_enabled=True):
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoHwBase, start_enabled=True):
         self.arduino = arduino_parent
         self.enabled = start_enabled
 
         super().__init__(_id, name, parent, list())  # type: ignore
 
         self.x = self.y = self.z = 0.0
-        self.arduino.addDataCallback(self.partID, self.set_measurements)
+        self.arduino.serial_adapter.addDataCallback(self.partID, self.set_measurements)
 
     def set_measurements(self, part: int, data: bytearray):
         self.w = int.from_bytes(data[0:2], 'little', signed=True)/32767
