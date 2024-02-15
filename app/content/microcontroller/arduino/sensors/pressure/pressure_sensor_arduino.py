@@ -1,53 +1,53 @@
+from asyncio import Future, Task
 from datetime import timedelta
-from typing import Iterable, Tuple, Type, Union
+import struct
+from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
+from dataclasses import dataclass
+from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
 from app.content.general_commands.enable import DisableCommand, EnableCommand
+from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
 from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
-from app.content.microcontroller.arduino.sensors.pressure.temperature_arduino import TemperatureSensor
-from app.content.microcontroller.arduino.sensors.pressure.pressure_arduino import PressureSensor
-from app.content.microcontroller.arduino.sensors.pressure.altitude_arduino import AltitudeSensor
 from app.logic.rocket_definition import Part, Rocket
 
-class PressureArduinoSensor(Part):
-    type = 'PressureArduinoSensor'
+class PressureSensor(Part):
+    type = 'Pressure'
 
     enabled: bool = True
 
     min_update_period = timedelta(milliseconds=20)
 
-    min_measurement_period = timedelta(milliseconds=1000)
+    min_measurement_period = timedelta(milliseconds=50)
 
-    sensorsList : list()
+    arduino: ArduinoHwBase
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino : ArduinoOverSerial,
-                 temperatureSensor : TemperatureSensor, pressureSensor : PressureSensor,
-                 altitudeSensor : AltitudeSensor, start_enabled=True):
+    temperature: float
 
+    pressure: float
+
+    calibrated: bool = False
+
+    partID = 10
+
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoHwBase, start_enabled=True):
+        self.arduino = arduino_parent
         self.enabled = start_enabled
 
         super().__init__(_id, name, parent, list())  # type: ignore
 
-        partID = 0x53
+        self.arduino.serial_adapter.addDataCallback(self.partID, self.set_measurements)
 
-        self.sensorsList = []
-        self.sensorsList.append(temperatureSensor)
-        self.sensorsList.append(pressureSensor)
-        self.sensorsList.append(altitudeSensor)
-
-        arduino.serial_adapter.addDataCallback(partID, self.set_measurements)
-
-
-    def set_measurements(self, dataList : list[int]):
-        self.sensorsList[0].temperature = dataList[0]
-        self.sensorsList[1].pressure = dataList[1]
-        self.sensorsList[2].altitude = dataList[2]
+    def set_measurements(self, part: int, data: bytearray):
+        self.arduino = struct.unpack_from('<f', data[0:4])[0]
+        self.pressure = struct.unpack_from('<f', data[4:8])[0]
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
 
     def update(self, commands: Iterable[Command], now, iteration):
+
         for c in commands:
 
             if isinstance(c, EnableCommand):
@@ -58,10 +58,11 @@ class PressureArduinoSensor(Part):
                 self.enabled = False
                 c.state = "success"
 
-
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
-        return []
+        return [
+            ('temperature', float),
+            ('pressure', float),
+        ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
-        return [[]]
-
+        return [[self.temperature, self.pressure]]
