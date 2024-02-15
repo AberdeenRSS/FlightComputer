@@ -29,7 +29,7 @@ if platform == 'android':
     BluetoothAdapter = autoclass('android.bluetooth.BluetoothAdapter')
     BluetoothDevice = autoclass('android.bluetooth.BluetoothDevice')
     BluetoothSocket = autoclass('android.bluetooth.BluetoothSocket')
-
+    JavaUUID = autoclass('java.util.UUID')
 
 
 class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
@@ -71,12 +71,16 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
 
     serial_adapter: ArduinoSerialAdapter
 
+    read_buffer: bytearray
+
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
         self.enabled = start_enabled
         super().__init__(_id, name, parent, list()) # type: ignore
 
         self.port_thread_lock = threading.Lock()
+
+        self.read_buffer = bytearray(1024)
 
         self.hdlc = None
 
@@ -94,7 +98,6 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
     def try_get_device_list(self):
         paired_devices = BluetoothAdapter.getDefaultAdapter().getBondedDevices().toArray()
         self.device_name_list = [d.getName() for d in paired_devices]
-
 
     def try_connect_device_in_background(self, device_name: str):
 
@@ -135,7 +138,7 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
         for device in paired_devices:
             if device.getName() == device_name:
                 self.socket = device.createInsecureRfcommSocketToServiceRecord(
-                    UUID("00001101-0000-1000-8000-00805F9B34FB"))
+                    JavaUUID.fromString("00001101-0000-1000-8000-00805F9B34FB"))
                 break
 
         if self.socket is None:
@@ -153,7 +156,7 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
             self.socket = None
             raise Exception('Connection lost')
         
-        if self.read_thread is None or not self.read_thread.is_alive():
+        if self.read_thread is not None and self.read_thread.is_alive():
             self.connected = False
             self.socket = None
             raise Exception('Old connection still established')
@@ -171,7 +174,7 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
         hdlc = tinyproto.Hdlc()
         self.hdlc = hdlc
         hdlc.crc = 8
-        hdlc.on_read = self
+        hdlc.on_read = self.serial_adapter.on_read
         hdlc.begin()
 
         try:
@@ -187,22 +190,27 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
                 if self.socket is None:
                     break
 
-                if not self.serial_port.isConnected(): # type: ignore
+                if not self.socket.isConnected(): # type: ignore
                     break
 
                 with self.port_thread_lock:
                     received_msg = None
-                    in_waiting = recv_stream.available() # Gets the number of bytes available to be read
-                    if in_waiting > 0:
-                        received_msg = recv_stream.readNBytes(in_waiting)
+                    read_bytes = recv_stream.read(self.read_buffer)
+                    if read_bytes > 0:
+                        received_msg = bytearray(self.read_buffer[0:read_bytes])
                     
-                if received_msg and len(received_msg) > 0:
+                if received_msg is not None and len(received_msg) > 0:
                     hdlc.rx(received_msg)
 
         except Exception as ex:
-            print(f'crash read thread {ex.args[0]}')
+            print(f'crash read thread: {ex}')
             raise ex
         finally:
+
+            # Close the socket if possible
+            if self.socket is not None:
+                self.socket.close()
+
             self.connected = False
             self.hdlc = None
             self.socket = None

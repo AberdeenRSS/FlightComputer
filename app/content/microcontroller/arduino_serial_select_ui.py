@@ -23,11 +23,11 @@ class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoHwSelectable]):
 
         self.part = part
 
-        self.selected_part_label = Label(text='No Part Selected', size_hint=(1, 0.4))
+        self.selected_part_label = Label(text='No Part Selected', size_hint=(1, 0.2))
         self.add_widget(self.selected_part_label)
 
-        self.device_options_scroll = ScrollView(do_scroll_x=False, size_hint=(1, None), always_overscroll=True)
-        self.device_options_list = BoxLayout(size_hint=(1, None), orientation='vertical')
+        self.device_options_scroll = ScrollView(do_scroll_x=False, size_hint=(1, 0.6), always_overscroll=True)
+        self.device_options_list = BoxLayout(size_hint=(1, 1), orientation='vertical')
         self.device_options_scroll.add_widget(self.device_options_list)
         self.add_widget(self.device_options_scroll)
 
@@ -50,6 +50,7 @@ class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoHwSelectable]):
             exception = s_device.exception()
             if exception is not None:
                 if self.old_state != 'ERROR':
+                    print(exception)
                     self.old_state = 'ERROR'
                     self.clear_widgets()
                     self.add_widget(Label(text=f'Error connecting to device {exception.args[0]}', color=[1, 0, 0, 1]))
