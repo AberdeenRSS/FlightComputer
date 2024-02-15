@@ -198,7 +198,7 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
                             in_waiting
                         )
                     
-                if received_msg and len(received_msg) > 0:
+                if received_msg is not None and len(received_msg) > 0:
                     hdlc.rx(received_msg)
 
         except Exception as ex:

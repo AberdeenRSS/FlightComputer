@@ -1,5 +1,5 @@
 # from app.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
-from app.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
+# from app.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
 from app.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
 from app.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from app.content.microcontroller.arduino_over_bluetooth import ArduinoOverBluetooth
@@ -79,7 +79,7 @@ def make_spatula() -> FlightConfig:
     # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame)
     # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame)
 
-    PositiveAttitudeAnalyzer(UUID('cc53cfb9-05bd-4ca7-bba5-202039636b48'), 'Attitude Analyzer', rocket, orientation)
+    # PositiveAttitudeAnalyzer(UUID('cc53cfb9-05bd-4ca7-bba5-202039636b48'), 'Attitude Analyzer', rocket, orientation)
     
     PressureSensor(UUID('6277bf09-36ba-4e41-861f-df6169d83f5f'), 'Pressure', rocket)
 

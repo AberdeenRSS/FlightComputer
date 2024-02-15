@@ -94,14 +94,14 @@ class PartListWidget(BoxLayout):
 
         self.clear_widgets()
 
-        self.add_widget(Label(text=part_ref.name))
+        self.add_widget(Label(text=part_ref.name, size_hint=(1, 0.1)))
 
         self.add_widget(part_ref)
 
         def on_back(instance):
             self.draw_overview()
 
-        back_btn = Button(text='Back')
+        back_btn = Button(text='Back', size_hint=(1, 0.1))
         back_btn.bind(on_press=on_back) # type: ignore
         self.add_widget(back_btn)
 
@@ -315,6 +315,7 @@ class FlightExecuter:
 
                 p.last_update = now
             except Exception as e:
+                print(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
                 Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
 
         # Gather all measurements of all parts

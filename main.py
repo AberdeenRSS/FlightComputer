@@ -94,6 +94,7 @@ async def main():
             continue
         e = d.exception()
         if e:
+            print(e)
             raise e
 
 if __name__ == '__main__':
@@ -103,5 +104,6 @@ if __name__ == '__main__':
     try:
         asyncio.get_event_loop().run_until_complete(main())
     except:
+        print(traceback.format_exc())
         CrashScreen(traceback.format_exc()).run()
         raise
