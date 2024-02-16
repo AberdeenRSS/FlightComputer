@@ -81,7 +81,7 @@ def make_spatula() -> FlightConfig:
 
     # PositiveAttitudeAnalyzer(UUID('cc53cfb9-05bd-4ca7-bba5-202039636b48'), 'Attitude Analyzer', rocket, orientation)
     
-    PressureSensor(UUID('6277bf09-36ba-4e41-861f-df6169d83f5f'), 'Pressure', rocket)
+    PressureArduinoSensor(UUID('6277bf09-36ba-4e41-861f-df6169d83f5f'), 'Pressure', rocket, arduino_serial)
 
     return FlightConfig(rocket, [ArduinoSerialSelectUI(arduino_serial)], True)
     # return FlightConfig(rocket, [], True)

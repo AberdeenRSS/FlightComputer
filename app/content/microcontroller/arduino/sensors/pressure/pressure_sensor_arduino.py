@@ -12,7 +12,7 @@ from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.logic.rocket_definition import Part, Rocket
 
-class PressureSensor(Part):
+class PressureArduinoSensor(Part):
     type = 'Pressure'
 
     enabled: bool = True
@@ -23,13 +23,13 @@ class PressureSensor(Part):
 
     arduino: ArduinoHwBase
 
-    temperature: float
-
     pressure: float
+
+    temperature: float
 
     calibrated: bool = False
 
-    partID = 10
+    partID = 11
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoHwBase, start_enabled=True):
         self.arduino = arduino_parent
@@ -40,8 +40,8 @@ class PressureSensor(Part):
         self.arduino.serial_adapter.addDataCallback(self.partID, self.set_measurements)
 
     def set_measurements(self, part: int, data: bytearray):
-        self.arduino = struct.unpack_from('<f', data[0:4])[0]
-        self.pressure = struct.unpack_from('<f', data[4:8])[0]
+        self.pressure = struct.unpack_from('<f', data[0:4])[0]
+        self.temperature = struct.unpack_from('<f', data[4:8])[0]
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]

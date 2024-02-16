@@ -73,7 +73,6 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
 
     read_buffer: bytearray
 
-
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
         self.enabled = start_enabled
         super().__init__(_id, name, parent, list()) # type: ignore
