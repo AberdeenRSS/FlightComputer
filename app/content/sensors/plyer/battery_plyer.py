@@ -8,7 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import battery
 from plyer.facades.battery import Battery
-
+from kivy import Logger
 
 
 class PlyerBatterySensor(Part):
@@ -59,7 +59,7 @@ class PlyerBatterySensor(Part):
                 self.is_charging = as_battery.status['isCharging']
                 self.battery_percent = as_battery.status['percentage']
             except Exception as e:
-                print(f'Plyer battery sensor failed: {e}')
+                Logger.error(f'Plyer battery sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.is_charging = None

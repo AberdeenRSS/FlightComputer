@@ -315,7 +315,7 @@ class FlightExecuter:
 
                 p.last_update = now
             except Exception as e:
-                print(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
+                # print(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
                 Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
 
         # Gather all measurements of all parts

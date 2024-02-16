@@ -8,7 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import barometer
 from plyer.facades.barometer import Barometer
-
+from kivy import Logger
 
 
 class PlyerBarometerSensor(Part):
@@ -45,7 +45,7 @@ class PlyerBarometerSensor(Part):
                 as_barometer.disable()
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer barometer sensor failed: {e}')
+            Logger.error(f'Plyer barometer sensor failed: {e}')
             return False
     
         return True
@@ -72,7 +72,7 @@ class PlyerBarometerSensor(Part):
                 self.iteration_pressure_value = self.pressure_value = as_barometer.pressure
 
             except Exception as e:
-                print(f'Plyer barometer sensor failed: {e}')
+                Logger.error(f'Plyer barometer sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_pressure_value = self.pressure_value = None

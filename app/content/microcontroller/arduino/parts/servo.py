@@ -40,8 +40,6 @@ class ServoSensor(Part):
     def proccessCommand(self, command : Command):
         command.response_message = 'Servo activated'
 
-        print("ssssssssss")
-
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [DisableCommand, EnableCommand, OpenCommand, CloseCommand]
     
@@ -94,5 +92,5 @@ class ServoSensor(Part):
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[int, int]]]:
-        return [[1 if self.enabled else 0, 1 if self.state is 'open' else 0]]
+        return [[1 if self.enabled else 0, 1 if self.state == 'open' else 0]]
 

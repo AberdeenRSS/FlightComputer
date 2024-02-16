@@ -203,7 +203,7 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
         except Exception as ex:
             
-            print(f'crash read thread {ex.args[0]}')
+            Logger.error(f'crash read thread {ex}')
             raise ex
         finally:
             self.connected = False

@@ -8,6 +8,7 @@ from app.logic.calibration.calibration_processor import CalibrationProcessor3D, 
 from app.logic.commands.command import Command
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
+from kivy import Logger
 
 try:
     from kivy.utils import platform
@@ -82,7 +83,7 @@ class PyjiniusAccelerationSensor(Part):
             self.hardware.accelerometerEnable(enable)
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer gravity sensor failed: {e}')
+            Logger.error(f'Plyer gravity sensor failed: {e}')
             return False
     
         return True
@@ -156,7 +157,7 @@ class PyjiniusAccelerationSensor(Part):
                 if last_accuracy:
                     self.accuracy = self.iteration_accuracy = last_accuracy
             except Exception as e:
-                print(f'Plyer gravity sensor failed: {e}')
+                Logger.error(f'Plyer gravity sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_acceleration = self.acceleration = None

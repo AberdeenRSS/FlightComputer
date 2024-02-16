@@ -8,6 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import gps
 from plyer.facades.gps import GPS
+from kivy import Logger
 
 from kivy.utils import platform
 
@@ -98,7 +99,7 @@ class PlyerGPSSensor(Part):
 
             self.enabled_confirmed = True
             self._enabled_confirmed = True
-            print(f'received location {kwargs}')
+            Logger.info(f'received location {kwargs}')
             lat = kwargs['lat'] if 'lat' in kwargs else None
             lon = kwargs['lon'] if 'lon' in kwargs else None
             alt = kwargs['altitude'] if 'altitude' in kwargs else None
@@ -111,7 +112,7 @@ class PlyerGPSSensor(Part):
 
         def on_status(**kwargs):
             
-            print(f'gps status: {kwargs}')
+            Logger.info(f'gps status: {kwargs}')
 
         return on_status
 

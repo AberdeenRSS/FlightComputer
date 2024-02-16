@@ -238,11 +238,11 @@ class RealtimeApiClient():
 
         @self.sio.event
         def connect_error(data):
-            print(f"The connection failed: {data}")
+            Logger.error(f"The connection failed: {data}")
 
         @self.sio.event
         def disconnect():
-            print("Socket io lost connection")
+            Logger.info("Socket io lost connection")
 
         @self.sio.on('command.new')
         def command_new(data: Any):

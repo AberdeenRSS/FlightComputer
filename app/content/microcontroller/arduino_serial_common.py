@@ -109,7 +109,7 @@ class ArduinoSerialAdapter:
                     try:
                         future.set_result(result)
                     except Exception as e:
-                        print(f'Cannot set response future: {e}')
+                        Logger.error(f'Cannot set response future: {e}')
 
                 else:
                     raise RuntimeError('Received request from Arduino, the arduino should only send responses')
@@ -125,10 +125,10 @@ class ArduinoSerialAdapter:
                 try:
                     self.dataCallbacks[part](part, data)
                 except Exception as e:
-                    print(f'Data callback for part {part} failed: {e.args[0]}')
+                    Logger.error(f'Data callback for part {part} failed: {e.args[0]}')
 
         except Exception as e:
-            print(f'Failed parsing package {a}: {e.args[0]}')
+            Logger.error(f'Failed parsing package {a}: {e.args[0]}')
 
     def send_message(self, partID: int, commandID: int):
         '''

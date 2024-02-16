@@ -8,7 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import gyroscope
 from plyer.facades.gyroscope import Gyroscope
-
+from kivy import Logger
 
 
 class PlyerGyroscopeSensor(Part):
@@ -45,7 +45,7 @@ class PlyerGyroscopeSensor(Part):
                 as_gyroscope.disable()
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer gyroscope sensor failed: {e}')
+            Logger.error(f'Plyer gyroscope sensor failed: {e}')
             return False
     
         return True
@@ -72,7 +72,7 @@ class PlyerGyroscopeSensor(Part):
                 self.iteration_rotation = self.rotation = as_gyroscope.rotation
 
             except Exception as e:
-                print(f'Plyer gyroscope sensor failed: {e}')
+                Logger.error(f'Plyer gyroscope sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_rotation = self.rotation = None
