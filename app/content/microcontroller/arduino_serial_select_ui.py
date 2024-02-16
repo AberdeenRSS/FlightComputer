@@ -8,6 +8,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
+from kivy import Logger
 
 class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoHwSelectable]):
 
@@ -50,7 +51,7 @@ class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoHwSelectable]):
             exception = s_device.exception()
             if exception is not None:
                 if self.old_state != 'ERROR':
-                    print(exception)
+                    Logger.error(exception)
                     self.old_state = 'ERROR'
                     self.clear_widgets()
                     self.add_widget(Label(text=f'Error connecting to device {exception.args[0]}', color=[1, 0, 0, 1]))

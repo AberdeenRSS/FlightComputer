@@ -8,7 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import spatialorientation
 from plyer.facades.spatialorientation import SpatialOrientation
-
+from kivy import Logger
 
 class PlyerSpatialOrientationSensor(Part):
 
@@ -47,7 +47,7 @@ class PlyerSpatialOrientationSensor(Part):
                 as_spatial_orientation.disable_listener()
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer spatial orientation sensor failed: {e}')
+            Logger.error(f'Plyer spatial orientation sensor failed: {e}')
             return False
     
         return True
@@ -71,7 +71,7 @@ class PlyerSpatialOrientationSensor(Part):
                 as_spatial_orientation = cast(SpatialOrientation, spatialorientation)
                 self.iteration_spacial_orientation = self.spatial_orientation = as_spatial_orientation.orientation
             except Exception as e:
-                print(f'Plyer spatial orientation sensor failed: {e}')
+                Logger.error(f'Plyer spatial orientation sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_spacial_orientation = self.spatial_orientation = None

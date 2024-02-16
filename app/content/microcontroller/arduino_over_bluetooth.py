@@ -202,7 +202,7 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
                     hdlc.rx(received_msg)
 
         except Exception as ex:
-            print(f'crash read thread: {ex}')
+            Logger.error(f'crash read thread: {ex}')
             raise ex
         finally:
 

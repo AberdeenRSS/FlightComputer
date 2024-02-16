@@ -8,7 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import gravity
 from plyer.facades.gravity import Gravity
-
+from kivy import Logger
 
 class PlyerGravitySensor(Part):
 
@@ -47,7 +47,7 @@ class PlyerGravitySensor(Part):
                 as_gravity.disable()
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer gravity sensor failed: {e}')
+            Logger.error(f'Plyer gravity sensor failed: {e}')
             return False
     
         return True
@@ -70,7 +70,7 @@ class PlyerGravitySensor(Part):
                 as_gravity = cast(Gravity, gravity)
                 self.iteration_gravity_value = self.gravity_value = as_gravity.gravity
             except Exception as e:
-                print(f'Plyer gravity sensor failed: {e}')
+                Logger.error(f'Plyer gravity sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_gravity_value = self.gravity_value = None

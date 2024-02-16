@@ -23,9 +23,9 @@ class PressureArduinoSensor(Part):
 
     arduino: ArduinoHwBase
 
-    pressure: float
+    pressure: float | None = None
 
-    temperature: float
+    temperature: float | None = None
 
     calibrated: bool = False
 
@@ -64,5 +64,5 @@ class PressureArduinoSensor(Part):
             ('pressure', float),
         ]
 
-    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
+    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
         return [[self.temperature, self.pressure]]

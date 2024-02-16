@@ -8,6 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import accelerometer
 from plyer.facades.accelerometer import Accelerometer
+from kivy import Logger
 
 class PlyerAccelerationSensor(Part):
 
@@ -46,7 +47,7 @@ class PlyerAccelerationSensor(Part):
                 as_accelerometer.disable()
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer acceleration sensor failed: {e}')
+            Logger.error(f'Plyer acceleration sensor failed: {e}')
             return False
     
         return True
@@ -69,7 +70,7 @@ class PlyerAccelerationSensor(Part):
                 as_accelerometer = cast(Accelerometer, accelerometer)
                 self.iteration_acceleration = self.acceleration = as_accelerometer.get_acceleration()
             except Exception as e:
-                print(f'Plyer acceleration sensor failed: {e}')
+                Logger.error(f'Plyer acceleration sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_acceleration = self.acceleration = None

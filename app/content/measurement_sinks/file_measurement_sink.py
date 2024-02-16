@@ -95,7 +95,7 @@ class FileMeasurementSink(MeasurementSinkBase):
 
                 self.flight_data_folder.mkdir(parents=True, exist_ok=True)
             except Exception as e:
-                print(f'Failed instantiating measurement folder {e}')
+                Logger.error(f'Failed instantiating measurement folder {e}')
             self.folder_created = True
 
         self.open_new_file_if_required()
@@ -178,7 +178,7 @@ class FileMeasurementSink(MeasurementSinkBase):
             self.current_file_handle.write(json.dumps(serialized))
             store_success = True
         except Exception as e:
-            print(f'Failed writing measurements to file: {e}')
+            Logger.error(f'Failed writing measurements to file: {e}')
             self.current_file_handle = None # Reset file
 
 
@@ -216,7 +216,7 @@ class FileMeasurementSink(MeasurementSinkBase):
             try:
                 self.current_file_handle.close()
             except:
-                print('Error closing last file handle')
+                Logger.error('Error closing last file handle')
         
         self.current_file_iteration = 0
         self.current_file_count = self.current_file_count + 1
@@ -227,4 +227,4 @@ class FileMeasurementSink(MeasurementSinkBase):
         try:
             self.current_file_handle = path.open('a')
         except Exception as e:
-            print(f'Failed creating measurement file: {e}')
+            Logger.error(f'Failed creating measurement file: {e}')

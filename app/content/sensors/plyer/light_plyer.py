@@ -8,8 +8,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.logic.rocket_definition import Command, Part, Rocket
 from plyer import light
 from plyer.facades.light import Light
-
-
+from kivy import Logger
 
 class PlyerLightSensor(Part):
 
@@ -45,7 +44,7 @@ class PlyerLightSensor(Part):
                 as_light.disable()
         except Exception as e:
             self.sensor_failed = True
-            print(f'Plyer light sensor failed: {e}')
+            Logger.error(f'Plyer light sensor failed: {e}')
             return False
     
         return True
@@ -72,7 +71,7 @@ class PlyerLightSensor(Part):
                 self.iteration_illumination = self.illumination = as_light.illumination
 
             except Exception as e:
-                print(f'Plyer light sensor failed: {e}')
+                Logger.error(f'Plyer light sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_illumination = self.illumination = None

@@ -173,9 +173,10 @@ class InertialReferenceFrame(Part, IOrientationSensor):
         return [CalibrateZeroCommand]
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:
+        
         return [[
             # *self.angular_velocity,
-            *self.orientation,
+            *quaternion.as_float_array(self.orientation),
             *self.air_velocity,
             *self.ground_velocity,
             *self.position

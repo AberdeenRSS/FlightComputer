@@ -41,23 +41,23 @@ class CrashScreen(App):
 
 async def main():
 
-    logging.disable()
+    # logging.disable()
 
-    # logging.basicConfig(level=logging.WARN)
+    logging.basicConfig(level=logging.INFO)
 
-    # logging.getLogger('httpx').setLevel(level=logging.WARN)
-    # logging.getLogger('httpcore').setLevel(level=logging.WARN)
-    # logging.getLogger('urllib3').setLevel(level=logging.WARN)
-    # logging.getLogger('requests').setLevel(level=logging.WARN)
+    logging.getLogger('httpx').setLevel(level=logging.WARN)
+    logging.getLogger('httpcore').setLevel(level=logging.WARN)
+    logging.getLogger('urllib3').setLevel(level=logging.WARN)
+    logging.getLogger('requests').setLevel(level=logging.WARN)
 
     # os.environ['KIVY_LOG_MODE'] = 'KIVY'
 
-    Config.set('kivy', 'log_level', 'debug')
-    Config.set('kivy', 'log_enable ', 1)
+    Config.set('kivy', 'log_level', 'warning')
+    Config.set('kivy', 'log_enable', 1)
     # Config.set('kivy', 'log_dir ', 'logs')
     # Config.set('kivy', 'log_name', '%y-%m-%d_%_.txt')
 
-    Logger.setLevel('DEBUG')
+    Logger.setLevel('WARN')
 
 
     # Do the import within the try block in case
@@ -94,7 +94,7 @@ async def main():
             continue
         e = d.exception()
         if e:
-            print(e)
+            Logger.error(e)
             raise e
 
 if __name__ == '__main__':
@@ -104,6 +104,6 @@ if __name__ == '__main__':
     try:
         asyncio.get_event_loop().run_until_complete(main())
     except:
-        print(traceback.format_exc())
+        Logger.error(traceback.format_exc())
         CrashScreen(traceback.format_exc()).run()
         raise
