@@ -41,8 +41,6 @@ class CrashScreen(App):
 
 async def main():
 
-    global user_data_dir
-
     logging.disable()
 
     # logging.basicConfig(level=logging.WARN)
@@ -68,6 +66,8 @@ async def main():
     from app.init_app import init_app
 
     ui_app, worker_process = init_app()
+
+    print(ui_app.user_data_dir)
 
     set_user_data_dir(ui_app.user_data_dir)
 
