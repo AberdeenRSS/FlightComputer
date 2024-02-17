@@ -21,9 +21,9 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
      
     type = 'Measurement_Sink.Api'
 
-    target_send_period = timedelta(seconds=1)
+    target_send_period = timedelta(seconds=0.5)
 
-    send_timeout = timedelta(seconds=20)
+    send_timeout = timedelta(seconds=10)
 
     send_task: Union[None, asyncio.Task] = None
 

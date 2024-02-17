@@ -23,7 +23,7 @@ class PlyerGPSSensor(Part):
 
     min_update_period = timedelta(milliseconds=1000)
 
-    min_measurement_period = timedelta(milliseconds=10)
+    min_measurement_period = timedelta(milliseconds=50)
 
     status_data_rate = 10
     ''' Rate at which the status of this component is reported if no other data is being received (in update cycles) '''

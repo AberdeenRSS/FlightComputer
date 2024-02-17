@@ -23,9 +23,9 @@ class InertialReferenceFrame(Part, IOrientationSensor):
 
     dependencies: list 
 
-    min_update_period: timedelta = timedelta(milliseconds=1)
+    min_update_period: timedelta = timedelta(milliseconds=10)
 
-    min_measurement_period: timedelta = timedelta(milliseconds=1)
+    min_measurement_period: timedelta = timedelta(milliseconds=10)
 
     #endregion
 
