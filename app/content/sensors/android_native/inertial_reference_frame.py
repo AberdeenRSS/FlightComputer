@@ -11,7 +11,6 @@ from app.logic.math.linear import quaternion_multiply, rotate_vector_by_quaterni
 from app.logic.rocket_definition import Measurements, Part, Rocket
 
 import numpy as np
-import quaternion
 
 
 class InertialReferenceFrame(Part, IOrientationSensor):
@@ -41,7 +40,7 @@ class InertialReferenceFrame(Part, IOrientationSensor):
 
     angular_velocity: np.ndarray
 
-    orientation: np.ndarray 
+    orientation: np.ndarray
 
     ground_velocity: np.ndarray
 
@@ -65,8 +64,9 @@ class InertialReferenceFrame(Part, IOrientationSensor):
         self.ground_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0], dtype=float)
 
         self.angular_velocity = kwargs.get('initial_ground_velocity') or np.array([0, 0, 0], dtype=float)
-        self.initial_orientation = np.quaternion(0, 0, 0, 1) #type: ignore
-        self.orientation = quaternion.from_float_array(quaternion.as_float_array(self.initial_orientation))
+        self.initial_orientation = np.array([0, 0, 0, 1], dtype=float)
+        self.orientation = np.array(self.initial_orientation, copy=True)
+
 
     def update_angular_velocity(self):
         current_angular_velocity = self.gyro.iteration_angular_acceleration
@@ -85,16 +85,13 @@ class InertialReferenceFrame(Part, IOrientationSensor):
         # np_ang_acc = np.array(current_angular_acc, copy=False, dtype=float)*(time_delta/len(current_angular_acc))
 
         # self.angular_velocity += np.sum(np_ang_acc, axis=0)
-        # angular_velocity_quats = np.c_[ np.zeros(len(current_angular_velocity), dtype=float), current_angular_velocity ] # prepend zeros to all vectors (make them quaternions)
 
-        as_np = np.array(current_angular_velocity, dtype=float)
-        as_np = np.insert(as_np, 0, 0, axis=0) # prepend zeros
-        as_np = quaternion.as_quat_array(as_np)
+        angular_velocity_quats = np.c_[ np.zeros(len(current_angular_velocity), dtype=float), current_angular_velocity ] # prepend zeros to all vectors (make them quaternions)
 
-        half_delta = time_delta/(2*len(as_np))
+        half_delta = time_delta/(2*len(angular_velocity_quats))
 
-        for v in as_np:
-            quat = self.orientation * v
+        for v in angular_velocity_quats:
+            quat = quaternion_multiply(v, self.orientation)
             self.orientation += half_delta * quat
 
         # Update the time of last update
@@ -130,7 +127,7 @@ class InertialReferenceFrame(Part, IOrientationSensor):
 
         c.state = 'success'
 
-        self.orientation = quaternion.from_float_array(quaternion.as_float_array(self.initial_orientation))
+        self.orientation = np.array(self.initial_orientation, dtype=float, copy=True)
         self.air_velocity = np.array([0, 0, 0], dtype=float)
         self.ground_velocity = np.array([0, 0, 0], dtype=float)
         self.position = np.array([0, 0, 0], dtype=float)
@@ -173,17 +170,18 @@ class InertialReferenceFrame(Part, IOrientationSensor):
         return [CalibrateZeroCommand]
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:
-        
         return [[
             # *self.angular_velocity,
-            *quaternion.as_float_array(self.orientation),
+            *self.orientation,
             *self.air_velocity,
             *self.ground_velocity,
             *self.position
         ]]
+    
+    def get_orientation(self):
+        if(self.orientation is None):
+            return None
+        return (self.orientation[0], self.orientation[1], self.orientation[2], self.orientation[3])
 
     def flush(self):
         pass        
-
-    def get_orientation(self) -> np.ndarray:
-        return self.orientation

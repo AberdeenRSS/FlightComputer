@@ -70,4 +70,4 @@ class IgniterSensor(Part):
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[int, int]]]:
-        return [[1 if self.enabled else 0, 1 if self.state is 'ignited' else 0]]
+        return [[1 if self.enabled else 0, 1 if self.state == 'ignited' else 0]]

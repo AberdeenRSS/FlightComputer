@@ -5,7 +5,7 @@ from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 import numpy as np
-import quaternion
+from app.logic.math.linear import rotate_vector_by_quaternion
 
 from dataclasses import dataclass
 from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
@@ -25,7 +25,7 @@ class PositiveAttitudeAnalyzer(Part):
 
     orientation_sensor: IOrientationSensor
 
-    pointing_up: int
+    pointing_up: int | None = None
     '''
     1 -> pointing up
     0 -> unknown/in between (depends on dead zones defined)
@@ -49,9 +49,11 @@ class PositiveAttitudeAnalyzer(Part):
             self.pointing_up = 0
             return
 
-        up_vector = [0, 0, 1]
+        up_vector = np.array([0.0, 0.0, 1.0], dtype=float)
 
-        pointing_vector = quaternion.rotate_vectors(orientation, up_vector)
+        as_quat = np.array([orientation[0], orientation[1], orientation[2], orientation[3]], dtype=float)
+
+        pointing_vector = rotate_vector_by_quaternion(up_vector, as_quat)
 
         self.pointing_up = 1 if pointing_vector[2] > 0 else -1
         
@@ -62,6 +64,6 @@ class PositiveAttitudeAnalyzer(Part):
             ('pointing_up', int)
         ]
 
-    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
+    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
         return [[self.pointing_up]]
 

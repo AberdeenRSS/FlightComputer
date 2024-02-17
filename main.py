@@ -52,12 +52,12 @@ async def main():
 
     # os.environ['KIVY_LOG_MODE'] = 'KIVY'
 
-    Config.set('kivy', 'log_level', 'warning')
+    Config.set('kivy', 'log_level', 'info')
     Config.set('kivy', 'log_enable', 1)
     # Config.set('kivy', 'log_dir ', 'logs')
     # Config.set('kivy', 'log_name', '%y-%m-%d_%_.txt')
 
-    Logger.setLevel('WARN')
+    Logger.setLevel('INFO')
 
 
     # Do the import within the try block in case

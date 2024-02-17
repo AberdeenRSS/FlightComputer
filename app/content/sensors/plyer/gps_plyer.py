@@ -77,6 +77,7 @@ class PlyerGPSSensor(Part):
 
         try:
 
+            Logger.info('GPS: trying to enable GPS')
             as_gps = cast(GPS, gps)
 
             if enable and not self.enabled_confirmed:
@@ -84,10 +85,14 @@ class PlyerGPSSensor(Part):
                 self._enabled_confirmed = False
                 as_gps.configure(on_location=self.make_on_location())
                 as_gps.start(1, 1)
-            elif not enable:
+                Logger.info('GPS: Initialized GPS')
+                return True
+            
+            if not enable:
                 as_gps.stop()
 
         except Exception as e:
+            Logger.error(f'GPS: Failed to intialize {e}')
             self.sensor_failed = True
             return False
     
@@ -99,7 +104,7 @@ class PlyerGPSSensor(Part):
 
             self.enabled_confirmed = True
             self._enabled_confirmed = True
-            Logger.info(f'received location {kwargs}')
+            Logger.info(f'GPS: received location {kwargs}')
             lat = kwargs['lat'] if 'lat' in kwargs else None
             lon = kwargs['lon'] if 'lon' in kwargs else None
             alt = kwargs['altitude'] if 'altitude' in kwargs else None
@@ -112,7 +117,7 @@ class PlyerGPSSensor(Part):
 
         def on_status(**kwargs):
             
-            Logger.info(f'gps status: {kwargs}')
+            Logger.info(f'GPS: status {kwargs}')
 
         return on_status
 
@@ -145,7 +150,7 @@ class PlyerGPSSensor(Part):
 
         # Try to enable gps. As soon as the first location
         # is received this will stop doing anything
-        self.try_enable_gps(True)
+        # self.try_enable_gps(True)
 
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:

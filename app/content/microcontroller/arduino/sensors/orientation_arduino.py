@@ -3,8 +3,6 @@ from datetime import timedelta
 import struct
 from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
-import numpy as np
-import quaternion
 
 from dataclasses import dataclass
 from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
@@ -25,12 +23,10 @@ class OrientationSensor(Part, IOrientationSensor):
 
     arduino: ArduinoHwBase
 
-    quat = np.quaternion(0, 0, 0, 0) #type: ignore
-
-    w: float
-    x: float
-    y: float
-    z: float
+    w: float | None = None
+    x: float | None = None
+    y: float | None = None
+    z: float | None = None
     calibrated: bool = False
 
     partID = 10
@@ -45,10 +41,10 @@ class OrientationSensor(Part, IOrientationSensor):
         self.arduino.serial_adapter.addDataCallback(self.partID, self.set_measurements)
 
     def set_measurements(self, part: int, data: bytearray):
-        self.quat.w = int.from_bytes(data[0:2], 'little', signed=True)/32767
-        self.quat.x = int.from_bytes(data[2:4], 'little', signed=True)/32767
-        self.quat.y = int.from_bytes(data[4:6], 'little', signed=True)/32767
-        self.quat.z = int.from_bytes(data[6:8], 'little', signed=True)/32767
+        self.w = int.from_bytes(data[0:2], 'little', signed=True)/32767
+        self.x = int.from_bytes(data[2:4], 'little', signed=True)/32767
+        self.y = int.from_bytes(data[4:6], 'little', signed=True)/32767
+        self.z = int.from_bytes(data[6:8], 'little', signed=True)/32767
         self.calibrated =  bool.from_bytes(data[8:9], 'little')
 
     def get_accepted_commands(self) -> list[Type[Command]]:
@@ -75,8 +71,8 @@ class OrientationSensor(Part, IOrientationSensor):
             ('Z', float),
         ]
 
-    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
-        return [[1 if self.calibrated else 0, self.quat.w, self.quat.x, self.quat.y, self.quat.z]]
+    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
+        return [[1 if self.calibrated else 0, self.w, self.x, self.y, self.z]]
 
-    def get_orientation(self) -> np.ndarray:
-        return self.quat
+    def get_orientation(self):
+        return (self.w, self.x, self.y, self.z)
