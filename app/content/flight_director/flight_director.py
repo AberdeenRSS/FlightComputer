@@ -118,7 +118,7 @@ class FlightDirector(Part):
             calibrate_orientation._part_id = self.orientation._id
 
             self.current_calibrate_base_sensor_commands = [calibrate_acc, calibrate_gyro, calibrate_orientation]
-            return [calibrate_acc, calibrate_gyro]
+            return [calibrate_acc, calibrate_gyro, calibrate_orientation]
         
         if c.state == 'processing':
             if self.current_calibrate_base_sensor_commands is None:
@@ -308,13 +308,13 @@ class FlightDirector(Part):
                     if new_command is not None:
                         new_commands.append(new_command)
             
-            # Use smartphone attitude if data is good
-            elif smartphone_data_age is not None and now < (smartphone_data_age + 3) and smartphone_attitude is not None:
+            # # Use smartphone attitude if data is good
+            # elif smartphone_data_age is not None and now < (smartphone_data_age + 3) and smartphone_attitude is not None:
                 
-                if smartphone_attitude < 0:
-                    new_command = self.send_deploy_parachute()
-                    if new_command is not None:
-                        new_commands.append(new_command)
+            #     if smartphone_attitude < 0:
+            #         new_command = self.send_deploy_parachute()
+            #         if new_command is not None:
+            #             new_commands.append(new_command)
 
             if self.deploy_parachute_countdown <= 0:
 

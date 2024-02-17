@@ -12,6 +12,7 @@ from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
 from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
+from app.logic.math.linear import quaternion_multiply
 from app.logic.rocket_definition import Part, Rocket
 
 import numpy as np
@@ -28,6 +29,8 @@ class OrientationSensor(Part, IOrientationSensor, IDataAge):
 
     arduino: ArduinoHwBase
 
+    original_quat: np.ndarray
+
     quat: np.ndarray
 
     calibrated: bool = False
@@ -42,6 +45,7 @@ class OrientationSensor(Part, IOrientationSensor, IDataAge):
         self.arduino = arduino_parent
         self.enabled = start_enabled
 
+        self.original_quat = np.array([0.0, 0.0, 0.0, 0.0], dtype=float)
         self.quat = np.array([0.0, 0.0, 0.0, 0.0], dtype=float)
         self.offset = np.array([0.0, 0.0, 0.0, 1.0], dtype=float)
 
@@ -52,11 +56,13 @@ class OrientationSensor(Part, IOrientationSensor, IDataAge):
 
     def set_measurements(self, part: int, data: bytearray):
 
-        self.quat[0] = int.from_bytes(data[0:2], 'little', signed=True)/32767
-        self.quat[1] = int.from_bytes(data[2:4], 'little', signed=True)/32767
-        self.quat[2] = int.from_bytes(data[4:6], 'little', signed=True)/32767
-        self.quat[3] = int.from_bytes(data[6:8], 'little', signed=True)/32767
+        self.original_quat[0] = int.from_bytes(data[0:2], 'little', signed=True)/32767
+        self.original_quat[1] = int.from_bytes(data[2:4], 'little', signed=True)/32767
+        self.original_quat[2] = int.from_bytes(data[4:6], 'little', signed=True)/32767
+        self.original_quat[3] = int.from_bytes(data[6:8], 'little', signed=True)/32767
         self.calibrated =  bool.from_bytes(data[8:9], 'little')
+
+        self.quat = quaternion_multiply(self.original_quat, self.offset)
 
         self.last_data_received = time()
 
@@ -65,14 +71,14 @@ class OrientationSensor(Part, IOrientationSensor, IDataAge):
 
     def calibrate(self, c: CalibrateZeroCommand):
         
-        quat_len = np.linalg.norm(self.quat)
+        quat_len = np.linalg.norm(self.original_quat)
 
         if quat_len < 0.5 or quat_len > 1.5:
             c.state = 'failed'
             c.response_message = 'No/Garbage data, could not calibrate'
             return
         
-        self.offset = np.array([-self.quat[0], self.quat[1], self.quat[2], self.quat[3]])
+        self.offset = np.array([-self.original_quat[0], self.original_quat[1], self.original_quat[2], self.original_quat[3]])
 
         c.state ='success'
         c.response_message = f'Calibrated with offset {self.offset}'
