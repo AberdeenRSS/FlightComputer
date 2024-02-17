@@ -224,6 +224,9 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
     def update(self, commands: Iterable[Command], now, iteration):
 
+        if self.connected:
+            self.serial_adapter.update(now)
+
         for c in commands:
 
             if isinstance(c, EnableCommand):

@@ -1,10 +1,12 @@
 from asyncio import Future, Task
 from datetime import timedelta
 import struct
+from time import time
 from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 from dataclasses import dataclass
+from app.content.common_sensor_interfaces.data_age import IDataAge
 from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
@@ -12,7 +14,7 @@ from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.logic.rocket_definition import Part, Rocket
 
-class PressureArduinoSensor(Part):
+class PressureArduinoSensor(Part, IDataAge):
     type = 'Pressure'
 
     enabled: bool = True
@@ -29,6 +31,8 @@ class PressureArduinoSensor(Part):
 
     calibrated: bool = False
 
+    last_data_received: float | None = None
+
     partID = 11
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], arduino_parent: ArduinoHwBase, start_enabled=True):
@@ -42,6 +46,7 @@ class PressureArduinoSensor(Part):
     def set_measurements(self, part: int, data: bytearray):
         self.pressure = struct.unpack_from('<f', data[0:4])[0]
         self.temperature = struct.unpack_from('<f', data[4:8])[0]
+        self.last_data_received = time()
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
@@ -66,3 +71,6 @@ class PressureArduinoSensor(Part):
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
         return [[self.temperature, self.pressure]]
+    
+    def get_data_age(self):
+        return self.last_data_received

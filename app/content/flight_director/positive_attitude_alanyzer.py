@@ -5,6 +5,7 @@ from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 import numpy as np
+from app.content.common_sensor_interfaces.data_age import IDataAge
 from app.logic.math.linear import rotate_vector_by_quaternion
 
 from dataclasses import dataclass
@@ -14,7 +15,7 @@ from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.logic.rocket_definition import Part, Rocket
 
-class PositiveAttitudeAnalyzer(Part):
+class PositiveAttitudeAnalyzer(Part, IDataAge):
     type = 'Analyzer.Attitude.Absolute'
 
     enabled: bool = True
@@ -24,6 +25,8 @@ class PositiveAttitudeAnalyzer(Part):
     min_measurement_period = timedelta(milliseconds=50)
 
     orientation_sensor: IOrientationSensor
+
+    last_good_data_update: float | None = None
 
     pointing_up: int | None = None
     '''
@@ -49,6 +52,13 @@ class PositiveAttitudeAnalyzer(Part):
             self.pointing_up = 0
             return
 
+        quat_len = np.linalg.norm(orientation)
+
+        # Should be a unit quaternion
+        if quat_len < 0.5 or quat_len > 1.5:
+            self.pointing_up = 0
+            return
+
         up_vector = np.array([0.0, 0.0, 1.0], dtype=float)
 
         as_quat = np.array([orientation[0], orientation[1], orientation[2], orientation[3]], dtype=float)
@@ -56,8 +66,9 @@ class PositiveAttitudeAnalyzer(Part):
         pointing_vector = rotate_vector_by_quaternion(up_vector, as_quat)
 
         self.pointing_up = 1 if pointing_vector[2] > 0 else -1
-        
 
+        self.last_good_data_update = now
+        
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
@@ -66,4 +77,7 @@ class PositiveAttitudeAnalyzer(Part):
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
         return [[self.pointing_up]]
+    
+    def get_data_age(self) -> float | None:
+        return self.last_good_data_update
 

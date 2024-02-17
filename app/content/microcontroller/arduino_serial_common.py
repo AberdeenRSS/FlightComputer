@@ -27,7 +27,7 @@ def make_default_command_callback(c: Command):
     def default_command_callback(res: Future[int]):
         exception = res.exception()
         if exception is not None:
-            c.state = 'failure'
+            c.state = 'failed'
             c.response_message  = exception.args[0]
             return
         
@@ -51,7 +51,22 @@ class ArduinoSerialAdapter:
     command_futures: dict[int, Future[int]]
     '''Futures that get completed when the Serial'''
 
+    swap_futures: dict[int, Future[int]]
+    '''Old futures that are scheduled for timeout'''
+
     send_func: Callable[[bytearray], None]
+
+    last_keep_alive: float = 0
+    '''Last point in time a keep alive was send'''
+
+    keep_alive_interval: float = 1
+    '''The interval of sending keep alive messages'''
+
+    last_future_swap: float = 0
+    '''Last time the futures where swapped to set them to timeout'''
+
+    future_timeout: float = 1.5
+    '''Time until command futures time out'''
 
     message_index = 0
     '''
@@ -64,6 +79,7 @@ class ArduinoSerialAdapter:
         self.dataCallbacks = dict()
 
         self.command_futures = dict()
+        self.swap_futures = dict()
 
         self.errorMessageDict = dict()
         self.errorMessageDict[0] = "Success"
@@ -85,6 +101,10 @@ class ArduinoSerialAdapter:
         for future in self.command_futures.values():
                 if not future.done():
                     future.set_exception(Exception(reason))
+        
+        for future in self.swap_futures.values():
+            if not future.done():
+                future.set_exception(Exception(reason))
 
     def on_read(self, a: bytearray):
         '''
@@ -168,6 +188,22 @@ class ArduinoSerialAdapter:
 
         return arr, message_index_used
     
+    def update(self, t: float):
+        
+        if t > (self.last_future_swap + self.future_timeout):
+            self.last_future_swap = t
+            for f in self.swap_futures.values():
+                if not f.done():
+                    f.set_exception(TimeoutError('Sending message to arduino might have failed, no answer received'))
+            
+            self.swap_futures = self.command_futures
+            self.command_futures = dict()
+
+        if t > (self.last_keep_alive + self.keep_alive_interval):
+            self.last_keep_alive = t
+            Logger.info('Arduino Serial: sending keep alive')
+            future = self.send_message(0, 1)
+            future.add_done_callback(lambda f: Logger.info('Arduino Serial: keep alive success') if f.exception() is None else Logger.error(f'Arduino Serial: keep alive failed: {f.exception()}'))
 
 
 class ArduinoHwBase(ABC):

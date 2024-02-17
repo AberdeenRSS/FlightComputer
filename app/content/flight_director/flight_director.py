@@ -4,8 +4,10 @@ from uuid import UUID, uuid4
 
 from app.content.flight_director.abort_command import AbortCommand
 from app.content.flight_director.arm_director_command import ArmDirectorCommand
+from app.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
 from app.content.flight_director.start_countdown_command import StartCountDownCommand
 from app.content.general_commands.calibrate import CalibrateZeroCommand
+from app.content.microcontroller.arduino.sensors.orientation_arduino import OrientationSensor
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.content.motor_commands.open import IgniteCommand, OpenCommand
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
@@ -55,11 +57,17 @@ class FlightDirector(Part):
 
     deploy_parachute_command: Union[OpenCommand, None] = None
 
-    deploy_parachute_delay = 35
+    deploy_parachute_delay = 22
 
     deploy_parachute_countdown: Union[None, float] = None
 
-    def __init__(self, _id: UUID, name: str, rocket: Rocket, arduino: ArduinoOverSerial, igniter: IgniterSensor, parachute: ServoSensor, acc: PyjiniusAccelerationSensor, gryo: PyjiniusGyroscopeSensor, inertialFrame: InertialReferenceFrame):
+    orientation: OrientationSensor
+    
+    attitude_smartphone: PositiveAttitudeAnalyzer
+    
+    attitude_external: PositiveAttitudeAnalyzer
+
+    def __init__(self, _id: UUID, name: str, rocket: Rocket, arduino: ArduinoOverSerial, igniter: IgniterSensor, parachute: ServoSensor, acc: PyjiniusAccelerationSensor, gryo: PyjiniusGyroscopeSensor, inertialFrame: InertialReferenceFrame, orientation: OrientationSensor, attitude_smartphone: PositiveAttitudeAnalyzer, attitude_external: PositiveAttitudeAnalyzer):
 
         super().__init__(_id, name, rocket, [arduino, igniter, parachute, acc, gryo, inertialFrame]) # type: ignore
 
@@ -69,6 +77,9 @@ class FlightDirector(Part):
         self.acc = acc
         self.gyro = gryo
         self.inertialFrame = inertialFrame
+        self.orientation = orientation
+        self.attitude_smartphone = attitude_smartphone
+        self.attitude_external = attitude_external
 
     def get_accepted_commands(self) -> list[Type[Command]]:
         return [CalibrateZeroCommand, ArmDirectorCommand, StartCountDownCommand, AbortCommand]
@@ -101,7 +112,12 @@ class FlightDirector(Part):
             calibrate_gyro.create_time = datetime.utcnow()
             calibrate_gyro._part_id = self.gyro._id
 
-            self.current_calibrate_base_sensor_commands = [calibrate_acc, calibrate_gyro]
+            calibrate_orientation = CalibrateZeroCommand()
+            calibrate_orientation._id = uuid4()
+            calibrate_orientation.create_time = datetime.utcnow()
+            calibrate_orientation._part_id = self.orientation._id
+
+            self.current_calibrate_base_sensor_commands = [calibrate_acc, calibrate_gyro, calibrate_orientation]
             return [calibrate_acc, calibrate_gyro]
         
         if c.state == 'processing':
@@ -151,7 +167,7 @@ class FlightDirector(Part):
         c.state = 'failed'
         c.response_message = 'Unknown error'
                 
-    def run_arm(self, c: ArmDirectorCommand):
+    def run_arm(self, c: ArmDirectorCommand, now: float):
 
         if self.state != 'Idle':
             c.state = 'failed'
@@ -167,6 +183,19 @@ class FlightDirector(Part):
             c.state = 'failed'
             c.response_message = 'Arduino not connected'
             return
+        
+        external_data_age = self.attitude_external.get_data_age()
+        smartphone_data_age = self.attitude_smartphone.get_data_age()
+
+        if external_data_age is None or now > (external_data_age + 3):
+            c.state = 'failed'
+            c.response_message = 'No recent data from external attitude'
+            return
+        
+        if smartphone_data_age is None or now > (smartphone_data_age + 3):
+            c.state = 'failed'
+            c.response_message = 'No recent data from smartphone attitude'
+            return
 
         c.state = 'success'
         self.state = 'Armed'
@@ -180,7 +209,7 @@ class FlightDirector(Part):
         
         if self.state == 'Idle':
             c.state = 'failed'
-            c.response_message = 'Countdown abroted'
+            c.response_message = 'Countdown aborted'
         
         if c.state == 'received':
             self.state = 'countdown'
@@ -227,6 +256,18 @@ class FlightDirector(Part):
 
         return deploy_command
 
+    def send_deploy_parachute(self):
+        if self.deploy_parachute_command is None or self.deploy_parachute_command.state == 'failed':
+            deploy_command = OpenCommand()
+            deploy_command._id = uuid4()
+            deploy_command.create_time = datetime.utcnow()
+            deploy_command._part_id = self.parachute._id
+
+            self.deploy_parachute_command = deploy_command
+
+            return deploy_command
+
+        return None    
                 
     def update(self, commands: Iterable[Command], now: float, iteration):
 
@@ -239,7 +280,7 @@ class FlightDirector(Part):
                 continue
 
             if isinstance(c, ArmDirectorCommand):
-                self.run_arm(c)
+                self.run_arm(c, now)
                 continue
 
             if isinstance(c, StartCountDownCommand):
@@ -253,21 +294,36 @@ class FlightDirector(Part):
         if self.state == 'flight':
             self.deploy_parachute_countdown = self.deploy_parachute_delay - (now - self.launch_time)
 
+            external_data_age = self.attitude_external.get_data_age()
+            external_attitude = self.attitude_external.pointing_up
+
+            smartphone_data_age = self.attitude_smartphone.get_data_age()
+            smartphone_attitude = self.attitude_smartphone.pointing_up
+            
+            # Use external attitude if data is good
+            if external_data_age is not None and now < (external_data_age + 3) and external_attitude is not None:
+                
+                if external_attitude < 0:
+                    new_command = self.send_deploy_parachute()
+                    if new_command is not None:
+                        new_commands.append(new_command)
+            
+            # Use smartphone attitude if data is good
+            elif smartphone_data_age is not None and now < (smartphone_data_age + 3) and smartphone_attitude is not None:
+                
+                if smartphone_attitude < 0:
+                    new_command = self.send_deploy_parachute()
+                    if new_command is not None:
+                        new_commands.append(new_command)
+
             if self.deploy_parachute_countdown <= 0:
 
-                if self.deploy_parachute_command is None or self.deploy_parachute_command.state == 'failed':
-                    deploy_command = OpenCommand()
-                    deploy_command._id = uuid4()
-                    deploy_command.create_time = datetime.utcnow()
-                    deploy_command._part_id = self.parachute._id
-
-                    self.deploy_parachute_command = deploy_command
-
-                    new_commands.append(deploy_command)
+                new_command = self.send_deploy_parachute()
+                if new_command is not None:
+                    new_commands.append(new_command)
 
         return new_commands
-    
-        
+
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [

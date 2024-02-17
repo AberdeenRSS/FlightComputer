@@ -14,9 +14,9 @@ class PlyerGravitySensor(Part):
 
     type = 'Sensor.Gravity'
 
-    min_update_period = timedelta(milliseconds=10)
+    min_update_period = timedelta(milliseconds=100)
 
-    min_measurement_period = timedelta(milliseconds=10)
+    min_measurement_period = timedelta(milliseconds=100)
 
     status_data_rate = 1_000
 
