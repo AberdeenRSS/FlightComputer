@@ -26,6 +26,7 @@ from app.content.microcontroller.arduino.sensors.pressure.altitude_arduino impor
 from app.content.microcontroller.arduino.sensors.pressure.pressure_sensor_arduino import PressureArduinoSensor
 from app.content.microcontroller.arduino.sensors.orientation_arduino import OrientationSensor
 from app.content.sensors.plyer.gravity_plyer import PlyerGravitySensor
+from app.content.testing.periodic_tester import PeriodicTester
 
 from app.flight_config import FlightConfig
 from app.logic.rocket_definition import Rocket
@@ -63,8 +64,8 @@ def make_spatula() -> FlightConfig:
 
     # # Serial communication
     # Arduino parts
-    # arduino_serial = ArduinoOverSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
-    arduino_serial = ArduinoOverBluetooth(UUID('10b87ad8-497a-4d9f-8944-4499856a35e4'), 'Serial Port', rocket)
+    arduino_serial = ArduinoOverSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
+    # arduino_serial = ArduinoOverBluetooth(UUID('10b87ad8-497a-4d9f-8944-4499856a35e4'), 'Serial Port', rocket)
 
     parachute = ServoSensor(UUID('9f86acb1-9795-46fc-b083-e6451f214d1f'), 'Servo', rocket, arduino_serial)
     igniter = IgniterSensor(UUID('f309669d-6bd7-4ee3-90a5-45a0e1bdd60e'), 'Igniter', rocket, arduino_serial, parachute)
@@ -83,7 +84,8 @@ def make_spatula() -> FlightConfig:
     attitude_smartphone = PositiveAttitudeAnalyzer(UUID('cc53cfb9-05bd-4ca7-bba5-202039636b48'), 'Attitude Analyzer Smartphone', rocket, inertialFrame)
     attitude_external = PositiveAttitudeAnalyzer(UUID('b0a3acb6-9374-482f-a1c4-4411c995a13e'), 'Attitude Analyzer External', rocket, orientation)
 
-    FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame, orientation, attitude_smartphone, attitude_external)
+    # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame, orientation, attitude_smartphone, attitude_external)
+    PeriodicTester(UUID('4f4534de-3a53-44ae-ada5-b7a0b0636e13'), 'Periodic HW tester', rocket, parachute, igniter)
 
     return FlightConfig(rocket, [ArduinoSerialSelectUI(arduino_serial)], True)
     # return FlightConfig(rocket, [], True)

@@ -278,6 +278,7 @@ class FlightExecuter:
     def control_loop(self, iteration: int, last_update: float):
 
         now = time.time()
+        now_as_date = datetime.fromtimestamp(now)
 
         # Make a list of all new commands sorted by part
         new_commands = self.swap_command_buffer()
@@ -306,6 +307,9 @@ class FlightExecuter:
 
                     if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
                         Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated. {len(generated_commands)} emitted')
+
+                    for c in generated_commands:
+                        c.create_time = now_as_date
 
                     new_commands.extend(generated_commands)
                     self.add_command_by_part(generated_commands, commands_by_part)
