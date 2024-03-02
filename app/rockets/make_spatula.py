@@ -89,7 +89,7 @@ def make_spatula() -> FlightConfig:
     attitude_smartphone = PositiveAttitudeAnalyzer(UUID('cc53cfb9-05bd-4ca7-bba5-202039636b48'), 'Attitude Analyzer Smartphone', rocket, inertialFrame)
     attitude_external = PositiveAttitudeAnalyzer(UUID('b0a3acb6-9374-482f-a1c4-4411c995a13e'), 'Attitude Analyzer External', rocket, orientation)
 
-    # FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame, orientation, attitude_smartphone, attitude_external)
+    FlightDirector(UUID('37155a2c-c51d-41b7-9dae-67d640d8c284'), 'Flight Director', rocket, arduino_serial, igniter, parachute, acc, gyro, inertialFrame, orientation, attitude_smartphone, attitude_external)
     # PeriodicTester(UUID('4f4534de-3a53-44ae-ada5-b7a0b0636e13'), 'Periodic HW tester', rocket, parachute, igniter)
 
     return FlightConfig(rocket, [FileMeasurementSinkDownloadUI(file_sink), ArduinoSerialSelectUI(arduino_serial), BarometricAltitudeConfigUI(altitude)], True)

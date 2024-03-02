@@ -45,6 +45,9 @@ class FileMeasurementSink(MeasurementSinkBase):
 
     folder_created = False
 
+    max_file_iterations = 256
+    '''Max number of measurement "packets" stored to a single file'''
+
     current_file_count = 0
 
     current_file_iteration = 0
@@ -209,7 +212,7 @@ class FileMeasurementSink(MeasurementSinkBase):
 
         self.current_file_iteration = self.current_file_iteration + 1
 
-        if self.current_file_handle is not None and self.current_file_iteration < 1000:
+        if self.current_file_handle is not None and self.current_file_iteration < self.max_file_iterations:
             return
         
         if self.current_file_handle:
