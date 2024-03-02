@@ -8,13 +8,15 @@ from uuid import UUID
 from dataclasses import dataclass
 from app.content.common_sensor_interfaces.data_age import IDataAge
 from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
+from app.content.common_sensor_interfaces.pressure import IPressureSensor
+from app.content.common_sensor_interfaces.temperature import ITemperatureSensor
 from app.content.general_commands.enable import DisableCommand, EnableCommand
 from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
 from app.logic.commands.command import Command
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.logic.rocket_definition import Part, Rocket
 
-class PressureArduinoSensor(Part, IDataAge):
+class PressureArduinoSensor(Part, IDataAge, IPressureSensor, ITemperatureSensor):
     type = 'Pressure'
 
     enabled: bool = True
@@ -74,3 +76,9 @@ class PressureArduinoSensor(Part, IDataAge):
     
     def get_data_age(self):
         return self.last_data_received
+    
+    def get_pressure(self):
+        return self.pressure # if self.pressure is not None else None # Convert to Pascal
+    
+    def get_temperature(self):
+        return (self.temperature + 273.15) if self.temperature is not None else None # Convert to Kelvin
