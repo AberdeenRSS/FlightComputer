@@ -37,7 +37,7 @@ version = 0.1.86
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,anyio==3.6.2,bidict,certifi,cffi,charset-normalizer,chardet,cryptography,docutils,h11,httpcore,httpx,idna,Kivy,msal,plyer,pycparser,Pygments,PyJWT,python-engineio,python-socketio,socketio,requests,rfc3986,sniffio,urllib3,websocket-client,zope.event,zope.interface,marshmallow, jsonschema, typing_extensions, marshmallow-jsonschema, packaging, pyrsistent, attrs, pyjnius, six, usbserial4a, usb4a, tinyproto, numpy, PyYAML
+requirements = python3,anyio==3.6.2,bidict,certifi,cffi,charset-normalizer,chardet,cryptography,docutils,h11,httpcore,httpx,idna,Kivy,msal,plyer,pycparser,Pygments,PyJWT,python-engineio,python-socketio,socketio,requests,rfc3986,sniffio,urllib3,websocket-client,zope.event,zope.interface,marshmallow, jsonschema, typing_extensions, marshmallow-jsonschema, packaging, pyrsistent, attrs, pyjnius, six, usbserial4a, usb4a, tinyproto, numpy, PyYAML, androidstorage4kivy
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes

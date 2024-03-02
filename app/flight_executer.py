@@ -126,14 +126,15 @@ class FlightExecuter:
 
     deleted: bool = False
 
-    def __init__(self, flight_config: FlightConfig, min_frame_time: float = 0.05) -> None:
+    def __init__(self, flight_config: FlightConfig, min_computation_frame_time: float = 0.01, min_ui_frame_time: float = 0.05) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
 
         self.flight_config = flight_config
         self.rocket = flight_config.rocket
-        self.min_frame_time = min_frame_time
+        self.min_computation_frame_time = min_computation_frame_time
+        self.min_ui_frame_time = min_ui_frame_time
 
         self.execution_order = topological_sort(self.rocket.parts)
         self.known_commands = gather_known_commands(self.rocket)
@@ -241,18 +242,23 @@ class FlightExecuter:
         # Run the update loop
         flight_loop_iteration = 0
         last_update: float = time.time()
+        last_ui_update = 0
         while True:
 
             update_start_time = time.time()
             
             update_end_time = self.control_loop(flight_loop_iteration, last_update)
-            self.part_list_widget.update_cur_part()
+            
+            if update_end_time > (last_ui_update + self.min_ui_frame_time):
+                last_ui_update = update_end_time
+                self.part_list_widget.update_cur_part()
+
             flight_loop_iteration += 1
 
             time_passed = update_end_time - last_update
             last_update = update_end_time
 
-            wait_time = self.min_frame_time - time_passed
+            wait_time = self.min_computation_frame_time - time_passed
             if wait_time < 0:
                continue
         

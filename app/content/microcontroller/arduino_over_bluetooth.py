@@ -279,7 +279,7 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:
 
-        last_index = self.last_message.index if self.last_message is not None else -1
+        last_index = self.serial_adapter.message_index if self.serial_adapter.message_index is not None else -1
 
         num_devices = len(self.device_name_list) if self.device_name_list is not None else -1
 

@@ -1,23 +1,27 @@
-from datetime import datetime, timedelta
-import random
-from time import sleep
+import base64
+from io import BytesIO
 from typing import Any, Callable, Collection, Coroutine, Union
 from uuid import UUID
 import jwt
 import json
 import httpx
 import socketio
-from asyncio import Future
 from app.logic.rocket_definition import Rocket
 from app.logic.to_vessel_and_flight import to_vessel_and_flight
 from app.models.command import Command, CommandSchema
-from app.models.flight_measurement import FlightMeasurementSchema
 from app.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
 from app.models.vessel import Vessel, VesselSchema
 from app.models.flight import Flight, FlightSchema
-from json import dumps
-from kivy.logger import Logger, LOG_LEVELS
+from kivy.logger import Logger
 import time
+import gzip
+
+def zip_payload(payload: str) -> bytes:
+    btsio = BytesIO()
+    g = gzip.GzipFile(fileobj=btsio, mode='w')
+    g.write(bytes(payload, 'utf8'))
+    g.close()
+    return btsio.getvalue()
 
 LOGGER_NAME = 'ApiClient'
 
@@ -44,6 +48,8 @@ class ApiClient:
     '''API client for the rss FlightManagementServer'''
 
     endpoint: str
+
+    gzip = True
 
     def __init__(self, auth_code: str) -> None:
 
@@ -152,17 +158,31 @@ class ApiClient:
 
         serialized = FlightMeasurementCompactSchema().dump_list(data)
 
+        additional_headers = dict()
+
+        if self.gzip:
+            # content = zip_payload(json.dumps(serialized))
+            content = gzip.compress(json.dumps(serialized).encode('utf-8'))
+
+            deb  = base64.b64encode(content)
+
         async with httpx.AsyncClient() as client:
 
             bearer = await self.authenticate()
 
             client.base_url = self.endpoint
             client.headers.setdefault('Authorization', 'Bearer ' + bearer)
+            if self.gzip:
+                client.headers.setdefault('Content-Encoding', 'gzip')
+                client.headers.setdefault('Content-Type', 'application/json')
 
             res = None
 
             try:
-                res = await client.post(f"/flight_data/report_compact/{flight_id}", json=serialized, timeout=timeout)
+                if self.gzip:
+                    res = await client.post(f"/flight_data/report_compact/{flight_id}", content=content, timeout=timeout, headers=additional_headers)
+                else:
+                    res = await client.post(f"/flight_data/report_compact/{flight_id}", json=serialized, timeout=timeout)
 
                 success = res.status_code >= 200 and res.status_code < 300
 
