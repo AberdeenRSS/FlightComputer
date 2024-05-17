@@ -1,6 +1,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
+from app.ui.data_download import DownloadDataUI
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
@@ -39,6 +40,27 @@ class FlightCreator(BoxLayout):
             self.creation_complete_future.set_result({'name': self.flight_name_input.text})
         return create_flight
 
+class MainMenu(BoxLayout):
+    def __init__(self, **kwargs):
+        kwargs['orientation'] = 'vertical'
+        super().__init__(**kwargs)
+
+        self.complete_future = asyncio.Future()
+
+        start_flight_btn = Button(text='Start Flight')
+        start_flight_btn.bind(on_press = self.start_flight())
+        self.add_widget(start_flight_btn)
+
+        download_data_btn = Button(text='Downlaod Data')
+        download_data_btn.bind(on_press = self.download_data())
+        self.add_widget(download_data_btn)
+
+    def start_flight(self):
+        self.complete_future.set_result('start_flight')
+
+    def download_data(self):
+        self.complete_future.set_result('download_data')
+
 class RSSFlightComputer(App):
 
     label = None
@@ -59,12 +81,35 @@ def init_app():
 async def run_loop():
 
     while(True):
+
+        app.root_layout.clear_widgets()
+
+        main_menu = MainMenu()
+        app.root_layout.add_widget(main_menu)
+
+        selected_ui = await main_menu.complete_future
+
+        app.root_layout.clear_widgets()
+
+        if selected_ui == 'download_data':
+
+            download_ui = DownloadDataUI()
+            await download_ui.complete_future
+        else:
+            break
+
+
+    while(True):
+
+        app.root_layout.clear_widgets()
+
+
         flight_creator = FlightCreator()
         app.root_layout.add_widget(flight_creator)
 
         create_result = await flight_creator.creation_complete_future
 
-        app.root_layout.remove_widget(flight_creator)
+        app.root_layout.clear_widgets()
 
         flight_config = make_spatula()
         flight_config.auth_code = str(get_vessel_auth_code())

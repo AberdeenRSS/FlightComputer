@@ -126,7 +126,7 @@ class FlightExecuter:
 
     deleted: bool = False
 
-    def __init__(self, flight_config: FlightConfig, min_computation_frame_time: float = 0.002, min_ui_frame_time: float = 0.05) -> None:
+    def __init__(self, flight_config: FlightConfig, min_computation_frame_time: float = 0.05, min_ui_frame_time: float = 0.05) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
