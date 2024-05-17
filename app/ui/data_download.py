@@ -26,32 +26,35 @@ class DownloadDataUI(BoxLayout):
 
     last_set: float | None
 
+    complete_future: asyncio.Future
+
     def __init__(self, **kwargs):
         kwargs['orientation'] = 'vertical'
         super().__init__(**kwargs)
 
-        if platform != 'android':
-            self.add_widget(Label(text='Only supported on android, files are available through files system on other platforms', color=[1, 0, 0, 1]))
-            return
-        
         self.complete_future = asyncio.Future()
-        
-        self.btns = []
 
-        avialable_files = self.get_available_data()
+        if platform == 'android':
+            
+            self.btns = []
 
-        for f in avialable_files:
+            avialable_files = self.get_available_data()
 
-            btn = Button(text=f'Download {f}')
-            btn.bind(on_press=self.make_on_downlaod(f)) # type: ignore
-            self.add_widget(btn)
-            self.btns.append(btn)
-        
+            for f in avialable_files:
+
+                btn = Button(text=f'Download {f}')
+                btn.bind(on_press=self.make_on_download(f)) # type: ignore
+                self.add_widget(btn)
+                self.btns.append(btn)
+
+        else:
+            self.add_widget(Label(text='Only supported on android, files are available through files system on other platforms', color=[1, 0, 0, 1]))
+            
         complete_btn = Button(text=f'Done')
         complete_btn.bind(on_press=self.on_done) # type: ignore
         self.add_widget(complete_btn)
 
-    def on_done(self):
+    def on_done(self, arg):
         self.complete_future.set_result(True)
 
     def draw(self):
@@ -63,8 +66,8 @@ class DownloadDataUI(BoxLayout):
 
         return [p[0] for p in os.walk(user_data_dir) if p[0].startswith('flight_at_')]
     
-    def make_on_downlaod(self, folder):
-        def f():
+    def make_on_download(self, folder):
+        def f(arg):
             return self.on_download(folder)
         return f
 

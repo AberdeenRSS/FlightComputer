@@ -48,17 +48,17 @@ class MainMenu(BoxLayout):
         self.complete_future = asyncio.Future()
 
         start_flight_btn = Button(text='Start Flight')
-        start_flight_btn.bind(on_press = self.start_flight())
+        start_flight_btn.bind(on_press = self.start_flight)
         self.add_widget(start_flight_btn)
 
         download_data_btn = Button(text='Downlaod Data')
-        download_data_btn.bind(on_press = self.download_data())
+        download_data_btn.bind(on_press = self.download_data)
         self.add_widget(download_data_btn)
 
-    def start_flight(self):
+    def start_flight(self, arg):
         self.complete_future.set_result('start_flight')
 
-    def download_data(self):
+    def download_data(self, arg):
         self.complete_future.set_result('download_data')
 
 class RSSFlightComputer(App):
@@ -94,6 +94,8 @@ async def run_loop():
         if selected_ui == 'download_data':
 
             download_ui = DownloadDataUI()
+            app.root_layout.add_widget(download_ui)
+            
             await download_ui.complete_future
         else:
             break
