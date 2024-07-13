@@ -1,10 +1,13 @@
 import asyncio
+from io import BytesIO
 import math
+import struct
 import time
 from typing import Iterable, Sequence, Tuple, Type, Union
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 from app.api_client import ApiClient
+from app.helper.measurement_binary_helper import get_struct_format_for_part
 from app.logic.commands.command import Command, Command
 from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase
 from app.logic.rocket_definition import Measurements, Part, Rocket
@@ -16,6 +19,9 @@ from kivy.logger import Logger, LOG_LEVELS
 from app.models.flight_measurement_compact import FlightMeasurementCompact
 
 LOGGER_NAME = 'Measurement_Sink'
+
+CHAR_SIZE = struct.calcsize('!B')
+SHORT_SIZE = struct.calcsize('!H')
 
 class ApiMeasurementSink(ApiMeasurementSinkBase):
      
@@ -51,9 +57,9 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('send_success', int),
-            ('send_duration', float),
-            ('drop_rate', float)
+            ('send_success', '?'),
+            ('send_duration', 'f'),
+            ('drop_rate', 'f')
         ]
 
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
@@ -65,7 +71,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
             return []
         
         return [
-            [1 if self.last_send_success else 0, self.last_send_duration, self.drop_rate]
+            [self.last_send_success, self.last_send_duration or 0, self.drop_rate]
         ]
     
     async def send_last_measurements(self, now: float):
@@ -87,11 +93,9 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         if self.last_send_duration is not None and self.last_send_duration > self.target_send_period.total_seconds():
             drop_rate = self.last_send_duration/self.target_send_period.total_seconds()
 
-
         combined_measurement_dict = dict[Part, list[Tuple[float, list[Union[float, int, str]]]]]()
 
         for measurement_dicts in old_buffer:
-
 
             for part, (start, end, measurements) in measurement_dicts.items():
 
@@ -100,12 +104,6 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
                 time_increment = end-start
                 for m in measurements:
 
-                    # try:
-                    #     inflated = part.inflate_measurement(m)
-                    # except:
-                    #     print(f'Failed inflating measurement for part {part.name}')
-                    #     continue
-
                     measurement_timestamp = start + (time_increment*i)
                     # as_date = datetime.fromtimestamp(measurement_timestamp, tz=timezone.utc)
                     if part not in combined_measurement_dict:
@@ -113,33 +111,71 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
                     combined_measurement_dict[part].append((measurement_timestamp, m))
                     i += 1
 
-        flight_measurements = list[FlightMeasurementCompact]()
+        total_size = 0
 
+        # Calculate size of resulting byte array first to optmize memory allocations
         for part, measurements in combined_measurement_dict.items():
             m_count = len(measurements)
-            filtered_measurements = list[Tuple[float, list[Union[float, int, str]]]]()
-            # Drop the measurement if overwhelmed
-            # Start with the last measurement as index 0
-            # to ensure it gets send
+
+            format = get_struct_format_for_part([t[1] for t in part.get_measurement_shape()])
+
+            total_size += CHAR_SIZE + SHORT_SIZE # Add size for part index and number of measurements
+
+            mesurement_size = struct.calcsize(format)
+
             i = m_count
             for m in measurements:
                 if ((m_count-i) % drop_rate) < 1:
-                    filtered_measurements.append(m)
+                    total_size += mesurement_size    
                 i -= 1
 
             parts = [s[0] for s in part.get_measurement_shape()]
 
-            flight_measurements.append(FlightMeasurementCompact(part._id, parts, filtered_measurements))
+        measurement_bytes = bytearray(total_size)
+        cur = 0
+
+        for part, measurements in combined_measurement_dict.items():
+            m_count = len(measurements)
+
+            format = get_struct_format_for_part([t[1] for t in part.get_measurement_shape()])
+
+            struct.pack_into('!B', measurement_bytes, cur, part._index)
+            
+            cur += CHAR_SIZE
+            num_m_location = cur # record location where to later write the number of included measurements to
+            cur += SHORT_SIZE
+
+            # Drop the measurement if overwhelmed
+            # Start with the last measurement as index 0
+            # to ensure it gets send
+            i = m_count
+            included_m_count = 0
+            for (t, m) in measurements:
+                if ((m_count-i) % drop_rate) < 1:
+
+                    m = [enocde_measurement(x) for x in m]
+                    try:
+                        struct.pack_into(format, measurement_bytes, cur, t, *m)
+                        cur += struct.calcsize(format)
+                    except Exception as e:
+                        Logger.warn(f'{LOGGER_NAME}: failed to prepare measuremetns of part {part.name} at time {t} for sending: {e.args[0]}')
+                    
+                    included_m_count += 1
+                
+                i -= 1
+
+            struct.pack_into('!H', measurement_bytes, num_m_location, included_m_count) # Write number of incldued measurements to remembered location
+
 
         
         # print(f'Sending measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
 
         if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Prepared measurements to be send over the Api. Trying to send measurements for {len(flight_measurements)} parts. Drop Rate: {drop_rate}')
+            Logger.debug(f'{LOGGER_NAME}: Prepared measurements to be send over the Api. Trying to send measurements for {combined_measurement_dict.items()} parts. Drop Rate: {drop_rate}')
 
         send_start = time.time()
 
-        (send_success, reason) = await self.api_client.try_report_flight_data_compact(self.flight._id, flight_measurements, self.send_timeout.total_seconds())
+        (send_success, reason) = await self.api_client.try_report_binray_flight_data(self.flight._id, bytes(measurement_bytes), self.send_timeout.total_seconds())
 
         self.drop_rate = drop_rate
         self.last_send_attempt_time = now
@@ -164,3 +200,10 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         self.last_send_success = True
         self.last_send_success_time = send_end
         self.last_send_duration = send_duration
+
+def enocde_measurement(m):
+
+    if isinstance(m, str):
+        return m.encode()
+    
+    return m

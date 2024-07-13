@@ -67,12 +67,12 @@ class PlyerBatterySensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('is_charging', int),
-            ('battery_percentage', float),
+            ('enabled', '?'),
+            ('sensor_failed', '?'),
+            ('is_charging', '?'),
+            ('battery_percentage', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0,  1 if self.is_charging else 0, self.battery_percent]]
+        return [[self.enabled, self.sensor_failed, self.is_charging or False, self.battery_percent or 0]]
     

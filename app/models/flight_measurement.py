@@ -40,7 +40,7 @@ class FlightMeasurementDescriptorSchema(make_safe_schema(FlightMeasurementDescri
 
     name = fields.String()
 
-    type = fields.String(validate= validate.Regexp(r"(string)|(int)|(float)"))
+    type = fields.String()
     """The type of the that measurement. Can be a "string", "int" or a "float" """
 
 @dataclass

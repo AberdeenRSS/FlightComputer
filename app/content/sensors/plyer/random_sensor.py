@@ -39,10 +39,10 @@ class TemperatureSensor(Part):
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         '''Commands that can be processed by this part'''
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('temperature', float),
+            ('enabled', '?'),
+            ('sensor_failed', 'i'),
+            ('temperature', 'f'),
         ]
 
     def collect_measurements(self, now) -> Iterable[Iterable[Union[str, float, int, None]]] :
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.temperature]]
+        return [[self.enabled, self.sensor_failed, self.temperature or -999]]

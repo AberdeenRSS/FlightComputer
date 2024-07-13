@@ -67,12 +67,12 @@ class PressureArduinoSensor(Part, IDataAge, IPressureSensor, ITemperatureSensor)
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('temperature', float),
-            ('pressure', float),
+            ('temperature', 'f'),
+            ('pressure', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
-        return [[self.temperature, self.pressure]]
+        return [[self.temperature or 0, self.pressure or 0]]
     
     def get_data_age(self):
         return self.last_data_received

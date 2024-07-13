@@ -152,6 +152,79 @@ class ApiClient:
         )
 
         return FlightSchema().load_safe(Flight, flight_res.json())
+    
+    async def try_report_binray_flight_data(self, flight_id, data: bytes, timeout: float) -> tuple[bool, str]:
+
+        async with httpx.AsyncClient() as client:
+
+            bearer = await self.authenticate()
+
+            client.base_url = self.endpoint
+            client.headers.setdefault('Authorization', 'Bearer ' + bearer)
+            client.headers.setdefault('Content-Type', 'application/octet-stream')
+
+            res = None
+
+            try:
+                res = await client.post(f"/flight_data/report_binary/{flight_id}", content=data, timeout=timeout)
+
+                success = res.status_code >= 200 and res.status_code < 300
+
+                if not success:
+                    Logger.warning(f'{LOGGER_NAME}: {format_response(res)}')
+
+                return (success, str(res.status_code))
+            except TimeoutError as e:
+                Logger.warning(f'{LOGGER_NAME}: Failed sending measurements due to timeout. Response: {res}')
+                return (False, 'TIMEOUT')
+            except  Exception as e:  
+                Logger.exception(f'{LOGGER_NAME}: Unknown error sending flight data. Exception: {e}. Response: {res}')
+                return (False, str(e))
+
+    async def try_report_flight_data_compact(self, flight_id, data: list[FlightMeasurementCompact], timeout: float) -> \
+        tuple[bool, str]:
+
+            serialized = FlightMeasurementCompactSchema().dump_list(data)
+
+            additional_headers = dict()
+
+            if self.gzip:
+                # content = zip_payload(json.dumps(serialized))
+                content = gzip.compress(json.dumps(serialized).encode('utf-8'))
+
+                deb  = base64.b64encode(content)
+
+            async with httpx.AsyncClient() as client:
+
+                bearer = await self.authenticate()
+
+                client.base_url = self.endpoint
+                client.headers.setdefault('Authorization', 'Bearer ' + bearer)
+                if self.gzip:
+                    client.headers.setdefault('Content-Encoding', 'gzip')
+                    client.headers.setdefault('Content-Type', 'application/json')
+
+                res = None
+
+                try:
+                    if self.gzip:
+                        res = await client.post(f"/flight_data/report_compact/{flight_id}", content=content, timeout=timeout, headers=additional_headers)
+                    else:
+                        res = await client.post(f"/flight_data/report_compact/{flight_id}", json=serialized, timeout=timeout)
+
+                    success = res.status_code >= 200 and res.status_code < 300
+
+                    if not success:
+                        Logger.warning(f'{LOGGER_NAME}: {format_response(res)}')
+
+                    return (success, str(res.status_code))
+                except TimeoutError as e:
+                    Logger.warning(f'{LOGGER_NAME}: Failed sending measurements due to timeout. Response: {res}')
+                    return (False, 'TIMEOUT')
+                except  Exception as e:  
+                    Logger.exception(f'{LOGGER_NAME}: Unknown error sending flight data. Exception: {e}. Response: {res}')
+                    return (False, str(e))
+
 
     async def try_report_flight_data_compact(self, flight_id, data: list[FlightMeasurementCompact], timeout: float) -> \
     tuple[bool, str]:

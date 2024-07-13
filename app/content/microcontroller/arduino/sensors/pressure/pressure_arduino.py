@@ -46,7 +46,7 @@ class PressureSensor(Part):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('pressure', float),
+            ('pressure', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:

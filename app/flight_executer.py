@@ -8,6 +8,8 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from app.api_client import ApiClient, RealtimeApiClient
 from app.flight_config import FlightConfig
+from app.helper.file_logger import FileLogger
+from app.helper.global_data_dir import reset_flight_data_dir
 from app.logic.commands.command import Command, Command
 from app.logic.commands.command_helper import deserialize_command, gather_known_commands, is_completed_command, make_command_schemas
 from app.logic.to_vessel_and_flight import to_vessel_and_flight
@@ -126,7 +128,7 @@ class FlightExecuter:
 
     deleted: bool = False
 
-    def __init__(self, flight_config: FlightConfig, min_computation_frame_time: float = 0.05, min_ui_frame_time: float = 0.05) -> None:
+    def __init__(self, flight_config: FlightConfig, min_computation_frame_time: float = 0.050, min_ui_frame_time: float = 0.050) -> None:
     
         self.command_buffer = list()
         self.executed_commands = list()
@@ -150,6 +152,11 @@ class FlightExecuter:
 
         self.last_iteration_time = 0
         self.cur_wait_time = 0
+
+        reset_flight_data_dir()
+        self.file_logger = FileLogger()
+
+        Logger.addHandler(self.file_logger)
 
     def make_on_new_command(self):
         def on_new_command(models: Collection[CommandModel]):
@@ -313,6 +320,10 @@ class FlightExecuter:
 
                     if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
                         Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated. {len(generated_commands)} emitted')
+                    
+                    if len(generated_commands) > 0:
+                        for c in generated_commands: 
+                            Logger.info(f'{LOGGER_NAME}: Part {p.name} created a new command of type {c._command_type} with creation time {c.create_time} for part {c._part_id} (ID: {c._id}, PartID: {c._part_id})')
 
                     for c in generated_commands:
                         c.create_time = now_as_date
@@ -374,6 +385,8 @@ class FlightExecuter:
         for sink in self.measurement_sinks:
             sink.measurement_buffer.append(current_measurements)
 
+        self.file_logger.flush()
+
         return now
 
     def add_command_by_part(self, new_commands: Collection[Command], commands_by_part: dict[Part, list[Command]]):
@@ -409,11 +422,18 @@ class FlightExecuter:
             commands_to_send = self.executed_commands
             self.executed_commands = list()
 
+            if len(commands_to_send) < 1:
+                return
+
             # Set all commands to failed, if they haven't been processed yet
             for c in commands_to_send:
                 if c.state == 'dispatched' or c.state == 'received':
                     c.state = 'failed'
                     c.response_message = 'Part did not process the command for an uknown reason'
+
+            Logger.info(f'{LOGGER_NAME}: Processed {len(commands_to_send)} commands:')
+            for c in commands_to_send: 
+                Logger.info(f'{LOGGER_NAME}: Processed command {c._id} of type {c._command_type} for part {c._part_id} resulting in state {c.state}')
 
             c_schema = CommandSchema()
 
@@ -422,6 +442,7 @@ class FlightExecuter:
 
             try:
                 await self.api_client.try_send_command_responses(str(self.flight._id), models)
+                Logger.info(f'{LOGGER_NAME}: Successfully trasmitted {len(commands_to_send)} commands')
             except Exception as e:
                 Logger.exception(f'{LOGGER_NAME}: Failed sending {len(models)} command responses: {e}')
 
@@ -435,5 +456,9 @@ class FlightExecuter:
 
         if not self.send_command_responses_task.done():
             self.send_command_responses_task.cancel()
+
+        if self.file_logger is not None:
+            self.file_logger.flush()
+            Logger.removeHandler(self.file_logger)
 
         self.deleted = True

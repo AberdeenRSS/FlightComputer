@@ -6,7 +6,7 @@ import time
 from typing import Iterable, Sequence, Tuple, Type, Union
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
-from app.helper.global_data_dir import get_user_data_dir
+from app.helper.global_data_dir import get_cur_flight_data_dir, get_user_data_dir
 from app.logic.commands.command import Command, Command
 from app.logic.measurement_sink import MeasurementSinkBase
 from app.logic.rocket_definition import Measurements, Part, Rocket
@@ -57,9 +57,7 @@ class FileMeasurementSink(MeasurementSinkBase):
     def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None]):
         super().__init__(_id, name, parent)
 
-        date_file_safe = datetime.now().isoformat().replace('-', '_').replace(':', '_').replace('.', '_')
-
-        self.flight_data_folder = Path(f'{get_user_data_dir()}/flight_at_{date_file_safe}')
+        self.flight_data_folder = Path(get_cur_flight_data_dir())
 
     def update(self, commands: Iterable[Command], now: float, iteration):
 
@@ -70,11 +68,11 @@ class FileMeasurementSink(MeasurementSinkBase):
         # Otherwise initiate next store
         self.store_task = asyncio.create_task(self.store_last_measurements(now))
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def get_measurement_shape(self) -> Iterable[Tuple[str, str]]:
         return [
-            ('store_success', int),
-            ('store_duration', float),
-            ('drop_rate', float)
+            ('store_success', 'i'),
+            ('store_duration', 'f'),
+            ('drop_rate', 'f')
         ]
 
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
@@ -86,7 +84,7 @@ class FileMeasurementSink(MeasurementSinkBase):
             return []
         
         return [
-            [1 if self.last_store_success else 0, self.last_store_duration, self.drop_rate]
+            [1 if self.last_store_success else 0, self.last_store_duration or 0, self.drop_rate]
         ]
     
     async def store_last_measurements(self, now: float):

@@ -78,9 +78,9 @@ class PlyerLightSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('illumination', float),
+            ('enabled', '?'),
+            ('sensor_failed', 'i'),
+            ('illumination', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
@@ -88,7 +88,7 @@ class PlyerLightSensor(Part):
         if iteration % self.status_data_rate > 0 and self.iteration_illumination is None:
             return
 
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, self.iteration_illumination]]
+        return [[self.enabled, self.sensor_failed, self.iteration_illumination or 0]]
     
     def flush(self):
         self.iteration_illumination

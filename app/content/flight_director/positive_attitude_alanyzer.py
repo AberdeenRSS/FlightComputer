@@ -70,13 +70,13 @@ class PositiveAttitudeAnalyzer(Part, IDataAge):
         self.last_good_data_update = now
         
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def get_measurement_shape(self) -> Iterable[Tuple[str, str]]:
         return [
-            ('pointing_up', int)
+            ('pointing_up', 'i')
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
-        return [[self.pointing_up]]
+        return [[self.pointing_up or 0]]
     
     def get_data_age(self) -> float | None:
         return self.last_good_data_update

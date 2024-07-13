@@ -8,6 +8,9 @@ from kivy import Logger
 
 from app.logic.rocket_definition import Part
 
+LOGGER_NAME = 'Serial Adapter'
+
+
 @dataclass
 class RssPacket:
 
@@ -35,8 +38,16 @@ def make_default_command_callback(c: Command):
     
     return default_command_callback
 
+def on_keep_alive_done(f: Future):
+
+    if f.exception() is None:
+        Logger.info('Arduino Serial: keep alive success')
+        return
+        
+    Logger.error(f'Arduino Serial: keep alive failed: {f.exception()}')
 
 class ArduinoSerialAdapter:
+
     ''' 
     Class sitting between the hardware connection and the program level logic.
     Transforms raw serial data into program level data and back
@@ -129,7 +140,7 @@ class ArduinoSerialAdapter:
                     try:
                         future.set_result(result)
                     except Exception as e:
-                        Logger.error(f'Cannot set response future: {e}')
+                        Logger.error(f'{LOGGER_NAME}: Cannot set response future: {e}')
 
                 else:
                     raise RuntimeError('Received request from Arduino, the arduino should only send responses')
@@ -140,15 +151,17 @@ class ArduinoSerialAdapter:
                 data = sensorData.getData()
 
                 if part not in self.dataCallbacks:
+                    Logger.warning(f'{LOGGER_NAME}: Received sensor data from arduino for unknown part: {part}')
                     return
 
                 try:
+                    # Logger.info(f'{LOGGER_NAME}: Received sensor data for part {part}')
                     self.dataCallbacks[part](part, data)
                 except Exception as e:
-                    Logger.error(f'Data callback for part {part} failed: {e.args[0]}')
+                    Logger.error(f'{LOGGER_NAME}: Data callback for part {part} failed: {e.args[0]}')
 
         except Exception as e:
-            Logger.error(f'Failed parsing package {a}: {e.args[0]}')
+            Logger.error(f'{LOGGER_NAME}: Failed parsing package {a}: {e.args[0]}')
 
     def send_message(self, partID: int, commandID: int):
         '''
@@ -166,7 +179,7 @@ class ArduinoSerialAdapter:
         try:
             self.send_func(message)
         except Exception as e:
-            Logger.warning(f'Failed sending serial message: {e}')
+            Logger.warning(f'{LOGGER_NAME}: Failed sending serial message: {e}')
             future.set_exception(e)
 
         return future
@@ -201,9 +214,9 @@ class ArduinoSerialAdapter:
 
         if t > (self.last_keep_alive + self.keep_alive_interval):
             self.last_keep_alive = t
-            Logger.info('Arduino Serial: sending keep alive')
+            Logger.info(f'{LOGGER_NAME}: sending keep alive')
             future = self.send_message(0, 1)
-            future.add_done_callback(lambda f: Logger.info('Arduino Serial: keep alive success') if f.exception() is None else Logger.error(f'Arduino Serial: keep alive failed: {f.exception()}'))
+            future.add_done_callback(on_keep_alive_done)
 
 
 class ArduinoHwBase(ABC):

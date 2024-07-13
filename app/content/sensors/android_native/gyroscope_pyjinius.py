@@ -165,16 +165,16 @@ class PyjiniusGyroscopeSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('calibrating', int),
-            ('accuracy', int),
-            ('angular-acceleration-x', float),
-            ('angular-acceleration-y', float),
-            ('angular-acceleration-z', float),
-            ('correction-x', float),
-            ('correction-y', float),
-            ('correction-z', float),
+            ('enabled', '?'),
+            ('sensor_failed', '?'),
+            ('calibrating', '?'),
+            ('accuracy', 'i'),
+            ('angular-acceleration-x', 'f'),
+            ('angular-acceleration-y', 'f'),
+            ('angular-acceleration-z', 'f'),
+            ('correction-x', 'f'),
+            ('correction-y', 'f'),
+            ('correction-z', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
@@ -184,27 +184,21 @@ class PyjiniusGyroscopeSensor(Part):
         
         if self.iteration_angular_acceleration is not None:
             res = [[
-                None,
-                None,
-                None,
-                None,
+                self.enabled,
+                self.sensor_failed,
+                self.calibration_command is not None,
+                self.iteration_accuracy or 0,
                 acc[0],
                 acc[1],
                 acc[2],
-                None,
-                None,
-                None,
+                self.correction[0],
+                self.correction[1],
+                self.correction[2],
             ] for acc in self.iteration_angular_acceleration]
-            res[0][0] = 1 if self.enabled else 0
-            res[0][1] = 1 if self.sensor_failed else 0
-            res[0][2] = 1 if self.calibration_command is not None else 0
-            res[0][3] = self.iteration_accuracy
-            res[0][7] = self.correction[0]
-            res[0][8] = self.correction[1]
-            res[0][9] = self.correction[2]
+
             return res
 
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, 1 if self.calibration_command is not None else 0, self.iteration_accuracy, None, None, None, None, None, None]]
+        return [[self.enabled, self.sensor_failed, self.calibration_command is not None, self.iteration_accuracy or 0, 0, 0, 0, 0, 0, 0]]
     
     def flush(self):
 

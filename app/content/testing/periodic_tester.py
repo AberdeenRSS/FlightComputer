@@ -79,8 +79,8 @@ class PeriodicTester(Part):
 
     def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         return [
-            ('igniter-success', int),
-            ('parachute-success', int),
+            ('igniter-success', 'i'),
+            ('parachute-success', 'i'),
             ]
 
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
@@ -88,5 +88,5 @@ class PeriodicTester(Part):
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:
         """Should give back all measurements obtained since the last tick"""
-        return [[self.last_ignite_success, self.last_parachute_success]]
+        return [[self.last_ignite_success or 0, self.last_parachute_success or 0]]
 

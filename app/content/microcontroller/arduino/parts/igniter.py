@@ -25,7 +25,7 @@ class IgniterSensor(Part):
 
     last_ignited: Union[float, None] = None
 
-    state: str
+    triggered: bool
 
     commandList: dict
 
@@ -65,9 +65,9 @@ class IgniterSensor(Part):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('Ignited', int),
+            ('enabled', '?'),
+            ('Ignited', '?'),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[int, int]]]:
-        return [[1 if self.enabled else 0, 1 if self.state == 'ignited' else 0]]
+        return [[self.enabled, self.state]]

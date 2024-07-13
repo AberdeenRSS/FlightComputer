@@ -325,16 +325,16 @@ class FlightDirector(Part):
         return new_commands
 
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def get_measurement_shape(self) -> Iterable[Tuple[str, str]]:
         return [
-            ('state', str),
-            ('calibrated', int),
-            ('countdown', float),
-            ('parachute_countdown', float)
+            ('state', '16s'),
+            ('calibrated', '?'),
+            ('countdown', 'f'),
+            ('parachute_countdown', 'f')
         ]
 
-    def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:
+    def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int]]]:
 
 
-        return [[self.state, 1 if self.calibrated else 0, self.countdown, self.deploy_parachute_countdown]]
+        return [[self.state, self.calibrated, self.countdown or 0, self.deploy_parachute_countdown or 0]]
     

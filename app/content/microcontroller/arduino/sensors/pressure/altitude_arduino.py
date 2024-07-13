@@ -44,7 +44,7 @@ class AltitudeSensor(Part):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('altitude', float),
+            ('altitude', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:

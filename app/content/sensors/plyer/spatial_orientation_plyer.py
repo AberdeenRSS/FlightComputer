@@ -78,11 +78,11 @@ class PlyerSpatialOrientationSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('spatial_orientation-z', float),
-            ('spatial_orientation-x', float),
-            ('spatial_orientation-y', float),
+            ('enabled', '?'),
+            ('sensor_failed', '?'),
+            ('spatial_orientation-z', 'f'),
+            ('spatial_orientation-x', 'f'),
+            ('spatial_orientation-y', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
@@ -90,8 +90,8 @@ class PlyerSpatialOrientationSensor(Part):
         if iteration % self.status_data_rate > 0 and self.iteration_spacial_orientation is None:
             return
 
-        spat = self.iteration_spacial_orientation or [None, None, None]
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, spat[0], spat[1], spat[2]]]
+        spat = self.iteration_spacial_orientation or [0, 0, 0]
+        return [[ self.enabled, self.sensor_failed, spat[0], spat[1], spat[2]]]
     
     def flush(self):
         self.iteration_spacial_orientation = None

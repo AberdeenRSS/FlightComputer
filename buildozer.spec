@@ -29,7 +29,7 @@ source.include_patterns = assets/*,images/*.png,config/*
 #source.exclude_patterns = license,images/*/*.jpg
 
 # (str) Application versioning (method 1)
-version = 0.1.90
+version = 0.2.3
 
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
@@ -37,7 +37,7 @@ version = 0.1.90
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,anyio==3.6.2,bidict,certifi,cffi,charset-normalizer,chardet,cryptography,docutils,h11,httpcore,httpx,idna,Kivy,msal,plyer,pycparser,Pygments,PyJWT,python-engineio,python-socketio,socketio,requests,rfc3986,sniffio,urllib3,websocket-client,zope.event,zope.interface,marshmallow, jsonschema, typing_extensions, marshmallow-jsonschema, packaging, pyrsistent, attrs, pyjnius, six, usbserial4a, usb4a, tinyproto, numpy, PyYAML, androidstorage4kivy
+requirements = python3,anyio==3.6.2,bidict,certifi,cffi,charset-normalizer,chardet,cryptography,docutils,h11,httpcore,httpx,idna,Kivy,msal, https://github.com/kivy/plyer/archive/refs/heads/master.zip, pycparser,Pygments,PyJWT,python-engineio,python-socketio,socketio,requests,rfc3986,sniffio,urllib3,websocket-client,zope.event,zope.interface,marshmallow, jsonschema, typing_extensions, marshmallow-jsonschema, packaging, pyrsistent, attrs, pyjnius, six, usbserial4a, usb4a, tinyproto, numpy, PyYAML, androidstorage4kivy
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -95,7 +95,7 @@ fullscreen = 0
 
 # (list) Permissions
 # (See https://python-for-android.readthedocs.io/en/latest/buildoptions/#build-options-1 for all the supported syntaxes and properties)
-android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,android.permission.BATTERY_STATS,android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION,android.permission.MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING,android.permission.BLUETOOTH,,android.permission.BLUETOOTH_CONNECT,android.permission.HIGH_SAMPLING_RATE_SENSORS
+android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,android.permission.BATTERY_STATS,android.permission.ACCESS_FINE_LOCATION,android.permission.ACCESS_COARSE_LOCATION,android.permission.ACCESS_FINE_LOCATION,android.permission.MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING,android.permission.BLUETOOTH,,android.permission.BLUETOOTH_CONNECT,android.permission.HIGH_SAMPLING_RATE_SENSORS
 #, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) features (adds uses-feature -tags to manifest)
@@ -105,7 +105,7 @@ android.permissions = android.permission.INTERNET,android.permission.WAKE_LOCK,a
 android.api = 33
 
 # (int) Minimum API your APK / AAB will support.
-android.minapi = 21
+android.minapi = 24
 
 # (int) Android SDK version to use
 #android.sdk = 20
@@ -322,7 +322,7 @@ android.no-byte-compile-python = False
 #p4a.fork = kivy
 
 # (str) python-for-android branch to use, defaults to master
-p4a.branch = develop
+#p4a.branch = develop
 
 # (str) python-for-android specific commit to use, defaults to HEAD, must be within p4a.branch
 #p4a.commit = HEAD

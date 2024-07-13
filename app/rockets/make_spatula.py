@@ -9,6 +9,7 @@ from app.content.microcontroller.arduino_over_bluetooth import ArduinoOverBlueto
 from app.content.microcontroller.arduino_serial import ArduinoOverSerial
 from app.content.microcontroller.arduino_serial_monitor_ui import ArduinoSerialMonitorUI
 from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
+from app.content.sensors.android_native.gps_pyjinius import PyjiniusGPSSensor
 from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
 from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
 from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
@@ -58,7 +59,8 @@ def make_spatula() -> FlightConfig:
     # PlyerLightSensor(UUID('1ae63061-2763-4374-80fd-8328ab8c30ef'), 'Light', rocket)
     # PlyerSpatialOrientationSensor(UUID('01219fb4-4f2f-42d8-a910-6aae01eee1c7'), 'Spatial Orientation', rocket)
 
-    PlyerGPSSensor(UUID('2a3de588-a4a3-46e1-b94b-fd17ad75b06a'), 'GPS', rocket)
+    # PlyerGPSSensor(UUID('2a3de588-a4a3-46e1-b94b-fd17ad75b06a'), 'GPS', rocket)
+    PyjiniusGPSSensor(UUID('41318396-2750-4e07-9c9f-3360d156db70'), 'GPS', rocket)
 
     # Native sensors
     acc = PyjiniusAccelerationSensor(UUID('d91eed66-d699-4816-892d-3e99282966ab'), 'Accelerometer', rocket)

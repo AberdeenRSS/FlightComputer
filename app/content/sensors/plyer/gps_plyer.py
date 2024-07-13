@@ -155,21 +155,21 @@ class PlyerGPSSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('enabled_confirmed', int),
-            ('lat', float),
-            ('lng', float),
-            ('height', float),
+            ('enabled', '?'),
+            ('sensor_failed', '?'),
+            ('enabled_confirmed', '?'),
+            ('lat', 'f'),
+            ('lng', 'f'),
+            ('height', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
 
         if len(self.location_data_buffer) > 0:
             res = [[
-                1 if self.enabled else 0, 
-                1 if self.sensor_failed else 0, 
-                1 if self.enabled_confirmed else 0,
+                self.enabled, 
+                self.sensor_failed, 
+                self.enabled_confirmed,
                 l[0],
                 l[1],
                 l[2]
@@ -181,12 +181,12 @@ class PlyerGPSSensor(Part):
             return None
         
         return [[
-            1 if self.enabled else 0,
-            1 if self.sensor_failed else 0,
-            1 if self.enabled_confirmed else 0,
-            None,
-            None,
-            None
+            self.enabled,
+            self.sensor_failed,
+            self.enabled_confirmed,
+            0,
+            0,
+            0
         ]]
     
     def flush(self):

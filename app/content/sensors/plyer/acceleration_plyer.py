@@ -77,11 +77,11 @@ class PlyerAccelerationSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('acceleration-x', float),
-            ('acceleration-y', float),
-            ('acceleration-z', float),
+            ('enabled', '?'),
+            ('sensor_failed', '?'),
+            ('acceleration-x', 'f'),
+            ('acceleration-y', 'f'),
+            ('acceleration-z', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
@@ -90,7 +90,7 @@ class PlyerAccelerationSensor(Part):
             return
 
         acc = self.iteration_acceleration or [None, None, None]
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, acc[0], acc[1], acc[2]]]
+        return [[self.enabled, self.sensor_failed, acc[0], acc[1], acc[2]]]
     
     def flush(self):
         self.iteration_acceleration = None

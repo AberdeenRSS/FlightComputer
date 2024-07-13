@@ -17,7 +17,7 @@ def to_vessel_and_flight(rocket: Rocket) -> tuple[Vessel, Flight]:
     now = datetime.utcnow()
     now = now.replace(tzinfo=timezone.utc)
 
-    flight = Flight(start=now, _vessel_id=vessel._id, _vessel_version=rocket.version, name=f'FLight at {now.isoformat()}', measured_parts=get_measured_parts(rocket), available_commands=get_commands(rocket))
+    flight = Flight(start=now, _vessel_id=vessel._id, _vessel_version=rocket.version, name=f'FLight at {now.isoformat()}', measured_parts=get_measured_parts(rocket), measured_part_ids=get_measured_part_ids(rocket), available_commands=get_commands(rocket))
 
     return vessel, flight
 
@@ -29,6 +29,10 @@ def get_all_parts(rocket: Rocket) -> list[VesselPart]:
     
     return all_parts
 
+def get_measured_part_ids(rocket: Rocket) -> dict[int, str]:
+
+    return [p._id for p in rocket.parts]
+
 def get_measured_parts(rocket: Rocket) -> dict[str, list[FlightMeasurementDescriptor]]:
 
     measured_parts = dict[str, list[FlightMeasurementDescriptor]]()
@@ -39,20 +43,7 @@ def get_measured_parts(rocket: Rocket) -> dict[str, list[FlightMeasurementDescri
 
         for measurement_name, measurement_type in p.get_measurement_shape():
 
-            m_type = None
-
-            if measurement_type == float:
-                m_type = 'float'
-            elif measurement_type == str:
-                m_type = 'string'
-            elif measurement_type == bool:
-                m_type = 'boolean'
-            elif measurement_type == int:
-                m_type = 'int'
-            else:
-                raise TypeError(f'Type {str(measurement_type)} is not supported as a measurement value')
-
-            measurements.append(FlightMeasurementDescriptor(measurement_name, m_type))
+            measurements.append(FlightMeasurementDescriptor(measurement_name, measurement_type))
     
         measured_parts[str(p._id)] = measurements
 

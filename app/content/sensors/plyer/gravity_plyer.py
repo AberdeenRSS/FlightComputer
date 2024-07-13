@@ -77,11 +77,11 @@ class PlyerGravitySensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('gravity-x', float),
-            ('gravity-y', float),
-            ('gravity-z', float),
+            ('enabled', '?'),
+            ('sensor_failed', '?'),
+            ('gravity-x', 'f'),
+            ('gravity-y', 'f'),
+            ('gravity-z', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
@@ -89,8 +89,8 @@ class PlyerGravitySensor(Part):
         if iteration % self.status_data_rate > 0 and self.iteration_gravity_value is None:
             return
 
-        grav =  self.iteration_gravity_value or [None, None, None]
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, grav[0], grav[1], grav[2]]]
+        grav =  self.iteration_gravity_value or [0, 0, 0]
+        return [[self.enabled, self.sensor_failed, grav[0], grav[1], grav[2]]]
     
     def flush(self):
         self.iteration_gravity_value = None

@@ -37,6 +37,8 @@ class Part(ABC):
 
     _id: UUID
 
+    _index: int
+
     type: str
 
     virtual: bool = False
@@ -111,9 +113,9 @@ class Part(ABC):
         pass
 
     @abstractclassmethod
-    def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
-        """Name and type of the measurement values of this part"""
-        return list[Tuple[str, Type]]()
+    def get_measurement_shape(self) -> Collection[Tuple[str, str]]:
+        """Name and struct descriptor of each measured value. See https://docs.python.org/3.5/library/struct.html for struct descriptor instructions"""
+        return list[Tuple[str, str]]()
 
     @abstractclassmethod
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
@@ -160,5 +162,6 @@ class Rocket:
 
     def add_part(self, part: Part):
         self.parts.append(part)
+        part._index = len(self.parts) - 1
         self.part_lookup[part._id] = part
         

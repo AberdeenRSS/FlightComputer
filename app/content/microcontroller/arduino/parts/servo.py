@@ -86,10 +86,10 @@ class ServoSensor(Part):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('communication_failure', int)
+            ('enabled', '?'),
+            ('communication_failure', '?')
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[int, int]]]:
-        return [[1 if self.enabled else 0, 1 if self.state == 'open' else 0]]
+        return [[self.enabled, self.state == 'failure']]
 

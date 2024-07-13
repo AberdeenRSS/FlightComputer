@@ -50,11 +50,11 @@ class FramerateSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('framerate', int)
+            ('framerate', 'f')
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
 
-        return [[self.framerate]]
+        return [[self.framerate or 0]]
     
     

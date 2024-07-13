@@ -45,7 +45,7 @@ class TemperatureSensor(Part):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('temperature', float),
+            ('temperature', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:

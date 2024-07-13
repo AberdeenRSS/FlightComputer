@@ -102,16 +102,16 @@ class OrientationSensor(Part, IOrientationSensor, IDataAge):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('calibrated', int),
-            ('W', float),
-            ('X', float),
-            ('Y', float),
-            ('Z', float),
+            ('calibrated', '?'),
+            ('W', 'f'),
+            ('X', 'f'),
+            ('Y', 'f'),
+            ('Z', 'f'),
         ]
 
-    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float | None]]:
+    def collect_measurements(self, now, iteration) -> Iterable[Iterable[float]]:
     
-        return [[1 if self.calibrated else 0, self.quat[0], self.quat[1], self.quat[2], self.quat[3]]]
+        return [[self.calibrated, self.quat[0], self.quat[1], self.quat[2], self.quat[3]]]
 
     def get_orientation(self):
         return (self.quat[0], self.quat[1], self.quat[2], self.quat[3])

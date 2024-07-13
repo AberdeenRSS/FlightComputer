@@ -4,6 +4,7 @@ import traceback
 import kivy
 from pathlib import Path
 
+from app.helper.file_logger import FileLogger
 from app.helper.global_data_dir import set_user_data_dir
 kivy.require('2.1.0') # replace with your current kivy version !
 

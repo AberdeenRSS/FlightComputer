@@ -50,7 +50,7 @@ class BarometricAltitudeSensor(Part):
 
     def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         return [
-            ('altitude', float),
+            ('altitude', 'f'),
             # ('pressure-sea-lvl', float),
             ]
 
@@ -59,5 +59,5 @@ class BarometricAltitudeSensor(Part):
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:
         """Should give back all measurements obtained since the last tick"""
-        return [[self.altitude]]
+        return [[self.altitude or -9999]]
 

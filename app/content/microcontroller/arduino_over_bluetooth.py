@@ -270,11 +270,11 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('available_devices', int),
-            ('connected', int),
-            ('failed_connection', int),
-            ('last_index', int)
+            ('enabled', '?'),
+            ('available_devices', 'i'),
+            ('connected', '?'),
+            ('failed_connection', '?'),
+            ('last_index', 'i')
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:
@@ -283,5 +283,5 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
 
         num_devices = len(self.device_name_list) if self.device_name_list is not None else -1
 
-        return [[1 if self.enabled else 0, num_devices, self.connected, 1 if self.read_thread_failure else 0, last_index]]
+        return [[self.enabled, num_devices, self.connected, self.read_thread_failure, last_index]]
     

@@ -79,11 +79,11 @@ class PlyerGyroscopeSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', int),
-            ('sensor_failed', int),
-            ('rotation-x', float),
-            ('rotation-y', float),
-            ('rotation-z', float),
+            ('enabled', '?'),
+            ('sensor_failed', '?'),
+            ('rotation-x', 'f'),
+            ('rotation-y', 'f'),
+            ('rotation-z', 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
@@ -91,8 +91,8 @@ class PlyerGyroscopeSensor(Part):
         if iteration % self.status_data_rate > 0 and self.iteration_rotation is None:
             return
 
-        rot =  self.iteration_rotation or [None, None, None]
-        return [[1 if self.enabled else 0, 1 if self.sensor_failed else 0, rot[0], rot[1], rot[2]]]
+        rot =  self.iteration_rotation or [0, 0, 0]
+        return [[self.enabled, self.sensor_failed, rot[0], rot[1], rot[2]]]
     
     def flush(self):
         self.iteration_rotation = None

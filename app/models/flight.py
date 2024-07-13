@@ -52,6 +52,8 @@ class Flight:
     When the flight ended
     """
 
+    measured_part_ids: list[int] = field(default_factory=list)
+
     measured_parts: dict[str, list[FlightMeasurementDescriptor]] = field(default_factory=dict)
     """
     The list of vessel parts that have measurements for and how those measurements will look like
@@ -102,6 +104,8 @@ class FlightSchema(make_safe_schema(Flight)):
     """
     When the flight ended
     """
+
+    measured_part_ids = fields.List(fields.Str())
 
     measured_parts = fields.Dict(keys= fields.Str(), values= fields.List(fields.Nested(FlightMeasurementDescriptorSchema)))
     """
