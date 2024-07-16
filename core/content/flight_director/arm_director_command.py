@@ -1,5 +1,5 @@
-from app.content.general_commands.basic_success_response import BasicErrorResponseSchema
-from app.logic.rocket_definition import Command
+from core.content.general_commands.basic_success_response import BasicErrorResponseSchema
+from core.logic.rocket_definition import Command
 
 class ArmDirectorCommand(Command):
     '''

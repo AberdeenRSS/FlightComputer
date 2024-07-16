@@ -4,13 +4,13 @@ from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 from dataclasses import dataclass
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
-from app.content.motor_commands.open import OpenCommand, CloseCommand
-from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoOverSerial, make_default_command_callback
-from app.logic.commands.command_helper import is_new_command
-from app.logic.rocket_definition import Part, Rocket
+from core.content.general_commands.enable import DisableCommand, EnableCommand
+from core.content.microcontroller.arduino_serial_common import ArduinoHwBase
+from core.content.motor_commands.open import OpenCommand, CloseCommand
+from core.logic.commands.command import Command
+from core.content.microcontroller.arduino_serial import ArduinoOverSerial, make_default_command_callback
+from core.logic.commands.command_helper import is_new_command
+from core.logic.rocket_definition import Part, Rocket
 
 
 class ServoSensor(Part):

@@ -5,8 +5,8 @@ from uuid import UUID
 from abc import ABC, abstractclassmethod
 from marshmallow import Schema
 
-from app.helper.model_helper import SchemaExt
-from app.logic.commands.command import Command, Command
+from core.helper.model_helper import SchemaExt
+from core.logic.commands.command import Command, Command
 
 #Maybe
 

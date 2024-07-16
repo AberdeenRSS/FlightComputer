@@ -6,15 +6,15 @@ import jwt
 import json
 import httpx
 import socketio
-from app.logic.rocket_definition import Rocket
-from app.logic.to_vessel_and_flight import to_vessel_and_flight
-from app.models.command import Command, CommandSchema
-from app.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
-from app.models.vessel import Vessel, VesselSchema
-from app.models.flight import Flight, FlightSchema
-from kivy.logger import Logger
+from core.logic.rocket_definition import Rocket
+from core.logic.to_vessel_and_flight import to_vessel_and_flight
+from core.models.command import Command, CommandSchema
+from core.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
+from core.models.vessel import Vessel, VesselSchema
+from core.models.flight import Flight, FlightSchema
 import time
 import gzip
+from logging import getLogger
 
 def zip_payload(payload: str) -> bytes:
     btsio = BytesIO()
@@ -23,7 +23,6 @@ def zip_payload(payload: str) -> bytes:
     g.close()
     return btsio.getvalue()
 
-LOGGER_NAME = 'ApiClient'
 
 def format_response(response: Union[httpx.Response, None]):
 
@@ -59,6 +58,8 @@ class ApiClient:
 
         self.endpoint = self._config['API_ENDPOINT']
 
+        self.logger = getLogger('API Client')
+
 
     old_token_decoded: Union[None, dict[str, Any]] = None
     old_token: Union[None, str] = None
@@ -78,12 +79,12 @@ class ApiClient:
         try:
             result = await self.request_with_error_handling_and_retry(lambda client: client.post('/auth/authorization_code_flow', data=self.auth_code), 3, False) # type: ignore
         except Exception as e:
-            Logger.exception(f'{LOGGER_NAME}: Authentication failed: {e.args}')
+            self.logger.exception(f'Authentication failed: {e.args}')
             raise
     
         if result.is_error:
-            Logger.exception(f'{LOGGER_NAME}: Authentication failed: {result.text}')
-            raise Exception(f'{LOGGER_NAME}: Authentication failed: {result.text}')
+            self.logger.exception(f'Authentication failed: {result.text}')
+            raise Exception(f'Authentication failed: {result.text}')
 
         auth_response = result.json()
         bearer = auth_response['token']
@@ -92,8 +93,8 @@ class ApiClient:
             header = jwt.get_unverified_header(bearer)
             decoded_bearer = jwt.decode(bearer, algorithms=header['alg'], verify=False, options={'verify_signature': False})
         except Exception as e:
-            Logger.exception(f'{LOGGER_NAME}: Authentication failed: Invalid bearer token: {e}')
-            raise Exception(f'{LOGGER_NAME}: Authentication failed: Invalid bearer token: {e}')
+            self.logger.exception(f'Authentication failed: Invalid bearer token: {e}')
+            raise Exception(f'Authentication failed: Invalid bearer token: {e}')
 
         self.old_token = bearer
         self.old_token_decoded = decoded_bearer
@@ -119,14 +120,14 @@ class ApiClient:
                 try:
                     response = await func(client)
                 except Exception as e:
-                    Logger.exception(f'{LOGGER_NAME}: Unexpected error while sending response')
+                    self.logger.exception(f'Unexpected error while sending response')
 
                 # If successful return
                 if response is not None and response.status_code >= 200 and response.status_code < 300:
-                    Logger.info(f'{LOGGER_NAME}: {format_response(response)}')
+                    self.logger.info(f'{format_response(response)}')
                     return response
 
-                Logger.warning(f'{LOGGER_NAME}: {format_response(response)} (Retry {curRetry})')
+                self.logger.warning(f'{format_response(response)} (Retry {curRetry})')
 
                 curRetry += 1
 
@@ -171,14 +172,14 @@ class ApiClient:
                 success = res.status_code >= 200 and res.status_code < 300
 
                 if not success:
-                    Logger.warning(f'{LOGGER_NAME}: {format_response(res)}')
+                    self.logger.warning(f'{format_response(res)}')
 
                 return (success, str(res.status_code))
             except TimeoutError as e:
-                Logger.warning(f'{LOGGER_NAME}: Failed sending measurements due to timeout. Response: {res}')
+                self.logger.warning(f'Failed sending measurements due to timeout. Response: {res}')
                 return (False, 'TIMEOUT')
             except  Exception as e:  
-                Logger.exception(f'{LOGGER_NAME}: Unknown error sending flight data. Exception: {e}. Response: {res}')
+                self.logger.exception(f'Unknown error sending flight data. Exception: {e}. Response: {res}')
                 return (False, str(e))
 
     async def try_report_flight_data_compact(self, flight_id, data: list[FlightMeasurementCompact], timeout: float) -> \
@@ -215,14 +216,14 @@ class ApiClient:
                     success = res.status_code >= 200 and res.status_code < 300
 
                     if not success:
-                        Logger.warning(f'{LOGGER_NAME}: {format_response(res)}')
+                        self.logger.warning(f'{format_response(res)}')
 
                     return (success, str(res.status_code))
                 except TimeoutError as e:
-                    Logger.warning(f'{LOGGER_NAME}: Failed sending measurements due to timeout. Response: {res}')
+                    self.logger.warning(f'Failed sending measurements due to timeout. Response: {res}')
                     return (False, 'TIMEOUT')
                 except  Exception as e:  
-                    Logger.exception(f'{LOGGER_NAME}: Unknown error sending flight data. Exception: {e}. Response: {res}')
+                    self.logger.exception(f'Unknown error sending flight data. Exception: {e}. Response: {res}')
                     return (False, str(e))
 
 
@@ -260,14 +261,14 @@ class ApiClient:
                 success = res.status_code >= 200 and res.status_code < 300
 
                 if not success:
-                    Logger.warning(f'{LOGGER_NAME}: {format_response(res)}')
+                    self.logger.warning(f'{format_response(res)}')
 
                 return (success, str(res.status_code))
             except TimeoutError as e:
-                Logger.warning(f'{LOGGER_NAME}: Failed sending measurements due to timeout. Response: {res}')
+                self.logger.warning(f'Failed sending measurements due to timeout. Response: {res}')
                 return (False, 'TIMEOUT')
             except  Exception as e:  
-                Logger.exception(f'{LOGGER_NAME}: Unknown error sending flight data. Exception: {e}. Response: {res}')
+                self.logger.exception(f'Unknown error sending flight data. Exception: {e}. Response: {res}')
                 return (False, str(e))
 
     async def try_send_command_responses(self, flight_id: str, commands):
@@ -310,6 +311,7 @@ class RealtimeApiClient():
         self.flight = flight
 
         self.sio = socketio.Client(logger=False)
+        self.logger = getLogger('Realtime Client')
         self.commands_buffer = list[Command]()
 
     async def connect(self, command_callback: Callable[[Collection[Command]], None]):
@@ -322,33 +324,36 @@ class RealtimeApiClient():
 
     def init_events(self, command_callback: Callable[[Collection[Command]], None]):
 
-        @self.sio.event
+        logger = self.logger
+        sio = self.sio
+
+        @sio.event
         def connect():
             try:
                 self.sio.call('command.subscribe_as_vessel', str(self.flight._id))
             except Exception as e:
-                Logger.info(f'{LOGGER_NAME}: Failed to subscribe to command stream: {e}')
+                logger.info(f'Failed to subscribe to command stream: {e}')
 
-        @self.sio.event
+        @sio.event
         def connect_error(data):
-            Logger.error(f"The connection failed: {data}")
+            logger.error(f"The connection failed: {data}")
 
-        @self.sio.event
+        @sio.event
         def disconnect():
-            Logger.info("Socket io lost connection")
+            logger.info("Socket io lost connection")
 
-        @self.sio.on('command.new')
+        @sio.on('command.new')
         def command_new(data: Any):
             try:
                 commands = CommandSchema().load_list_safe(Command, data['commands'])
                 command_callback(commands)
 
             except:
-                Logger.info(f'{LOGGER_NAME}: Failed parsing command')
+                logger.info(f'Failed parsing command')
 
-        @self.sio.on('*')
+        @sio.on('*')
         def catch_all(event, data):
-            Logger.info(f'{LOGGER_NAME}: received unknown event {event}')
+            logger.info(f'received unknown event {event}')
 
     def __del__(self):
         if self.sio.connected:

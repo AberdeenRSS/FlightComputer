@@ -7,20 +7,20 @@ from typing import Callable, Collection, Iterable, Tuple, Type, Union
 from uuid import UUID
 
 from dataclasses import dataclass
-from app.content.microcontroller.arduino_serial_common import ArduinoHwBase, ArduinoSerialAdapter, make_default_command_callback
-from app.logic.commands.command import Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
-from app.content.motor_commands.open import SetIgnitionPhaseCommand
-from app.content.motor_commands.open import SetPreparationPhaseCommand
+from core.content.microcontroller.arduino_serial_common import ArduinoHwBase, ArduinoSerialAdapter, make_default_command_callback
+from core.logic.commands.command import Command
+from core.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from core.content.motor_commands.open import SetIgnitionPhaseCommand
+from core.content.motor_commands.open import SetPreparationPhaseCommand
 
-from app.logic.rocket_definition import Part, Rocket
+from core.logic.rocket_definition import Part, Rocket
 
 from kivy.utils import platform
 from kivy.logger import Logger, LOG_LEVELS
 
 
 import tinyproto
-from app.content.microcontroller.arduino.messages.messages import SensorData, ResponseMessage
+from core.content.microcontroller.arduino.messages.messages import SensorData, ResponseMessage
 
 
 if platform == 'android':

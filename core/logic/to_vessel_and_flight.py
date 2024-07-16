@@ -1,12 +1,12 @@
 from typing import Type
 from uuid import UUID
-from app.logic.rocket_definition import Command
-from app.models.command import CommandInfo
-from app.models.flight_measurement import FlightMeasurement, FlightMeasurementDescriptor
-from app.models.vessel import Vessel
-from app.models.vessel_part import VesselPart
-from app.models.flight import Flight
-from app.logic.rocket_definition import Rocket
+from core.logic.rocket_definition import Command
+from core.models.command import CommandInfo
+from core.models.flight_measurement import FlightMeasurement, FlightMeasurementDescriptor
+from core.models.vessel import Vessel
+from core.models.vessel_part import VesselPart
+from core.models.flight import Flight
+from core.logic.rocket_definition import Rocket
 from datetime import datetime, timezone
 from marshmallow_jsonschema import JSONSchema
 

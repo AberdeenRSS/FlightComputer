@@ -4,7 +4,7 @@ from time import strftime
 from typing import Type, Union
 import uuid
 from marshmallow import Schema, fields, validate
-from app.helper.model_helper import make_safe_schema
+from core.helper.model_helper import make_safe_schema
 
 @dataclass
 class FlightMeasurementSeriesIdentifier:

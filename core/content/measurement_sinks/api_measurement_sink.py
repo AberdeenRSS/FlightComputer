@@ -6,17 +6,17 @@ import time
 from typing import Iterable, Sequence, Tuple, Type, Union
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
-from app.api_client import ApiClient
-from app.helper.measurement_binary_helper import get_struct_format_for_part
-from app.logic.commands.command import Command, Command
-from app.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase
-from app.logic.rocket_definition import Measurements, Part, Rocket
-from app.models.flight import Flight
-from app.models.flight_measurement import FlightMeasurement
+from core.api_client import ApiClient
+from core.helper.measurement_binary_helper import get_struct_format_for_part
+from core.logic.commands.command import Command, Command
+from core.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase
+from core.logic.rocket_definition import Measurements, Part, Rocket
+from core.models.flight import Flight
+from core.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
 from kivy.logger import Logger, LOG_LEVELS
 
-from app.models.flight_measurement_compact import FlightMeasurementCompact
+from core.models.flight_measurement_compact import FlightMeasurementCompact
 
 LOGGER_NAME = 'Measurement_Sink'
 

@@ -1,17 +1,17 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from app.ui.data_download import DownloadDataUI
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
-from app.flight_executer import FlightExecuter
-from app.rockets.make_spatula import make_spatula
 from datetime import datetime
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 
-from app.helper.vessel_store import get_vessel_auth_code, set_vessel_auth_code
+from kivy_wrapper.app.flight_setup_handler import FlightSetupHandler
+from kivy_wrapper.app.helper.vessel_store import get_vessel_auth_code, set_vessel_auth_code
+from kivy_wrapper.app.rockets.make_spatula import make_spatula
+from kivy_wrapper.app.ui.data_download import DownloadDataUI
 
 class FlightCreator(BoxLayout):
 
@@ -121,7 +121,7 @@ async def run_loop():
         if flight_config.should_add_default_uis:
             flight_config.add_default_uis()
 
-        flight_executor = FlightExecuter(flight_config)
+        flight_executor = FlightSetupHandler(flight_config)
         app.root_layout.add_widget(flight_executor.ui)
 
         # Wait for the flight to finish or crash

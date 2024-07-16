@@ -5,15 +5,15 @@ from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 import numpy as np
-from app.content.common_sensor_interfaces.data_age import IDataAge
-from app.logic.math.linear import rotate_vector_by_quaternion
+from core.content.common_sensor_interfaces.data_age import IDataAge
+from core.logic.math.linear import rotate_vector_by_quaternion
 
 from dataclasses import dataclass
-from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoOverSerial
-from app.logic.rocket_definition import Part, Rocket
+from core.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
+from core.content.general_commands.enable import DisableCommand, EnableCommand
+from core.logic.commands.command import Command
+from core.content.microcontroller.arduino_serial import ArduinoOverSerial
+from core.logic.rocket_definition import Part, Rocket
 
 class PositiveAttitudeAnalyzer(Part, IDataAge):
     type = 'Analyzer.Attitude.Absolute'

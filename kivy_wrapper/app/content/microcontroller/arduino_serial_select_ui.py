@@ -1,14 +1,15 @@
 
 from typing import Iterable, Sized, Collection, Union
-from app.content.microcontroller.arduino_serial import ArduinoOverSerial
-from app.content.microcontroller.arduino_serial_common import ArduinoHwSelectable
-from app.ui.part_ui import PartUi
+from core.content.microcontroller.arduino_serial import ArduinoOverSerial
+from core.content.microcontroller.arduino_serial_common import ArduinoHwSelectable
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy import Logger
+
+from kivy_wrapper.app.ui.part_ui import PartUi
 
 class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoHwSelectable]):
 

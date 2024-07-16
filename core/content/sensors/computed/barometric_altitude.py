@@ -2,10 +2,10 @@ from datetime import timedelta
 import math
 from typing import Collection, Iterable, Sequence, Tuple, Type, Union
 from uuid import UUID
-from app.content.common_sensor_interfaces.pressure import IPressureSensor
-from app.content.common_sensor_interfaces.temperature import ITemperatureSensor
-from app.logic.commands.command import Command
-from app.logic.rocket_definition import Measurements, Part, Rocket
+from core.content.common_sensor_interfaces.pressure import IPressureSensor
+from core.content.common_sensor_interfaces.temperature import ITemperatureSensor
+from core.logic.commands.command import Command
+from core.logic.rocket_definition import Measurements, Part, Rocket
 
 __ALTITUDE_EQ_EXPONENT__ = 1/5.257
 

@@ -2,14 +2,14 @@ from asyncio import Future
 from datetime import timedelta
 from typing import Iterable, Tuple, Type, Union
 from uuid import UUID
-from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
+from core.content.microcontroller.arduino_serial_common import ArduinoHwBase
 
-from app.content.motor_commands.open import IgniteCommand
-from app.content.microcontroller.arduino.parts.servo import ServoSensor
-from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoOverSerial, make_default_command_callback
-from app.logic.commands.command_helper import is_new_command
-from app.logic.rocket_definition import Part, Rocket
+from core.content.motor_commands.open import IgniteCommand
+from core.content.microcontroller.arduino.parts.servo import ServoSensor
+from core.logic.commands.command import Command
+from core.content.microcontroller.arduino_serial import ArduinoOverSerial, make_default_command_callback
+from core.logic.commands.command_helper import is_new_command
+from core.logic.rocket_definition import Part, Rocket
 
 
 class IgniterSensor(Part):

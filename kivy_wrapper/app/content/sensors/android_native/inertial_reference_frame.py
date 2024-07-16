@@ -1,16 +1,17 @@
 from datetime import timedelta
 from typing import Collection, Iterable, Sequence, Tuple, Type, Union, cast
 from uuid import UUID
-from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
-from app.content.general_commands.calibrate import CalibrateZeroCommand
-from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
+from core.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
+from core.content.general_commands.calibrate import CalibrateZeroCommand
 
-from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
-from app.logic.commands.command import Command
-from app.logic.math.linear import quaternion_multiply, rotate_vector_by_quaternion
-from app.logic.rocket_definition import Measurements, Part, Rocket
+from core.logic.commands.command import Command
+from core.logic.math.linear import quaternion_multiply, rotate_vector_by_quaternion
+from core.logic.rocket_definition import Measurements, Part, Rocket
 
 import numpy as np
+
+from kivy_wrapper.app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
+from kivy_wrapper.app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
 
 
 class InertialReferenceFrame(Part, IOrientationSensor):

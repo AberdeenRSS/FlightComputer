@@ -1,12 +1,13 @@
+from time import sleep
 from datetime import timedelta
-from typing import Iterable, Tuple, Type, Union
+from typing import Iterable, Tuple, Type, Union, cast
+from typing_extensions import Self
 from uuid import UUID
-from app.content.general_commands.calibrate import CalibrateZeroCommand
-from app.logic.calibration.calibration_processor import CalibrationProcessor3D, SimpleCalibrationProcessor3D
-from app.logic.commands.command import Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.rocket_definition import Command, Part, Rocket
-from kivy.utils import platform
+from core.content.general_commands.calibrate import CalibrateZeroCommand
+from core.logic.calibration.calibration_processor import CalibrationProcessor3D, SimpleCalibrationProcessor3D
+from core.logic.commands.command import Command
+from core.content.general_commands.enable import DisableCommand, EnableCommand
+from core.logic.rocket_definition import Command, Part, Rocket
 from kivy import Logger
 
 try:
@@ -19,11 +20,11 @@ except:
     print('Not running in kivy app')
 
 
-class PyjiniusGyroscopeSensor(Part):
+class PyjiniusAccelerationSensor(Part):
 
     #region Config
 
-    type = 'Sensor.Gyroscope'
+    type = 'Sensor.Acceleration'
 
     min_update_period = timedelta(milliseconds=10)
 
@@ -36,7 +37,7 @@ class PyjiniusGyroscopeSensor(Part):
 
     #endregion
 
-    #region State
+    #region Status
 
     enabled: bool = True
 
@@ -50,17 +51,17 @@ class PyjiniusGyroscopeSensor(Part):
     correction = [0, 0, 0]
     ''' Correction value form calibration process'''
 
-    #endregion
+    #endregion 
 
     #region Sensor Data
 
     calibration_proccessor: Union[CalibrationProcessor3D, None] = None
 
-    angular_acceleration: Union[None, Tuple[float, float, float]] = None
+    acceleration: Union[None, Tuple[float, float, float]]
 
     accuracy: Union[int, None] = None
 
-    iteration_angular_acceleration: Union[None, list[Tuple[float, float, float]]] = None
+    iteration_acceleration: Union[None, list[Tuple[float, float, float]]] = None
 
     iteration_accuracy: Union[int, None] = None
 
@@ -78,11 +79,11 @@ class PyjiniusGyroscopeSensor(Part):
     
     def try_enable(self, enable: bool) -> bool:
         try:
-            self.hardware = autoclass('org.rss.Gyroscope')
-            self.hardware.gyroEnable(enable)
+            self.hardware = autoclass('org.rss.Accelerometer')
+            self.hardware.accelerometerEnable(enable)
         except Exception as e:
             self.sensor_failed = True
-            Logger.error(f'Native Gyro sensor failed: {e}')
+            Logger.error(f'Plyer gravity sensor failed: {e}')
             return False
     
         return True
@@ -113,28 +114,27 @@ class PyjiniusGyroscopeSensor(Part):
 
         command.state = 'success'
         command.response_message = f'Successfully calbirated sensor. Calibraiton values: {self.correction}'
-
    
-    def update(self, commands: Iterable[Command], now: float, iteration):
+    def update(self, commands: Iterable[Command], now, iteration):
         
         for c in commands:
             if isinstance(c, EnableCommand):
                 success = self.try_enable(True)
                 c.state = 'success' if success else 'failed'
-                c.response_message = 'Successfully enabled gyro' if success else 'Gryo unavailable'
+                c.response_message = 'Successfully enabled accelerometer' if success else 'Accelerometer unavailable'
                 if success:
                     self.enabled = True
             elif isinstance(c, DisableCommand):
                 success = self.try_enable(False)
                 c.state = 'success' if success else 'failed'
-                c.response_message = 'Successfully disabled gyro' if success else 'Failed disabling gyro'
+                c.response_message = 'Successfully disabled accelerometer' if success else 'Failed disabling accelerometer'
                 if success: 
                     self.enabled = False
             elif isinstance(c, CalibrateZeroCommand):
                 self.process_calibration(c, now)
             else:
                 c.state = 'failed' # Part cannot handle this command
-                c.response_message = f'The nativ gyrocsope can not process commands of type {c.command_type}'
+                c.response_message = f'Cannot process commands of type {c.command_type}'
                 continue
             
         if self.enabled and not self.sensor_failed:
@@ -143,24 +143,24 @@ class PyjiniusGyroscopeSensor(Part):
                 self.hardware.flush()
                 last_accuracy = self.hardware.lastAccuracy
                 if len(last_events) > 0:
-                    self.iteration_angular_acceleration = [x.values for x in last_events]
+                    self.iteration_acceleration = [x.values for x in last_events]
                     # If calibrating add the calibration values
                     # Do this before the old calibration is applied to make sure
                     # that it is a fresh calbiration
                     if self.calibration_proccessor is not None:
-                        self.calibration_proccessor.add_values(self.iteration_angular_acceleration)
-                    for v in self.iteration_angular_acceleration:
+                        self.calibration_proccessor.add_values(self.iteration_acceleration)
+                    for v in self.iteration_acceleration:
                         v[0] += self.correction[0] # type: ignore
                         v[1] += self.correction[1] # type: ignore
                         v[2] += self.correction[2] # type: ignore
-                    self.angular_acceleration = self.iteration_angular_acceleration[-1]
+                    self.acceleration = self.iteration_acceleration[-1]
                 if last_accuracy:
                     self.accuracy = self.iteration_accuracy = last_accuracy
             except Exception as e:
                 Logger.error(f'Plyer gravity sensor failed: {e}')
                 self.sensor_failed = True
         else:
-            self.iteration_angular_acceleration = self.angular_acceleration = None
+            self.iteration_acceleration = self.acceleration = None
             self.iteration_accuracy = self.accuracy = None
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
@@ -169,9 +169,9 @@ class PyjiniusGyroscopeSensor(Part):
             ('sensor_failed', '?'),
             ('calibrating', '?'),
             ('accuracy', 'i'),
-            ('angular-acceleration-x', 'f'),
-            ('angular-acceleration-y', 'f'),
-            ('angular-acceleration-z', 'f'),
+            ('acceleration-x', 'f'),
+            ('acceleration-y', 'f'),
+            ('acceleration-z', 'f'),
             ('correction-x', 'f'),
             ('correction-y', 'f'),
             ('correction-z', 'f'),
@@ -179,29 +179,30 @@ class PyjiniusGyroscopeSensor(Part):
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
 
-        if iteration % self.status_data_rate > 0 and self.iteration_angular_acceleration is None and self.iteration_accuracy is None:
+        if iteration % self.status_data_rate > 0 and self.iteration_acceleration is None and self.iteration_accuracy is None:
             return
         
-        if self.iteration_angular_acceleration is not None:
+        if self.iteration_acceleration is not None:
             res = [[
                 self.enabled,
                 self.sensor_failed,
-                self.calibration_command is not None,
-                self.iteration_accuracy or 0,
+                self.calibration_command,
+                self.iteration_accuracy,
                 acc[0],
                 acc[1],
                 acc[2],
                 self.correction[0],
                 self.correction[1],
                 self.correction[2],
-            ] for acc in self.iteration_angular_acceleration]
-
+            ] for acc in self.iteration_acceleration]
+           
             return res
 
         return [[self.enabled, self.sensor_failed, self.calibration_command is not None, self.iteration_accuracy or 0, 0, 0, 0, 0, 0, 0]]
     
+    
     def flush(self):
 
-        self.iteration_angular_acceleration = None
+        self.iteration_acceleration = None
         self.iteration_accuracy = None
         

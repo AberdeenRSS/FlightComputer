@@ -5,15 +5,15 @@ from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 from dataclasses import dataclass
-from app.content.common_sensor_interfaces.data_age import IDataAge
-from app.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
-from app.content.general_commands.calibrate import CalibrateZeroCommand
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
-from app.logic.commands.command import Command
-from app.content.microcontroller.arduino_serial import ArduinoOverSerial
-from app.logic.math.linear import quaternion_multiply
-from app.logic.rocket_definition import Part, Rocket
+from core.content.common_sensor_interfaces.data_age import IDataAge
+from core.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
+from core.content.general_commands.calibrate import CalibrateZeroCommand
+from core.content.general_commands.enable import DisableCommand, EnableCommand
+from core.content.microcontroller.arduino_serial_common import ArduinoHwBase
+from core.logic.commands.command import Command
+from core.content.microcontroller.arduino_serial import ArduinoOverSerial
+from core.logic.math.linear import quaternion_multiply
+from core.logic.rocket_definition import Part, Rocket
 
 import numpy as np
 from time import time

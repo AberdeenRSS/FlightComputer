@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Iterable
-from app.logic.rocket_definition import Part, Rocket
-from app.ui.default_part_ui import DefaultPartUI
-from app.ui.part_ui import PartUi
+from core.logic.rocket_definition import Part, Rocket
+from kivy_wrapper.app.ui.default_part_ui import DefaultPartUI
+from kivy_wrapper.app.ui.part_ui import PartUi
 
 @dataclass
 class FlightConfig():

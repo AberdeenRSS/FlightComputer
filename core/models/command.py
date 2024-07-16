@@ -3,8 +3,8 @@ from datetime import datetime
 from typing import Any, Union
 from uuid import UUID
 from marshmallow import Schema, fields, validate
-from app.helper.json_schema_field import JSON_Schema_Field
-from app.helper.model_helper import make_safe_schema
+from core.helper.json_schema_field import JSON_Schema_Field
+from core.helper.model_helper import make_safe_schema
 
 @dataclass
 class Command:

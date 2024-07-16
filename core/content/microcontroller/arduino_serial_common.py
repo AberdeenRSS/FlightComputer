@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 from asyncio import Future, Task
 from dataclasses import dataclass
 from typing import Callable, Collection
-from app.content.microcontroller.arduino.messages.messages import ResponseMessage, SensorData
-from app.logic.commands.command import Command
+from core.content.microcontroller.arduino.messages.messages import ResponseMessage, SensorData
+from core.logic.commands.command import Command
 from kivy import Logger
 
-from app.logic.rocket_definition import Part
+from core.logic.rocket_definition import Part
 
 LOGGER_NAME = 'Serial Adapter'
 

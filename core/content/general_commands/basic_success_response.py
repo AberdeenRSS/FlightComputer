@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import Union
 from marshmallow import Schema, fields
-from app.helper.model_helper import make_safe_schema
+from core.helper.model_helper import make_safe_schema
 
 @dataclass
 class BasicErrorResponse:

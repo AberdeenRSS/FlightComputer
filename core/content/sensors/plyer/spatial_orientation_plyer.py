@@ -3,9 +3,9 @@ from datetime import timedelta
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
-from app.logic.commands.command import Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.rocket_definition import Command, Part, Rocket
+from core.logic.commands.command import Command
+from core.content.general_commands.enable import DisableCommand, EnableCommand
+from core.logic.rocket_definition import Command, Part, Rocket
 from plyer import spatialorientation
 from plyer.facades.spatialorientation import SpatialOrientation
 from kivy import Logger

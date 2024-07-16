@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 import time
 
-from app.helper.global_data_dir import get_cur_flight_data_dir
+from core.helper.global_data_dir import get_cur_flight_data_dir
 
 
 class FileLogger(logging.Handler):
@@ -62,7 +62,6 @@ class FileLogger(logging.Handler):
 
 
     def emit(self, record):
-        "using the Clock module for thread safety with kivy's main loop"
         def f(dt=None):
 
             self.create_next_file_handle_if_required()
@@ -77,7 +76,8 @@ class FileLogger(logging.Handler):
             except Exception as e:
                 pass
 
-        Clock.schedule_once(f)
+        f()
+        # Clock.schedule_once(f)
 
     def flush(self):
         if self.current_file_handle is None:

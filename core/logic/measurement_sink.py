@@ -3,13 +3,13 @@ from datetime import datetime
 from typing import Iterable, Sequence, Tuple, Type, Union
 from typing_extensions import Self
 from uuid import UUID
-from app.api_client import ApiClient
-from app.logic.commands.command import Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.rocket_definition import Command, Measurements, Part, Rocket
+from core.api_client import ApiClient
+from core.logic.commands.command import Command
+from core.content.general_commands.enable import DisableCommand, EnableCommand
+from core.logic.rocket_definition import Command, Measurements, Part, Rocket
 from random import random
 
-from app.models.flight import Flight
+from core.models.flight import Flight
 
 MeasurementsByPart = dict[Part, tuple[float, float, Sequence[Measurements]]]
 

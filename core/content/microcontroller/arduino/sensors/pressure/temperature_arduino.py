@@ -4,9 +4,9 @@ from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 from dataclasses import dataclass
-from app.content.general_commands.enable import DisableCommand, EnableCommand
-from app.logic.commands.command import Command
-from app.logic.rocket_definition import Part, Rocket
+from core.content.general_commands.enable import DisableCommand, EnableCommand
+from core.logic.commands.command import Command
+from core.logic.rocket_definition import Part, Rocket
 
 
 class TemperatureSensor(Part):

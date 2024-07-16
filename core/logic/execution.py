@@ -1,6 +1,6 @@
 from typing import Iterable
-from app.logic.commands.command import Command
-from app.logic.rocket_definition import Part, Rocket
+from core.logic.commands.command import Command
+from core.logic.rocket_definition import Part, Rocket
 
 
 def topological_sort(commands: Iterable[Part]) -> list[Part]:

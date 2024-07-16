@@ -1,8 +1,4 @@
-
 from typing import Iterable, Sized, Collection, Union
-from app.content.microcontroller.arduino_serial import ArduinoOverSerial
-from app.content.microcontroller.arduino_serial_common import RssPacket
-from app.ui.part_ui import PartUi
 
 from time import time
 from datetime import datetime
@@ -11,6 +7,10 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
+
+from core.content.microcontroller.arduino_serial_common import RssPacket
+from kivy_wrapper.app.content.microcontroller.arduino_serial import ArduinoOverSerial
+from kivy_wrapper.app.ui.part_ui import PartUi
 
 class ArduinoSerialMonitorUI(BoxLayout, PartUi[ArduinoOverSerial]):
 

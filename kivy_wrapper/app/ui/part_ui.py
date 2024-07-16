@@ -1,7 +1,8 @@
 
 
 from typing import Generic, TypeVar
-from app.logic.rocket_definition import Part
+
+from core.logic.rocket_definition import Part
 
 T = TypeVar('T', bound=Part)
 

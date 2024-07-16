@@ -2,25 +2,25 @@ from datetime import datetime, timedelta
 from typing import Iterable, Tuple, Type, Union
 from uuid import UUID, uuid4
 
-from app.content.flight_director.abort_command import AbortCommand
-from app.content.flight_director.arm_director_command import ArmDirectorCommand
-from app.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
-from app.content.flight_director.start_countdown_command import StartCountDownCommand
-from app.content.general_commands.calibrate import CalibrateZeroCommand
-from app.content.microcontroller.arduino.sensors.orientation_arduino import OrientationSensor
-from app.content.microcontroller.arduino_serial import ArduinoOverSerial
-from app.content.motor_commands.open import IgniteCommand, OpenCommand
-from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
-from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
-from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
-from app.content.microcontroller.arduino.parts.igniter import IgniterSensor
-from app.content.microcontroller.arduino.parts.servo import ServoSensor
-from app.logic.commands.command import Command
-from app.logic.commands.command import Command, Command
-from app.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
-from app.logic.commands.command_helper import is_completed_command, is_new_command
+from core.content.flight_director.abort_command import AbortCommand
+from core.content.flight_director.arm_director_command import ArmDirectorCommand
+from core.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
+from core.content.flight_director.start_countdown_command import StartCountDownCommand
+from core.content.general_commands.calibrate import CalibrateZeroCommand
+from core.content.microcontroller.arduino.sensors.orientation_arduino import OrientationSensor
+from core.content.microcontroller.arduino_serial import ArduinoOverSerial
+from core.content.motor_commands.open import IgniteCommand, OpenCommand
+from kivy_wrapper.app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
+from kivy_wrapper.app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
+from kivy_wrapper.app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
+from core.content.microcontroller.arduino.parts.igniter import IgniterSensor
+from core.content.microcontroller.arduino.parts.servo import ServoSensor
+from core.logic.commands.command import Command
+from core.logic.commands.command import Command, Command
+from core.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from core.logic.commands.command_helper import is_completed_command, is_new_command
 
-from app.logic.rocket_definition import Part, Rocket
+from core.logic.rocket_definition import Part, Rocket
 from kivy.logger import Logger, LOG_LEVELS
 
 

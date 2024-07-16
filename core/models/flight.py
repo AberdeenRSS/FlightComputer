@@ -3,10 +3,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Union
 from uuid import UUID, uuid4
 from marshmallow import Schema, fields
-from app.models.flight_measurement import FlightMeasurementDescriptor
-from app.models.command import CommandInfo, CommandInfoSchema
-from app.models.flight_measurement import FlightMeasurementDescriptorSchema
-from app.helper.model_helper import make_safe_schema
+from core.models.flight_measurement import FlightMeasurementDescriptor
+from core.models.command import CommandInfo, CommandInfoSchema
+from core.models.flight_measurement import FlightMeasurementDescriptorSchema
+from core.helper.model_helper import make_safe_schema
 
 FLIGHT_DEFAULT_HEAD_TIME = timedelta(minutes=2)
 """

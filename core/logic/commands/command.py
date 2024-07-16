@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Union
 from uuid import UUID
 
-from app.helper.model_helper import SchemaExt
+from core.helper.model_helper import SchemaExt
 
 
 class Command(ABC):

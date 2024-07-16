@@ -1,13 +1,13 @@
 from datetime import timedelta
 from typing import Collection, Iterable, Sequence, Tuple, Type, Union
 from uuid import UUID, uuid4
-from app.content.microcontroller.arduino.parts.igniter import IgniterSensor
-from app.content.microcontroller.arduino.parts.servo import ServoSensor
-from app.content.microcontroller.arduino_serial_common import ArduinoHwBase
-from app.content.motor_commands.open import CloseCommand, IgniteCommand, OpenCommand
-from app.logic.commands.command import Command
-from app.logic.commands.command_helper import is_completed_command
-from app.logic.rocket_definition import Measurements, Part, Rocket
+from core.content.microcontroller.arduino.parts.igniter import IgniterSensor
+from core.content.microcontroller.arduino.parts.servo import ServoSensor
+from core.content.microcontroller.arduino_serial_common import ArduinoHwBase
+from core.content.motor_commands.open import CloseCommand, IgniteCommand, OpenCommand
+from core.logic.commands.command import Command
+from core.logic.commands.command_helper import is_completed_command
+from core.logic.rocket_definition import Measurements, Part, Rocket
 
 
 class PeriodicTester(Part):
