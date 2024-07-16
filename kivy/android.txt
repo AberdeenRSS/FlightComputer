@@ -1,0 +1,3 @@
+title=RSSFlightComputer
+author=Sidney Pauly
+orientation=   
