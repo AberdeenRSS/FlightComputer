@@ -6,6 +6,8 @@
 Lib/
 .idea/
 
+/config/secret.json
+
 vessel_info.json
 share/sdl2/bin/LICENSE.png.txt
 share/sdl2/bin/LICENSE.opusfile.txt

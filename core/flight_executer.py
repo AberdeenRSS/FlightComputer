@@ -90,7 +90,7 @@ class FlightExecuter:
         self.command_buffer = list[Command]()
         return old
 
-    async def run_control_loop(self, update_ui_hook: Callable | None):
+    async def run_control_loop(self, update_ui_hook: Callable | None = None):
 
         # Run the update loop
         flight_loop_iteration = 0
