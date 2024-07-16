@@ -1,5 +1,6 @@
 
 from datetime import timedelta
+from logging import getLogger
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
@@ -8,12 +9,14 @@ from core.content.general_commands.enable import DisableCommand, EnableCommand
 from core.logic.rocket_definition import Command, Part, Rocket
 from plyer import gps
 from plyer.facades.gps import GPS
-from kivy import Logger
 
-from kivy.utils import platform
+try:
+    from kivy.utils import platform
 
-if platform == 'android':
-    from android.permissions import request_permissions, Permission
+    if platform == 'android':
+        from android.permissions import request_permissions, Permission
+except:
+    pass
 
 class PlyerGPSSensor(Part):
 
@@ -62,6 +65,8 @@ class PlyerGPSSensor(Part):
         self.location_data_buffer = list()
         self.status_data_buffer = list()
 
+        self.logger = getLogger('GPS Plyer')
+
         # Request the android permission so that the app definetly gets location access
         if platform == 'android':
             request_permissions([Permission.ACCESS_COARSE_LOCATION, Permission.ACCESS_FINE_LOCATION])
@@ -77,7 +82,7 @@ class PlyerGPSSensor(Part):
 
         try:
 
-            Logger.info('GPS: trying to enable GPS')
+            self.logger.info('GPS: trying to enable GPS')
             as_gps = cast(GPS, gps)
 
             if enable and not self.enabled_confirmed:
@@ -85,14 +90,14 @@ class PlyerGPSSensor(Part):
                 self._enabled_confirmed = False
                 as_gps.configure(on_location=self.make_on_location())
                 as_gps.start(1, 1)
-                Logger.info('GPS: Initialized GPS')
+                self.logger.info('GPS: Initialized GPS')
                 return True
             
             if not enable:
                 as_gps.stop()
 
         except Exception as e:
-            Logger.error(f'GPS: Failed to intialize {e}')
+            self.logger.error(f'GPS: Failed to intialize {e}')
             self.sensor_failed = True
             return False
     
@@ -104,7 +109,7 @@ class PlyerGPSSensor(Part):
 
             self.enabled_confirmed = True
             self._enabled_confirmed = True
-            Logger.info(f'GPS: received location {kwargs}')
+            self.logger.info(f'GPS: received location {kwargs}')
             lat = kwargs['lat'] if 'lat' in kwargs else None
             lon = kwargs['lon'] if 'lon' in kwargs else None
             alt = kwargs['altitude'] if 'altitude' in kwargs else None
@@ -117,7 +122,7 @@ class PlyerGPSSensor(Part):
 
         def on_status(**kwargs):
             
-            Logger.info(f'GPS: status {kwargs}')
+            self.logger.info(f'GPS: status {kwargs}')
 
         return on_status
 

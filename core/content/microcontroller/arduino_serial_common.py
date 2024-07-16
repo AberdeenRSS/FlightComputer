@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from asyncio import Future, Task
 from dataclasses import dataclass
+from logging import getLogger
 from typing import Callable, Collection
 from core.content.microcontroller.arduino.messages.messages import ResponseMessage, SensorData
 from core.logic.commands.command import Command
-from kivy import Logger
 
 from core.logic.rocket_definition import Part
 
@@ -38,13 +38,7 @@ def make_default_command_callback(c: Command):
     
     return default_command_callback
 
-def on_keep_alive_done(f: Future):
 
-    if f.exception() is None:
-        Logger.info('Arduino Serial: keep alive success')
-        return
-        
-    Logger.error(f'Arduino Serial: keep alive failed: {f.exception()}')
 
 class ArduinoSerialAdapter:
 
@@ -89,6 +83,8 @@ class ArduinoSerialAdapter:
         self.send_func = send_func
         self.dataCallbacks = dict()
 
+        self.logger = getLogger('Arduino Serial Adapter')
+
         self.command_futures = dict()
         self.swap_futures = dict()
 
@@ -117,6 +113,17 @@ class ArduinoSerialAdapter:
             if not future.done():
                 future.set_exception(Exception(reason))
 
+    def make_on_keep_alive_done(self):
+        def on_keep_alive_done(f: Future):
+
+            if f.exception() is None:
+                self.logger.info('Arduino Serial: keep alive success')
+                return
+                
+            self.logger.error(f'Arduino Serial: keep alive failed: {f.exception()}')
+
+        return on_keep_alive_done
+
     def on_read(self, a: bytearray):
         '''
         Method to be called if there is raw data received from the arduino
@@ -140,7 +147,7 @@ class ArduinoSerialAdapter:
                     try:
                         future.set_result(result)
                     except Exception as e:
-                        Logger.error(f'{LOGGER_NAME}: Cannot set response future: {e}')
+                        self.logger.error(f'{LOGGER_NAME}: Cannot set response future: {e}')
 
                 else:
                     raise RuntimeError('Received request from Arduino, the arduino should only send responses')
@@ -151,17 +158,17 @@ class ArduinoSerialAdapter:
                 data = sensorData.getData()
 
                 if part not in self.dataCallbacks:
-                    Logger.warning(f'{LOGGER_NAME}: Received sensor data from arduino for unknown part: {part}')
+                    self.logger.warning(f'{LOGGER_NAME}: Received sensor data from arduino for unknown part: {part}')
                     return
 
                 try:
-                    # Logger.info(f'{LOGGER_NAME}: Received sensor data for part {part}')
+                    # self.logger.info(f'{LOGGER_NAME}: Received sensor data for part {part}')
                     self.dataCallbacks[part](part, data)
                 except Exception as e:
-                    Logger.error(f'{LOGGER_NAME}: Data callback for part {part} failed: {e.args[0]}')
+                    self.logger.error(f'{LOGGER_NAME}: Data callback for part {part} failed: {e.args[0]}')
 
         except Exception as e:
-            Logger.error(f'{LOGGER_NAME}: Failed parsing package {a}: {e.args[0]}')
+            self.logger.error(f'{LOGGER_NAME}: Failed parsing package {a}: {e.args[0]}')
 
     def send_message(self, partID: int, commandID: int):
         '''
@@ -179,7 +186,7 @@ class ArduinoSerialAdapter:
         try:
             self.send_func(message)
         except Exception as e:
-            Logger.warning(f'{LOGGER_NAME}: Failed sending serial message: {e}')
+            self.logger.warning(f'{LOGGER_NAME}: Failed sending serial message: {e}')
             future.set_exception(e)
 
         return future
@@ -214,7 +221,7 @@ class ArduinoSerialAdapter:
 
         if t > (self.last_keep_alive + self.keep_alive_interval):
             self.last_keep_alive = t
-            Logger.info(f'{LOGGER_NAME}: sending keep alive')
+            self.logger.info(f'{LOGGER_NAME}: sending keep alive')
             future = self.send_message(0, 1)
             future.add_done_callback(on_keep_alive_done)
 

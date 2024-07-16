@@ -1,5 +1,6 @@
 import asyncio
 from io import BytesIO
+from logging import getLogger, _nameToLevel
 import math
 import struct
 import time
@@ -14,7 +15,6 @@ from core.logic.rocket_definition import Measurements, Part, Rocket
 from core.models.flight import Flight
 from core.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
-from kivy.logger import Logger, LOG_LEVELS
 
 from core.models.flight_measurement_compact import FlightMeasurementCompact
 
@@ -45,6 +45,8 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
 
     def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None]):
         super().__init__(_id, name, parent)
+
+        self.logger = getLogger('Api Measurement Sink')
 
     def update(self, commands: Iterable[Command], now: float, iteration):
 
@@ -82,8 +84,8 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         old_buffer = self.measurement_buffer
         self.measurement_buffer = list()
 
-        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Starting measurment dispatch. {len(old_buffer)} in curent buffer')
+        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+            self.logger.debug(f'Starting measurment dispatch. {len(old_buffer)} in curent buffer')
 
         # A drop rate of 1 means every measurement is send
         # 2 only every second, etc.
@@ -158,7 +160,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
                         struct.pack_into(format, measurement_bytes, cur, t, *m)
                         cur += struct.calcsize(format)
                     except Exception as e:
-                        Logger.warn(f'{LOGGER_NAME}: failed to prepare measuremetns of part {part.name} at time {t} for sending: {e.args[0]}')
+                        self.logger.warn(f'failed to prepare measuremetns of part {part.name} at time {t} for sending: {e.args[0]}')
                     
                     included_m_count += 1
                 
@@ -170,8 +172,8 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         
         # print(f'Sending measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
 
-        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Prepared measurements to be send over the Api. Trying to send measurements for {combined_measurement_dict.items()} parts. Drop Rate: {drop_rate}')
+        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+            self.logger.debug(f'Prepared measurements to be send over the Api. Trying to send measurements for {combined_measurement_dict.items()} parts. Drop Rate: {drop_rate}')
 
         send_start = time.time()
 
@@ -187,15 +189,15 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         # Data was not send, therefore return old send date
         if not send_success:
 
-            Logger.warning(f'{LOGGER_NAME}: Failed sending measurements. Reason: {reason}. Took {send_duration:02}ms')
+            self.logger.warning(f'Failed sending measurements. Reason: {reason}. Took {send_duration:02}ms')
 
             self.last_send_success = False
             if reason == 'TIMEOUT':
                 self.last_send_duration = self.send_timeout.total_seconds()
             return
         
-        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Successfully send  measurements. Took {send_duration:02}ms')
+        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+            self.logger.debug(f'Successfully send  measurements. Took {send_duration:02}ms')
 
         self.last_send_success = True
         self.last_send_success_time = send_end

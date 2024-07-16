@@ -1,5 +1,6 @@
 
 from datetime import timedelta
+from logging import getLogger
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
@@ -8,7 +9,6 @@ from core.content.general_commands.enable import DisableCommand, EnableCommand
 from core.logic.rocket_definition import Command, Part, Rocket
 from plyer import gyroscope
 from plyer.facades.gyroscope import Gyroscope
-from kivy import Logger
 
 
 class PlyerGyroscopeSensor(Part):
@@ -32,6 +32,8 @@ class PlyerGyroscopeSensor(Part):
 
         self.enabled = start_enabled
 
+        self.logger = getLogger('Gyro Plyer')
+
         self.try_enable_gyroscope(self.enabled)
 
         super().__init__(_id, name, parent, list()) # type: ignore
@@ -45,7 +47,7 @@ class PlyerGyroscopeSensor(Part):
                 as_gyroscope.disable()
         except Exception as e:
             self.sensor_failed = True
-            Logger.error(f'Plyer gyroscope sensor failed: {e}')
+            self.logger.error(f'Plyer gyroscope sensor failed: {e}')
             return False
     
         return True
@@ -72,7 +74,7 @@ class PlyerGyroscopeSensor(Part):
                 self.iteration_rotation = self.rotation = as_gyroscope.rotation
 
             except Exception as e:
-                Logger.error(f'Plyer gyroscope sensor failed: {e}')
+                self.logger.error(f'Plyer gyroscope sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_rotation = self.rotation = None

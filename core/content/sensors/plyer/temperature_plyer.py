@@ -1,5 +1,6 @@
 
 from datetime import timedelta
+from logging import getLogger
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
@@ -8,7 +9,6 @@ from core.content.general_commands.enable import DisableCommand, EnableCommand
 from core.logic.rocket_definition import Command, Part, Rocket
 from plyer import temperature
 from plyer.facades.temperature import Temperature
-from kivy import Logger
 
 
 class PlyerTemperatureSensor(Part):
@@ -32,6 +32,8 @@ class PlyerTemperatureSensor(Part):
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
 
         self.enabled = start_enabled
+        self.logger = getLogger('Barmometer Plyer')
+
         self.try_enable_temperature(self.enabled)
 
         super().__init__(_id, name, parent, list()) # type: ignore
@@ -45,7 +47,7 @@ class PlyerTemperatureSensor(Part):
                 as_temperature.disable()
         except Exception as e:
             self.sensor_failed = True
-            Logger.error(f'Plyer temperature sensor failed: {e}')
+            self.logger.error(f'Plyer temperature sensor failed: {e}')
             return False
     
         return True
@@ -72,7 +74,7 @@ class PlyerTemperatureSensor(Part):
                 self.iteration_temperature_value = self.temperature_value = as_temperature.temperature
 
             except Exception as e:
-                Logger.error(f'Plyer temperature sensor failed: {e}')
+                self.logger.error(f'Plyer temperature sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_temperature_value = self.temperature_value = None

@@ -1,12 +1,8 @@
 import asyncio
-from logging import getLogger
+from logging import _nameToLevel, getLogger
 import time
 from typing import Callable, Collection, Iterable, cast
 from datetime import datetime
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
 from core.api_client import ApiClient, RealtimeApiClient
 from core.helper.file_logger import FileLogger
 from core.helper.global_data_dir import reset_flight_data_dir
@@ -17,7 +13,6 @@ from core.models.command import Command as CommandModel, CommandSchema
 from core.logic.execution import topological_sort
 from core.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase, MeasurementsByPart
 from core.logic.rocket_definition import Part, Rocket
-from kivy.logger import Logger, LOG_LEVELS
 
 from core.models.flight import Flight
 
@@ -43,7 +38,6 @@ class FlightExecuter:
     def __init__(self, rocket: Rocket, flight: Flight, api_client: ApiClient, min_computation_frame_time: float = 0.050, min_ui_frame_time: float = 0.050) -> None:
     
         self.logger = getLogger('Flight Exector')
-
 
         self.command_buffer = list()
         self.executed_commands = list()
@@ -77,14 +71,14 @@ class FlightExecuter:
                 p.api_client = self.api_client
                 p.flight = self.flight
 
-        Logger.addHandler(self.file_logger)
+        self.logger.addHandler(self.file_logger)
 
     def make_on_new_command(self):
         def on_new_command(models: Collection[CommandModel]):
 
 
             for c in models:
-                Logger.info(f'{LOGGER_NAME}: Received new command of type {c._command_type} with creation time {c.create_time} (ID: {c._id}, PartID: {c._part_id})')
+                self.logger.info(f'{LOGGER_NAME}: Received new command of type {c._command_type} with creation time {c.create_time} (ID: {c._id}, PartID: {c._part_id})')
                 c.state = 'received'
 
             self.command_buffer.extend([deserialize_command(self.known_commands, c) for c in models])
@@ -152,8 +146,8 @@ class FlightExecuter:
         commands_by_part = dict[Part, list[Command]]()
         self.add_command_by_part(new_commands, commands_by_part)
 
-        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Control loop iteration {iteration}. Time {datetime.fromtimestamp(now)}. {len(new_commands)} pending')
+        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+            self.logger.debug(f'{LOGGER_NAME}: Control loop iteration {iteration}. Time {datetime.fromtimestamp(now)}. {len(new_commands)} pending')
 
         # Call update on every part
         for p in self.execution_order:
@@ -172,12 +166,12 @@ class FlightExecuter:
 
                 if generated_commands is not None:
 
-                    if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-                        Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated. {len(generated_commands)} emitted')
+                    if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+                        self.logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated. {len(generated_commands)} emitted')
                     
                     if len(generated_commands) > 0:
                         for c in generated_commands: 
-                            Logger.info(f'{LOGGER_NAME}: Part {p.name} created a new command of type {c._command_type} with creation time {c.create_time} for part {c._part_id} (ID: {c._id}, PartID: {c._part_id})')
+                            self.logger.info(f'{LOGGER_NAME}: Part {p.name} created a new command of type {c._command_type} with creation time {c.create_time} for part {c._part_id} (ID: {c._id}, PartID: {c._part_id})')
 
                     for c in generated_commands:
                         c.create_time = now_as_date
@@ -185,13 +179,13 @@ class FlightExecuter:
                     new_commands.extend(generated_commands)
                     self.add_command_by_part(generated_commands, commands_by_part)
 
-                elif(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-                        Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated')
+                elif(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+                        self.logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully updated')
 
                 p.last_update = now
             except Exception as e:
                 # print(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
-                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
+                self.logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to update {e}')
 
         # Gather all measurements of all parts
         current_measurements = MeasurementsByPart()
@@ -202,8 +196,8 @@ class FlightExecuter:
             try:
                 measurements = p.collect_measurements(now, iteration)
 
-                if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-                    Logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully collected measurements. New measurements: {len(measurements) if measurements is not None else "None"}')
+                if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+                    self.logger.debug(f'{LOGGER_NAME}: Iteration {iteration}. Part {p.name} successfully collected measurements. New measurements: {len(measurements) if measurements is not None else "None"}')
                 
                 if measurements is None:
                     continue
@@ -218,14 +212,14 @@ class FlightExecuter:
                 current_measurements[p] = (p.last_measurement or now, now, measurements)
                 p.last_measurement = now
             except Exception as e:
-                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to take measurements: {e}')
+                self.logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to take measurements: {e}')
 
         # Flush all parts (free memory)
         for p in self.execution_order:
             try:
                 p.flush()
             except:
-                Logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to flush')
+                self.logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to flush')
 
 
         # Set all commands to be executed, except those that are currently set to be prossesing
@@ -285,9 +279,9 @@ class FlightExecuter:
                     c.state = 'failed'
                     c.response_message = 'Part did not process the command for an uknown reason'
 
-            Logger.info(f'{LOGGER_NAME}: Processed {len(commands_to_send)} commands:')
+            self.logger.info(f'{LOGGER_NAME}: Processed {len(commands_to_send)} commands:')
             for c in commands_to_send: 
-                Logger.info(f'{LOGGER_NAME}: Processed command {c._id} of type {c._command_type} for part {c._part_id} resulting in state {c.state}')
+                self.logger.info(f'{LOGGER_NAME}: Processed command {c._id} of type {c._command_type} for part {c._part_id} resulting in state {c.state}')
 
             c_schema = CommandSchema()
 
@@ -296,9 +290,9 @@ class FlightExecuter:
 
             try:
                 await self.api_client.try_send_command_responses(str(self.flight._id), models)
-                Logger.info(f'{LOGGER_NAME}: Successfully trasmitted {len(commands_to_send)} commands')
+                self.logger.info(f'{LOGGER_NAME}: Successfully trasmitted {len(commands_to_send)} commands')
             except Exception as e:
-                Logger.exception(f'{LOGGER_NAME}: Failed sending {len(models)} command responses: {e}')
+                self.logger.exception(f'{LOGGER_NAME}: Failed sending {len(models)} command responses: {e}')
 
     def __del__(self):
 
@@ -313,6 +307,6 @@ class FlightExecuter:
 
         if self.file_logger is not None:
             self.file_logger.flush()
-            Logger.removeHandler(self.file_logger)
+            self.logger.removeHandler(self.file_logger)
 
         self.deleted = True

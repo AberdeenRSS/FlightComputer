@@ -1,8 +1,9 @@
 from core.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
-from core.ui.part_ui import PartUi
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
+
+from kivy_wrapper.app.ui.part_ui import PartUi
 
 class ApiMeasurementSinkUI(BoxLayout, PartUi[ApiMeasurementSink]):
 

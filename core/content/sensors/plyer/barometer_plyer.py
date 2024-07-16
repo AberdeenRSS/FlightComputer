@@ -1,5 +1,6 @@
 
 from datetime import timedelta
+from logging import getLogger
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
@@ -8,7 +9,6 @@ from core.content.general_commands.enable import DisableCommand, EnableCommand
 from core.logic.rocket_definition import Command, Part, Rocket
 from plyer import barometer
 from plyer.facades.barometer import Barometer
-from kivy import Logger
 
 
 class PlyerBarometerSensor(Part):
@@ -34,6 +34,8 @@ class PlyerBarometerSensor(Part):
         self.enabled = start_enabled
         self.try_enable_barometer(self.enabled)
 
+        self.logger = getLogger('Barmometer Plyer')
+
         super().__init__(_id, name, parent, list()) # type: ignore
 
     def try_enable_barometer(self, enable: bool) -> bool:
@@ -45,7 +47,7 @@ class PlyerBarometerSensor(Part):
                 as_barometer.disable()
         except Exception as e:
             self.sensor_failed = True
-            Logger.error(f'Plyer barometer sensor failed: {e}')
+            self.logger.error(f'Plyer barometer sensor failed: {e}')
             return False
     
         return True
@@ -72,7 +74,7 @@ class PlyerBarometerSensor(Part):
                 self.iteration_pressure_value = self.pressure_value = as_barometer.pressure
 
             except Exception as e:
-                Logger.error(f'Plyer barometer sensor failed: {e}')
+                self.logger.error(f'Plyer barometer sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_pressure_value = self.pressure_value = None

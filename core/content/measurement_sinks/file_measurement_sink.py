@@ -1,6 +1,7 @@
 import asyncio
 from io import TextIOWrapper
 import json
+from logging import _nameToLevel, getLogger
 import math
 import time
 from typing import Iterable, Sequence, Tuple, Type, Union
@@ -13,8 +14,6 @@ from core.logic.rocket_definition import Measurements, Part, Rocket
 from core.models.flight import Flight
 from core.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
-from kivy.logger import Logger, LOG_LEVELS
-from kivy.app import App
 
 import os
 from pathlib import Path
@@ -59,6 +58,8 @@ class FileMeasurementSink(MeasurementSinkBase):
 
         self.flight_data_folder = Path(get_cur_flight_data_dir())
 
+        self.logger = getLogger('File Measurement Sink')
+
     def update(self, commands: Iterable[Command], now: float, iteration):
 
         # If the last store was not completed yet do nothing
@@ -96,7 +97,7 @@ class FileMeasurementSink(MeasurementSinkBase):
 
                 self.flight_data_folder.mkdir(parents=True, exist_ok=True)
             except Exception as e:
-                Logger.error(f'Failed instantiating measurement folder {e}')
+                self.logger.error(f'Failed instantiating measurement folder {e}')
             self.folder_created = True
 
         self.open_new_file_if_required()
@@ -108,8 +109,8 @@ class FileMeasurementSink(MeasurementSinkBase):
         old_buffer = self.measurement_buffer
         self.measurement_buffer = list()
 
-        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Starting measurment dispatch. {len(old_buffer)} in curent buffer')
+        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+            self.logger.debug(f'Starting measurment dispatch. {len(old_buffer)} in curent buffer')
 
         # A drop rate of 1 means every measurement is store
         # 2 only every second, etc.
@@ -166,8 +167,8 @@ class FileMeasurementSink(MeasurementSinkBase):
         
         # print(f'storeing measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
 
-        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Prepared measurements to be store over the Api. Trying to store measurements for {len(flight_measurements)} parts. Drop Rate: {drop_rate}')
+        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+            self.logger.debug(f'Prepared measurements to be store over the Api. Trying to store measurements for {len(flight_measurements)} parts. Drop Rate: {drop_rate}')
 
         store_start = time.time()
 
@@ -179,7 +180,7 @@ class FileMeasurementSink(MeasurementSinkBase):
             self.current_file_handle.write(json.dumps(serialized))
             store_success = True
         except Exception as e:
-            Logger.error(f'Failed writing measurements to file: {e}')
+            self.logger.error(f'Failed writing measurements to file: {e}')
             self.current_file_handle = None # Reset file
 
 
@@ -193,14 +194,14 @@ class FileMeasurementSink(MeasurementSinkBase):
         # Data was not store, therefore return old store date
         if not store_success:
 
-            Logger.warning(f'{LOGGER_NAME}: Failed storeing measurements. Took {store_duration:02}ms')
+            self.logger.warning(f'Failed storeing measurements. Took {store_duration:02}ms')
 
             self.last_store_success = False
             self.last_store_duration = self.store_timeout.total_seconds()
             return
         
-        if(Logger.isEnabledFor(LOG_LEVELS['debug'])):
-            Logger.debug(f'{LOGGER_NAME}: Successfully store  measurements. Took {store_duration:02}ms')
+        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
+            self.logger.debug(f'Successfully store  measurements. Took {store_duration:02}ms')
 
         self.last_store_success = True
         self.last_store_success_time = store_end
@@ -217,7 +218,7 @@ class FileMeasurementSink(MeasurementSinkBase):
             try:
                 self.current_file_handle.close()
             except:
-                Logger.error('Error closing last file handle')
+                self.logger.error('Error closing last file handle')
         
         self.current_file_iteration = 0
         self.current_file_count = self.current_file_count + 1
@@ -228,4 +229,4 @@ class FileMeasurementSink(MeasurementSinkBase):
         try:
             self.current_file_handle = path.open('a')
         except Exception as e:
-            Logger.error(f'Failed creating measurement file: {e}')
+            self.logger.error(f'Failed creating measurement file: {e}')

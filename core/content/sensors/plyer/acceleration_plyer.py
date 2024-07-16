@@ -1,5 +1,6 @@
 
 from datetime import timedelta
+from logging import getLogger
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
@@ -8,7 +9,6 @@ from core.content.general_commands.enable import DisableCommand, EnableCommand
 from core.logic.rocket_definition import Command, Part, Rocket
 from plyer import accelerometer
 from plyer.facades.accelerometer import Accelerometer
-from kivy import Logger
 
 class PlyerAccelerationSensor(Part):
 
@@ -33,6 +33,8 @@ class PlyerAccelerationSensor(Part):
         self.enabled = start_enabled
         self.try_enable_accelerometer(self.enabled)
 
+        self.logger = getLogger('Acceleration Plyer')
+
         super().__init__(_id, name, parent, list()) # type: ignore
 
     def get_accepted_commands(self) -> list[Type[Command]]:
@@ -47,7 +49,7 @@ class PlyerAccelerationSensor(Part):
                 as_accelerometer.disable()
         except Exception as e:
             self.sensor_failed = True
-            Logger.error(f'Plyer acceleration sensor failed: {e}')
+            self.logger.error(f'Plyer acceleration sensor failed: {e}')
             return False
     
         return True
@@ -70,7 +72,7 @@ class PlyerAccelerationSensor(Part):
                 as_accelerometer = cast(Accelerometer, accelerometer)
                 self.iteration_acceleration = self.acceleration = as_accelerometer.get_acceleration()
             except Exception as e:
-                Logger.error(f'Plyer acceleration sensor failed: {e}')
+                self.logger.error(f'Plyer acceleration sensor failed: {e}')
                 self.sensor_failed = True
         else:
             self.iteration_acceleration = self.acceleration = None

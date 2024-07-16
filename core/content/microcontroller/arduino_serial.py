@@ -1,6 +1,7 @@
 from asyncio import Future, Task
 import asyncio
 from datetime import timedelta
+from logging import getLogger
 import threading
 from time import sleep
 from typing import Callable, Collection, Iterable, Tuple, Type, Union
@@ -15,18 +16,22 @@ from core.content.motor_commands.open import SetPreparationPhaseCommand
 
 from core.logic.rocket_definition import Part, Rocket
 
-from kivy.utils import platform
-from kivy.logger import Logger, LOG_LEVELS
 
 
 import tinyproto
 from core.content.microcontroller.arduino.messages.messages import SensorData, ResponseMessage
 
+try:
+    from kivy.utils import platform
 
-if platform == 'android':
-    from usb4a import usb
-    from usbserial4a import serial4a
-else:
+    if platform == 'android':
+        from usb4a import usb
+        from usbserial4a import serial4a
+    else:
+        from serial.tools import list_ports
+        from serial import Serial
+
+except:
     from serial.tools import list_ports
     from serial import Serial
 
@@ -70,6 +75,9 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], start_enabled = True):
         self.enabled = start_enabled
+
+        self.logger = getLogger('Arduino Over Serial')
+
         super().__init__(_id, name, parent, list()) # type: ignore
 
         self.port_thread_lock = threading.Lock()
@@ -203,7 +211,7 @@ class ArduinoOverSerial(Part, ArduinoHwBase):
 
         except Exception as ex:
             
-            Logger.error(f'crash read thread {ex}')
+            self.logger.error(f'crash read thread {ex}')
             raise ex
         finally:
             self.connected = False

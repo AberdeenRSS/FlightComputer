@@ -41,9 +41,9 @@ class CrashScreen(App):
 
 async def main():
 
-    # logging.disable()
-
-    logging.basicConfig(level=logging.INFO)
+    # Initialize root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
 
     logging.getLogger('httpx').setLevel(level=logging.WARN)
     logging.getLogger('httpcore').setLevel(level=logging.WARN)
@@ -59,7 +59,6 @@ async def main():
 
     Logger.setLevel('INFO')
 
-
     # Do the import within the try block in case
     # there are problems with it. In that
     # case the crash screen can still be shown
@@ -67,7 +66,7 @@ async def main():
 
     ui_app, worker_process = init_app()
 
-    print(ui_app.user_data_dir)
+    Logger.info(f'Storing data at {ui_app.user_data_dir}')
 
     set_user_data_dir(ui_app.user_data_dir)
 
