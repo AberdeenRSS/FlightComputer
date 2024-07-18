@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 global user_data_dir
@@ -23,7 +23,7 @@ def get_cur_flight_data_dir():
     global cur_flight_dir
     
     if cur_flight_dir == '':
-        date_file_safe = datetime.now().isoformat().replace('-', '_').replace(':', '_').replace('.', '_')
+        date_file_safe = datetime.now(UTC).isoformat().replace('-', '_').replace(':', '_').replace('.', '_')
         cur_flight_dir = f'{get_user_data_dir()}/flight_at_{date_file_safe}'
     
     return cur_flight_dir

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from io import TextIOWrapper
 import logging
 from pathlib import Path
@@ -72,7 +72,7 @@ class FileLogger(logging.Handler):
             content = self.format(record)
 
             try:
-                self.current_file_handle.write( f'{datetime.now().isoformat()}: {content}\n')
+                self.current_file_handle.write( f'{datetime.now(UTC).isoformat()}: {content}\n')
             except Exception as e:
                 pass
 

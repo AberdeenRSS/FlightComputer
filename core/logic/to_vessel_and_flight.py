@@ -2,20 +2,19 @@ from typing import Type
 from uuid import UUID
 from core.logic.rocket_definition import Command
 from core.models.command import CommandInfo
-from core.models.flight_measurement import FlightMeasurement, FlightMeasurementDescriptor
+from core.models.flight_measurement import FlightMeasurementDescriptor
 from core.models.vessel import Vessel
 from core.models.vessel_part import VesselPart
 from core.models.flight import Flight
 from core.logic.rocket_definition import Rocket
-from datetime import datetime, timezone
-from marshmallow_jsonschema import JSONSchema
+from datetime import UTC, datetime
+from marshmallow_jsonschema_3 import JSONSchema
 
 def to_vessel_and_flight(rocket: Rocket) -> tuple[Vessel, Flight]:
 
     vessel = Vessel(_id=rocket.id or UUID(), _version=rocket.version, name=rocket.name, parts=get_all_parts(rocket))
 
-    now = datetime.utcnow()
-    now = now.replace(tzinfo=timezone.utc)
+    now = datetime.now(UTC)
 
     flight = Flight(start=now, _vessel_id=vessel._id, _vessel_version=rocket.version, name=f'FLight at {now.isoformat()}', measured_parts=get_measured_parts(rocket), measured_part_ids=get_measured_part_ids(rocket), available_commands=get_commands(rocket))
 
