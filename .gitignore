@@ -1,4 +1,5 @@
 /.venv
+/venv
 /config/api_secrets.json
 /bin
 /.buildozer
