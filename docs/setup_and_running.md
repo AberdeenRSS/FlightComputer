@@ -1,3 +1,5 @@
+Debian 12
+
 Install and use python3.11
 
 ```
