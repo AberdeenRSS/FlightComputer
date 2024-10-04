@@ -223,7 +223,7 @@ class ArduinoSerialAdapter:
             self.last_keep_alive = t
             self.logger.info(f'{LOGGER_NAME}: sending keep alive')
             future = self.send_message(0, 1)
-            future.add_done_callback(on_keep_alive_done)
+            # future.add_done_callback(on_keep_alive_done)
 
 
 class ArduinoHwBase(ABC):

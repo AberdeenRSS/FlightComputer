@@ -16,7 +16,7 @@ def to_vessel_and_flight(rocket: Rocket) -> tuple[Vessel, Flight]:
 
     now = datetime.now(UTC)
 
-    flight = Flight(start=now, _vessel_id=vessel._id, _vessel_version=rocket.version, name=f'FLight at {now.isoformat()}', measured_parts=get_measured_parts(rocket), measured_part_ids=get_measured_part_ids(rocket), available_commands=get_commands(rocket))
+    flight = Flight(start=now, _vessel_id=vessel._id, _vessel_version=rocket.version, name=f'Flight at {now.isoformat()}', measured_parts=get_measured_parts(rocket), measured_part_ids=get_measured_part_ids(rocket), available_commands=get_commands(rocket))
 
     return vessel, flight
 

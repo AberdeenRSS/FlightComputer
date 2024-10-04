@@ -77,7 +77,7 @@ class ApiClient:
         # Because we're looking for a token for the current app, not for a user,
         # use None for the account parameter.
         try:
-            result = await self.request_with_error_handling_and_retry(lambda client: client.post('/auth/authorization_code_flow', data=self.auth_code), 3, False) # type: ignore
+            result = await self.request_with_error_handling_and_retry(lambda client: client.post('/auth/authorization_code_flow', data=json.dumps({ 'token': self.auth_code })), 3, False) # type: ignore
         except Exception as e:
             self.logger.exception(f'Authentication failed: {e.args}')
             raise
