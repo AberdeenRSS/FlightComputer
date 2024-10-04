@@ -5,10 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Module",
+            "name": "Kivy",
             "type": "python",
             "request": "launch",
-            "module": "main",
+            "module": "kivy_wrapper",
+            "justMyCode": true
+        },
+        {
+            "name": "Standalone",
+            "type": "python",
+            "request": "launch",
+            "module": "standalone",
             "justMyCode": true
         }
     ]
