@@ -4,19 +4,31 @@ import random
 import queue
 
 from bases.packet import base_packet, simple_packet
-from bases.process import base_process, use_process_uid_number
+from bases.process import base_process
+from generators.packet_uid_generator import uid_generator
+
+# only import whats needed, all sub-process can import their own things
+
+# ---
+# Hard cap of processes = 16
+# active processes = 5
+active_processes = 16
+
+
+# ---
 
 
 
-def queue_setup(process_uid_number):
+
+def queue_setup(process_uid_generator:uid_generator):
     """
-    Generate 16 different processes
+    Generate active_processes different processes
     """
     process_array:list[tuple[multiprocessing.Queue, multiprocessing.Queue, multiprocessing.Process, int]] = []
-    for i in range(0,16):
+    for i in range(0,active_processes):
         s = multiprocessing.Queue()
         r = multiprocessing.Queue()
-        base_proc = base_process(s, r, i, process_uid_number)
+        base_proc = base_process(s, r, i, process_uid_generator.generate())
         process_array.append((s, r, base_proc))
 
     for i in process_array:
@@ -25,15 +37,15 @@ def queue_setup(process_uid_number):
     return process_array
 
 
-def queue_main(process_array, process_uid_number):
+def queue_main(process_array, process_uid_generator:uid_generator):
     """
     Main loop
     """
     process_array:list[tuple[multiprocessing.Queue, multiprocessing.Queue, multiprocessing.Process, int]]
-    running_totals = [0] *len(process_array)
-    running_totals_two = [0] *len(process_array)
+    running_totals = [0] * active_processes
+    running_totals_two = [0] * active_processes
     count = 0
-    end = len(process_array)
+    end = active_processes
     old_val = 0
     all_packets = []
     while True:
@@ -72,7 +84,7 @@ def queue_main(process_array, process_uid_number):
             print(empty_time)
             print(running_totals)
             print(running_totals_two)
-            print(use_process_uid_number(process_uid_number, increment=False))
+            print(process_uid_generator.get_current_uid())
             print(f"{time.time()-begin} --- \n")
 
             if count >= end:
@@ -88,7 +100,7 @@ def queue_main(process_array, process_uid_number):
 if __name__ == '__main__':
     begin = time.time()
     #a = pipe_setup()
-    v = multiprocessing.Value("i", 0)
+    v = uid_generator()
     a = queue_setup(v)
     try:
         #pipe_main(a)

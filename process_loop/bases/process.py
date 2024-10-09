@@ -4,30 +4,17 @@ import random
 import time
 
 from bases.packet import simple_packet
-
-def use_process_uid_number(process_uid_number, increment:bool=False) -> int:
-    """
-    Either gets or increments the process uid number
-    returns the current or incremented one
-    """
-
-    with process_uid_number.get_lock():
-        if increment:
-            process_uid_number.value += 1
-            return process_uid_number.value
-        else:
-            return process_uid_number.value
-        
+from generators.packet_uid_generator import uid_generator
 
 class base_process(multiprocessing.Process):
     """
     Base process class, still under development
     """
 
-    def __init__(self, my_send_queue:multiprocessing.Queue, my_recv_queue:multiprocessing.Queue, uid, process_uid_number) -> None:
+    def __init__(self, my_send_queue:multiprocessing.Queue, my_recv_queue:multiprocessing.Queue, uid, process_uid_generator:uid_generator) -> None:
         super().__init__()
         
-        self.process_uid_number = process_uid_number # uid total currently
+        self.process_uid_generator = process_uid_generator # uid total currently
         self.uid = uid
         self.my_send_queue = my_send_queue
         self.my_recv_queue = my_recv_queue
@@ -58,12 +45,12 @@ class base_process(multiprocessing.Process):
                 #update_time = now
                 # send a debuff to another process
                 if random.randint(0,1):
-                    p_uid_n = use_process_uid_number(self.process_uid_number,increment=True)
+                    p_uid_n = self.process_uid_generator.generate()
                     p = simple_packet(p_uid_n, self.uid, random.randint(1,2), targets=(random.randint(0,15), ))
                     self.my_send_queue.put(p, block=False)
             
 
-                p_uid_n = use_process_uid_number(self.process_uid_number,increment=True)
+                p_uid_n = self.process_uid_generator.generate()
                 p = simple_packet(p_uid_n, self.uid, [counter,v])
                 self.my_send_queue.put(p, block=False)
                 #array = []
