@@ -14,11 +14,36 @@ class base_process(multiprocessing.Process):
     def __init__(self, my_send_queue:multiprocessing.Queue, my_recv_queue:multiprocessing.Queue, uid, process_uid_generator:uid_generator) -> None:
         super().__init__()
         
-        self.process_uid_generator = process_uid_generator # uid total currently
         self.uid = uid
-        self.my_send_queue = my_send_queue
-        self.my_recv_queue = my_recv_queue
+
+        self._process_uid_generator = process_uid_generator # uid total currently
+        self._my_send_queue = my_send_queue
+        self._my_recv_queue = my_recv_queue
     
+
+    def dump_queue(self) -> list:
+        """
+        Read whats sent to the process and dump it into an array
+        """
+        contents = []
+        while True:
+            try:
+                # drain the queue
+                contents.append(self._my_recv_queue.get(block=False))
+            except queue.Empty as e:
+                break
+        return contents
+    
+
+    def put_in_queue(self, contents, targets="", target_type=[]) -> bool:
+        """
+        puts items into the queue for the main loop to read
+        """
+        p_uid_n = self._process_uid_generator.generate()
+        p = simple_packet(p_uid_n, self.uid, contents, targets=targets, target_type=target_type)
+        self._my_send_queue.put(p, block=False)
+
+
     def run(self):
         # imports
 
@@ -29,15 +54,11 @@ class base_process(multiprocessing.Process):
             #update_time = time.time()
             #array = []
             while True:
-                # read whats sent to this process and do stuff with it
-                while True:
-                    try:
-                        # drain the queue
-                        temp:simple_packet = self.my_recv_queue.get(block=False)
-                        counter -= temp.content
-                    except queue.Empty as e:
-                        break
+                content = self.dump_queue()
 
+                for i in content:
+                    i:simple_packet
+                    counter -= i.content
 
                 v = random.random()/2 # *4 # 1,5
                 #now = time.time()
@@ -45,14 +66,14 @@ class base_process(multiprocessing.Process):
                 #update_time = now
                 # send a debuff to another process
                 if random.randint(0,1):
-                    p_uid_n = self.process_uid_generator.generate()
+                    p_uid_n = self._process_uid_generator.generate()
                     p = simple_packet(p_uid_n, self.uid, random.randint(1,2), targets=(random.randint(0,15), ))
-                    self.my_send_queue.put(p, block=False)
+                    self._my_send_queue.put(p, block=False)
             
 
-                p_uid_n = self.process_uid_generator.generate()
+                p_uid_n = self._process_uid_generator.generate()
                 p = simple_packet(p_uid_n, self.uid, [counter,v])
-                self.my_send_queue.put(p, block=False)
+                self._my_send_queue.put(p, block=False)
                 #array = []
                 counter += 1
                 if counter >= 16:
@@ -61,5 +82,5 @@ class base_process(multiprocessing.Process):
         except KeyboardInterrupt as e:
             print(f"exiting id: {self.uid}")
         finally:
-            self.my_send_queue.close()
-            self.my_recv_queue.close()
+            self._my_send_queue.close()
+            self._my_recv_queue.close()
