@@ -86,7 +86,6 @@ def queue_main(process_array, process_uid_generator:uid_generator):
     running_totals = [0] * total_processes
     running_totals_two = [0] * total_processes
     count = 0
-    end = total_processes
     old_val = 0
     all_packets = []
     while True:
@@ -135,7 +134,7 @@ def queue_main(process_array, process_uid_generator:uid_generator):
             print(process_uid_generator.get_current_uid())
             print(f"{time.time()-begin} --- \n")
 
-            if count >= end:
+            if count >= active_processes:
                 for packet in all_packets:
                     packet:simple_packet
                     with open("./dump.txt", "a") as f:
