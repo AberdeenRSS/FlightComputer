@@ -66,14 +66,10 @@ class base_process(multiprocessing.Process):
                 #update_time = now
                 # send a debuff to another process
                 if random.randint(0,1):
-                    p_uid_n = self._process_uid_generator.generate()
-                    p = simple_packet(p_uid_n, self.uid, random.randint(1,2), targets=(random.randint(0,15), ))
-                    self._my_send_queue.put(p, block=False)
+                    self.put_in_queue(random.randint(1,2), targets=(random.randint(0,15), ))
             
 
-                p_uid_n = self._process_uid_generator.generate()
-                p = simple_packet(p_uid_n, self.uid, [counter,v])
-                self._my_send_queue.put(p, block=False)
+                self.put_in_queue([counter,v])
                 #array = []
                 counter += 1
                 if counter >= 16:

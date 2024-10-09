@@ -14,6 +14,7 @@ total_processes = 16 # dont change this unless you know what you're doing
 # The total of which "active processes" are true
 active_processes = 15
 
+
 # which processes are active?
 active_processes_list = [
     False,  # 0
@@ -34,6 +35,7 @@ active_processes_list = [
     True   # 15
 ]
 # ---
+# validate if  active processes is correct
 count = 0
 for i in active_processes_list:
     if i:
@@ -53,6 +55,7 @@ if count != active_processes:
         else:
             raise ValueError("Exiting due to value mismatch between active_processes and active_processes_list")
 
+# ensure nothing bad happens due to a mistake, crash out if this
 if total_processes < active_processes:
     raise ValueError("total_processes cannot be less than active processes")
 
