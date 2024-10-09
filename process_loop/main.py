@@ -49,8 +49,17 @@ if count != active_processes:
         elif v.lower() == "a":
             print(f"updating from {active_processes} to {count}")
             active_processes = count
+            b = False
         else:
             raise ValueError("Exiting due to value mismatch between active_processes and active_processes_list")
+
+# ---
+"""
+
+The script starts below here
+
+"""
+# ---
 
 
 def queue_setup(process_uid_generator:uid_generator):
