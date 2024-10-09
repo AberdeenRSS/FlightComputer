@@ -8,6 +8,7 @@ from generators.packet_uid_generator import uid_generator
 
 from bases.packet import simple_packet
 
+# has to be called custom process inside of the setup.py file
 class custom_process(base_process):
     def __init__(self, my_send_queue: queue, my_recv_queue: queue, process_uid_generator:uid_generator, uid) -> None:
         # in file 0
