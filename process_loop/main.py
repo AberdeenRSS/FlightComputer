@@ -1,6 +1,7 @@
 import multiprocessing
 import time
 import queue
+import importlib
 
 from bases.packet import simple_packet
 from bases.process import base_process
@@ -12,12 +13,12 @@ from generators.packet_uid_generator import uid_generator
 # Hard cap of processes = 16
 total_processes = 16 # dont change this unless you know what you're doing
 # The total of which "active processes" are true
-active_processes = 15
+active_processes = 16
 
 
 # which processes are active?
 active_processes_list = [
-    False,  # 0
+    True,  # 0
     True,  # 1
     True,  # 2
     True,  # 3
@@ -79,7 +80,11 @@ def queue_setup(process_uid_generator:uid_generator):
             continue
         s = multiprocessing.Queue()
         r = multiprocessing.Queue()
-        base_proc = base_process(s, r, i, process_uid_generator)
+        try:
+            mod = importlib.import_module(f"processes._{i}.setup")
+            base_proc = mod.custom_process(s, r, process_uid_generator, i)
+        except ImportError as e:
+            base_proc = base_process(s, r, process_uid_generator, i)
         process_array[i] = (s, r, base_proc)
 
     for i in range(0, total_processes):
@@ -103,6 +108,7 @@ def queue_main(process_array, process_uid_generator:uid_generator):
     count = 0
     old_val = 0
     all_packets = []
+    iteration = 0
     while True:
         # loop through fast
         empty_time = time.time()
@@ -135,9 +141,10 @@ def queue_main(process_array, process_uid_generator:uid_generator):
         # save amount of time it takes to empty
 
         for i in range(0, len(running_totals_two)):
-            if running_totals_two[i] == 15:
-                running_totals_two[i] = "/"
-                count += 1
+            if running_totals_two[i] != "/":
+                if int(running_totals_two[i]) >= 15:
+                    running_totals_two[i] = "/"
+                    count += 1
         val = int(time.time())
         val = val%10
         if val != old_val:
@@ -147,6 +154,11 @@ def queue_main(process_array, process_uid_generator:uid_generator):
             print(running_totals)
             print(running_totals_two)
             print(process_uid_generator.get_current_uid())
+            for i in range(0, active_processes):
+                if active_processes_list[i]:
+                    if not process_array[i][2].is_alive():
+                        print(f"{i} is dead")
+                        active_processes_list[i] = False
             print(f"{time.time()-begin} --- \n")
 
             if count >= active_processes:
@@ -157,6 +169,15 @@ def queue_main(process_array, process_uid_generator:uid_generator):
                         f.write(f"{packet.uid}, {packet.sender_uid}, {packet.targets}, {packet.content}\n")
 
                 break
+        
+
+        iteration += 1
+        # avoid this running at iteration 0
+        if iteration%100 == 0:
+            pass
+
+
+        
 
 
 if __name__ == '__main__':

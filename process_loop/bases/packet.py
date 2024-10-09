@@ -13,7 +13,9 @@ class base_packet:
 
 class simple_packet(base_packet):
     """
-    an example packet class with one variable "content" allowing anything to be assigned to it
+    The most common packet type
+    Handles content which can be anything
+    Different packets can be created and have anything inside them, even functions
     """
     def __init__(self, uid: int, sender_uid:int, content, targets: list = [], target_type: str = "") -> None:
         super().__init__(uid, sender_uid, targets, target_type)

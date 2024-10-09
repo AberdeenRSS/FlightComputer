@@ -10,9 +10,9 @@ from bases.packet import simple_packet
 
 class custom_process(base_process):
     def __init__(self, my_send_queue: queue, my_recv_queue: queue, process_uid_generator:uid_generator, uid) -> None:
-        # in file 0
+        # in file 1
         # therefore
-        uid = 0
+        uid = 1
         super().__init__(my_send_queue, my_recv_queue, process_uid_generator, uid)
 
     def run(self):
@@ -38,7 +38,7 @@ class custom_process(base_process):
                 #update_time = now
                 # send a debuff to another process
                 if random.randint(0,1):
-                    self.put_in_queue(-50, targets=(random.randint(0,15), ))
+                    self.put_in_queue(random.randint(1,2), targets=(random.randint(0,15), ))
             
 
                 self.put_in_queue([counter,v])
@@ -51,6 +51,6 @@ class custom_process(base_process):
         except KeyboardInterrupt as e:
             #print(f"exiting id: {self.uid}")
             pass
-        
+
         finally:
             self.safe_exit()

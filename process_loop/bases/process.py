@@ -11,7 +11,7 @@ class base_process(multiprocessing.Process):
     Base process class, still under development
     """
 
-    def __init__(self, my_send_queue:multiprocessing.Queue, my_recv_queue:multiprocessing.Queue, uid, process_uid_generator:uid_generator) -> None:
+    def __init__(self, my_send_queue:multiprocessing.Queue, my_recv_queue:multiprocessing.Queue, process_uid_generator:uid_generator, uid) -> None:
         super().__init__()
         
         self.uid = uid
@@ -42,6 +42,15 @@ class base_process(multiprocessing.Process):
         p_uid_n = self._process_uid_generator.generate()
         p = simple_packet(p_uid_n, self.uid, contents, targets=targets, target_type=target_type)
         self._my_send_queue.put(p, block=False)
+
+
+    def safe_exit(self):
+        """
+        close queues and exit
+        """
+        self._my_send_queue.close()
+        self._my_recv_queue.close()
+
 
 
     def run(self):
@@ -75,8 +84,9 @@ class base_process(multiprocessing.Process):
                 if counter >= 16:
                     raise KeyboardInterrupt
                 time.sleep(v)
+
         except KeyboardInterrupt as e:
-            print(f"exiting id: {self.uid}")
+            #print(f"exiting id: {self.uid}")
+            pass
         finally:
-            self._my_send_queue.close()
-            self._my_recv_queue.close()
+            self.safe_exit()
