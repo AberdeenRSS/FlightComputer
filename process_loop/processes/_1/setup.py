@@ -19,6 +19,12 @@ class custom_process(base_process):
         # imports
 
         # main loop
+        # put ready command in queue so main system knows this function is ready
+        print(f"{self.uid} ready")
+        self.put_in_queue("ready")
+        print(f"{self.uid} waiting for go")
+        if self._my_recv_queue.get() != "go":
+            return
 
         try:
             counter = 0

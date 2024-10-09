@@ -87,14 +87,6 @@ def queue_setup(process_uid_generator:uid_generator):
             base_proc = base_process(s, r, process_uid_generator, i)
         process_array[i] = (s, r, base_proc)
 
-    for i in range(0, total_processes):
-        if not active_processes_list[i]:
-            # check if its supposed to be active
-            continue
-        process_array[i][2].start()
-
-            
-
     return process_array
 
 
@@ -109,6 +101,42 @@ def queue_main(process_array, process_uid_generator:uid_generator):
     old_val = 0
     all_packets = []
     iteration = 0
+
+    for i in range(0, total_processes):
+        if not active_processes_list[i]:
+            # check if its supposed to be active
+            continue
+        process_array[i][2].start()
+
+    waiting = True
+    alt_mode = False
+    ready_list = []
+    print("main listening")
+    while waiting:
+        for i in range(0, total_processes):
+            if not active_processes_list[i]:
+                continue
+            
+            if alt_mode:
+                print(f"sent go to {i}")
+                process_array[i][1].put("go", block=False)
+                continue
+            try:
+                tmp = process_array[i][0].get(block=False)
+                if tmp.content == "ready":
+                    print(f"{i} is ready")
+                    all_packets.append(tmp)
+                    ready_list.append(i)
+            except queue.Empty:
+                pass
+        
+        if len(ready_list) == active_processes:
+            if alt_mode:
+                waiting = False
+            alt_mode = True
+
+    print("a")
+
     while True:
         # loop through fast
         empty_time = time.time()
@@ -126,12 +154,16 @@ def queue_main(process_array, process_uid_generator:uid_generator):
                 temp:simple_packet = process_array[i][0].get(block=False)
                 all_packets.append(temp)
 
-                if len(temp.targets) > 0:
-                    for j in temp.targets:
-                        if active_processes_list[j]:
-                            process_array[j][1].put(temp, block=False)
-                    
-                    continue
+                try:
+                    if len(temp.targets) > 0:
+                        for j in temp.targets:
+                            if active_processes_list[j]:
+                                process_array[j][1].put(temp, block=False)
+                        
+                        continue
+                except TypeError as e:
+                    raise TypeError("Targets must be an iterable")
+
                 running_totals_two[temp.sender_uid] = temp.content[0]
 
             except queue.Empty as e:
