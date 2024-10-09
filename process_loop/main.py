@@ -135,7 +135,7 @@ def queue_main(process_array, process_uid_generator:uid_generator):
                 waiting = False
             alt_mode = True
 
-    print("a")
+    print("Moving to main loop")
 
     while True:
         # loop through fast

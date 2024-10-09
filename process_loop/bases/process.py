@@ -35,7 +35,7 @@ class base_process(multiprocessing.Process):
         return contents
     
 
-    def put_in_queue(self, contents, targets="", target_type=[]) -> bool:
+    def put_in_queue(self, contents, targets=(), target_type=[]) -> bool:
         """
         puts items into the queue for the main loop to read
         """
