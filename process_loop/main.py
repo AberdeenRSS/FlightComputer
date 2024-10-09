@@ -53,6 +53,9 @@ if count != active_processes:
         else:
             raise ValueError("Exiting due to value mismatch between active_processes and active_processes_list")
 
+if total_processes < active_processes:
+    raise ValueError("total_processes cannot be less than active processes")
+
 # ---
 """
 
