@@ -28,7 +28,7 @@ def queue_setup(process_uid_generator:uid_generator):
     for i in range(0,active_processes):
         s = multiprocessing.Queue()
         r = multiprocessing.Queue()
-        base_proc = base_process(s, r, i, process_uid_generator.generate())
+        base_proc = base_process(s, r, i, process_uid_generator)
         process_array.append((s, r, base_proc))
 
     for i in process_array:
