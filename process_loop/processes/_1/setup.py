@@ -36,7 +36,9 @@ class custom_process(base_process):
 
                 for i in content:
                     i:simple_packet
-                    counter -= i.content
+                    if i.content != -50:
+                        print(f"current {counter} adding {i.content} from packet id {i.uid}")
+                        counter += i.content
 
                 v = random.random()/2 # *4 # 1,5
                 #now = time.time()
@@ -49,7 +51,7 @@ class custom_process(base_process):
 
                 self.put_in_queue([counter,v])
                 #array = []
-                counter += 1
+                #counter += 1
                 if counter >= 16:
                     raise KeyboardInterrupt
                 time.sleep(v)
