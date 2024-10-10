@@ -95,7 +95,6 @@ def queue_main(process_array, process_uid_generator:uid_generator):
     Main loop
     """
     process_array:list[tuple[multiprocessing.Queue, multiprocessing.Queue, multiprocessing.Process, int]]
-    running_totals = [0] * total_processes
     running_totals_two = [0] * total_processes
     count = 0
     old_val = 0
@@ -173,17 +172,16 @@ def queue_main(process_array, process_uid_generator:uid_generator):
         # save amount of time it takes to empty
 
         for i in range(0, len(running_totals_two)):
-            if running_totals_two[i] != "/":
-                if int(running_totals_two[i]) >= 15:
-                    running_totals_two[i] = "/"
-                    count += 1
+            if running_totals_two[i] != "/" and int(running_totals_two[i]) >= 15:
+                running_totals_two[i] = "/"
+                count += 1
+
         val = int(time.time())
         val = val%10
         if val != old_val:
             # every second output stuff for us to read
             old_val = val
             print(empty_time)
-            print(running_totals)
             print(running_totals_two)
             print(process_uid_generator.get_current_uid())
             for i in range(0, active_processes):
