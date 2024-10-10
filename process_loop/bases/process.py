@@ -21,18 +21,15 @@ class base_process(multiprocessing.Process):
         self._my_recv_queue = my_recv_queue
     
 
-    def dump_queue(self) -> list:
+    def get_from_queue(self) -> simple_packet | None:
         """
         Read whats sent to the process and dump it into an array
         """
-        contents = []
-        while True:
-            try:
-                # drain the queue
-                contents.append(self._my_recv_queue.get(block=False))
-            except queue.Empty as e:
-                break
-        return contents
+        try:
+            # drain the queue
+            return self._my_recv_queue.get(block=False)
+        except queue.Empty as e:
+            return None
     
 
     def put_in_queue(self, contents, targets=(), target_type=[]) -> bool:
@@ -71,11 +68,10 @@ class base_process(multiprocessing.Process):
             #update_time = time.time()
             #array = []
             while True:
-                content = self.dump_queue()
+                q_content = self.get_from_queue()
+                if q_content is not None:
 
-                for i in content:
-                    i:simple_packet
-                    counter -= i.content
+                        counter -= q_content.content
 
                 v = random.random()/2 # *4 # 1,5
                 #now = time.time()

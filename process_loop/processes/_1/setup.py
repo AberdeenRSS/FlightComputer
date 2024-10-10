@@ -32,13 +32,11 @@ class custom_process(base_process):
             #array = []
             while True:
                 # read whats sent to this process and do stuff with it
-                content = self.dump_queue()
-
-                for i in content:
-                    i:simple_packet
-                    if i.content != -50:
-                        print(f"current {counter} adding {i.content} from packet id {i.uid}")
-                        counter += i.content
+                q_content = self.get_from_queue()
+                if q_content is not None:
+                    if q_content.content != -50:
+                        print(f"current {counter} adding {q_content.content} from packet id {q_content.uid}")
+                        counter += q_content.content
 
                 v = random.random()/2 # *4 # 1,5
                 #now = time.time()
