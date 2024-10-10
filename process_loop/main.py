@@ -15,6 +15,8 @@ total_processes = 16 # dont change this unless you know what you're doing
 # The total of which "active processes" are true
 active_processes = 16
 
+# RECOMMENDED
+
 
 # which processes are active?
 active_processes_list = [
@@ -100,6 +102,8 @@ def queue_main(process_array, process_uid_generator:uid_generator):
     old_val = 0
     all_packets = []
     iteration = 0
+    mean_cycle_time = 0
+    cycle_time_list = [0]*100
 
     for i in range(0, total_processes):
         if not active_processes_list[i]:
@@ -138,7 +142,7 @@ def queue_main(process_array, process_uid_generator:uid_generator):
 
     while True:
         # loop through fast
-        empty_time = time.time()
+        cycle_start_time = empty_time = time.time()
         for i in range(0, total_processes):
             # loop through all processes & check if the queue is empty, if it isnt empty it and log that
             process_array[i]
@@ -189,6 +193,7 @@ def queue_main(process_array, process_uid_generator:uid_generator):
                     if not process_array[i][2].is_alive():
                         print(f"{i} is dead")
                         active_processes_list[i] = False
+            print(f"cycle: {iteration}, time: {mean_cycle_time}")
             print(f"{time.time()-begin} --- \n")
 
             if count >= active_processes:
@@ -205,6 +210,8 @@ def queue_main(process_array, process_uid_generator:uid_generator):
         # avoid this running at iteration 0
         if iteration%100 == 0:
             pass
+        cycle_time_list[iteration%100] = time.time() - cycle_start_time
+        mean_cycle_time = sum(cycle_time_list) / len(cycle_time_list)
 
 
         
