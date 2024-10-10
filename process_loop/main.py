@@ -62,6 +62,10 @@ if count != active_processes:
 if total_processes < active_processes:
     raise ValueError("total_processes cannot be less than active processes")
 
+# check if array length (active_processes_list) is the same as total_processes
+if total_processes != len(active_processes_list):
+    raise ValueError("Total processes is not the sameas active processes list")
+
 # ---
 """
 
