@@ -35,7 +35,7 @@ class custom_process(base_process):
                 q_content = self.get_from_queue()
                 if q_content is not None:
                     if q_content.content != -50:
-                        print(f"current {counter} adding {q_content.content} from packet id {q_content.uid}")
+                        print(f"current {counter} adding {q_content.content} from packet id {q_content.uid}, sender: {q_content.sender_uid}, {self._my_recv_queue.qsize()} to go")
                         counter += q_content.content
 
                 v = random.random()/2 # *4 # 1,5
@@ -43,14 +43,14 @@ class custom_process(base_process):
 
                 #update_time = now
                 # send a debuff to another process
-                if random.randint(0,1):
-                    self.put_in_queue(random.randint(1,2), targets=(random.randint(0,15), ))
+                #if random.randint(0,1):
+                #    self.put_in_queue(random.randint(1,2), targets=(random.randint(0,15), ))
             
 
                 self.put_in_queue([counter,v])
                 #array = []
                 #counter += 1
-                if counter >= 16:
+                if counter >= 16 and self._my_recv_queue.empty():
                     raise KeyboardInterrupt
                 time.sleep(v)
 

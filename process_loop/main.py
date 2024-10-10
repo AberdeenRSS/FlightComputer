@@ -176,7 +176,7 @@ def queue_main(process_array, process_uid_generator:uid_generator):
         # save amount of time it takes to empty
 
         for i in range(0, len(running_totals_two)):
-            if running_totals_two[i] != "/" and int(running_totals_two[i]) >= 15:
+            if running_totals_two[i] != "/" and i != 1 and int(running_totals_two[i]) >= 15:
                 running_totals_two[i] = "/"
                 count += 1
 
@@ -196,7 +196,7 @@ def queue_main(process_array, process_uid_generator:uid_generator):
             print(f"cycle: {iteration}, time: {mean_cycle_time}")
             print(f"{time.time()-begin} --- \n")
 
-            if count >= active_processes:
+            if count >= active_processes-1 and not process_array[1][2].is_alive():
                 for packet in all_packets:
                     packet:simple_packet
                     with open("./dump.txt", "a") as f:

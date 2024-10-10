@@ -79,7 +79,7 @@ class base_process(multiprocessing.Process):
                 #update_time = now
                 # send a debuff to another process
                 if random.randint(0,1):
-                    self.put_in_queue(random.randint(1,2), targets=(random.randint(0,15), ))
+                    self.put_in_queue(random.randint(1,2), targets=(1, random.randint(0,15) ))
             
 
                 self.put_in_queue([counter,v])
