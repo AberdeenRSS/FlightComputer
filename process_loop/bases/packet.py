@@ -9,6 +9,7 @@ class base_packet:
         self.sender_uid = sender_uid
         self.targets = targets
         self.target_type = target_type
+        self.failed = 0
         
 
 class simple_packet(base_packet):

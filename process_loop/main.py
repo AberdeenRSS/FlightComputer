@@ -3,7 +3,7 @@ import time
 import queue
 import importlib
 
-from bases.packet import simple_packet
+from bases.packet import base_packet, simple_packet
 from bases.process import base_process
 from generators.packet_uid_generator import uid_generator
 
@@ -65,6 +65,15 @@ if total_processes < active_processes:
 # check if array length (active_processes_list) is the same as total_processes
 if total_processes != len(active_processes_list):
     raise ValueError("Total processes is not the sameas active processes list")
+
+# initial clean ups and pre-run stuff
+
+# clean dump file
+dump_file = "./dump.txt"
+with open(dump_file, "w") as f:
+    f.write("")
+#
+
 
 # ---
 """
@@ -149,31 +158,52 @@ def queue_main(process_array, process_uid_generator:uid_generator):
         cycle_start_time = empty_time = time.time()
         for i in range(0, total_processes):
             # loop through all processes & check if the queue is empty, if it isnt empty it and log that
-            process_array[i]
+            
+            # description of following variable
             # process_array[i] = tuple[multiprocessing.Queue, multiprocessing.Queue, multiprocessing.Process, int]
+            process_array[i]
             
             # if i not in active process list, skip to next iteration
             if not active_processes_list[i]:
                 continue
 
             try:
-                # drain the queue
-                temp:simple_packet = process_array[i][0].get(block=False)
-                all_packets.append(temp)
+                # get from the queue
+                selected_packet:simple_packet = process_array[i][0].get(block=False)
+                # check if its a packet, else skip it
+                if not isinstance(selected_packet, base_packet):
+                    print("Dropping packet: Not a packet")
+                    continue
 
+                # try to identify and send to targets, packets are dropped if this is bad or empty, but still logged
                 try:
-                    if len(temp.targets) > 0:
-                        for j in temp.targets:
-                            if active_processes_list[j]:
-                                process_array[j][1].put(temp, block=False)
+                    # check if the length is greater than 0 (not [] <- default)
+                    if len(selected_packet.targets) > 0:
+                        # try to loop through them
+                        for j in selected_packet.targets:
+                            # check if j is an int and if its within the right range
+                            if j >= 0 and j <= 16:
+                                # check its targetting a running process
+                                if active_processes_list[j]:
+                                    # put it into the processes queue
+                                    process_array[j][1].put(selected_packet, block=False)
                         
-                        continue
+                # if somethings goes wrong, specifically a type error:
                 except TypeError as e:
-                    raise TypeError("Targets must be an iterable")
+                    selected_packet.failed = 1
+                    raise TypeError("Dropping packet: Targets must be an iterable")
 
-                running_totals_two[temp.sender_uid] = temp.content[0]
+                try: 
+                    # temp testing stuff
+                    running_totals_two[selected_packet.sender_uid] = selected_packet.content[0]
+                except:
+                    continue
+
+                # append it to a list of all packets
+                all_packets.append(selected_packet)
 
             except queue.Empty as e:
+                # empty cycle, nothing happened
                 pass
         
         empty_time = time.time() - empty_time
@@ -203,9 +233,9 @@ def queue_main(process_array, process_uid_generator:uid_generator):
             if count >= active_processes-1 and not process_array[1][2].is_alive():
                 for packet in all_packets:
                     packet:simple_packet
-                    with open("./dump.txt", "a") as f:
+                    with open(dump_file, "a") as f:
 
-                        f.write(f"{packet.uid}, {packet.sender_uid}, {packet.targets}, {packet.content}\n")
+                        f.write(f"{packet.failed}, {packet.uid}, {packet.sender_uid}, {packet.targets}, {packet.content}\n")
 
                 break
         
