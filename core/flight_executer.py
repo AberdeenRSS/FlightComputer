@@ -252,10 +252,10 @@ class FlightExecuter:
     
     async def send_command_responses(self):
 
-        abort = await self.init_flight_task
+        # abort = await self.init_flight_task
 
-        if abort:
-            return
+        # if abort:
+        #     return
 
         while True:
 
