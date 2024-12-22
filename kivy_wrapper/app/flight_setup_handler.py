@@ -12,9 +12,9 @@ from asyncio import Future
 from core.api_client import RealtimeApiClient
 from core.flight_executer import FlightExecuter
 
-from core.logic import to_vessel_and_flight
-from kivy_wrapper.app.flight_config import FlightConfig
-from kivy_wrapper.app.ui.part_ui import PartUi
+from core.logic.to_vessel_and_flight import to_vessel_and_flight
+from app.flight_config import FlightConfig
+from app.ui.part_ui import PartUi
 
 from core.api_client import ApiClient
 
@@ -139,7 +139,7 @@ class FlightSetupHandler():
                 self.logger.info(f'Successfully registered with server. Setting up realtime API')
 
                 self.executor = FlightExecuter(self.flight_config.rocket, self.flight, self.api_client)
-
+    
                 self.realtime_client = RealtimeApiClient(self.api_client, self.flight)
                 await self.realtime_client.connect(self.executor.make_on_new_command())
 

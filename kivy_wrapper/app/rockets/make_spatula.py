@@ -1,13 +1,13 @@
 # frocorepp.content.measurement_sinks.api_measurement_sink_ui import ApiMeasurementSinkUI
 # frocorepp.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
-from kivy_wrapper.app.content.flight_director.flight_director import FlightDirector
+from app.content.flight_director.flight_director import FlightDirector
 from core.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
 from core.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
 from core.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from core.content.microcontroller.arduino_serial import ArduinoOverSerial
-from kivy_wrapper.app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
+from app.content.microcontroller.arduino_serial_select_ui import ArduinoSerialSelectUI
 from core.content.sensors.computed.barometric_altitude import BarometricAltitudeSensor
-from kivy_wrapper.app.ui.barometric_altitude_config_ui import BarometricAltitudeConfigUI
+from app.ui.barometric_altitude_config_ui import BarometricAltitudeConfigUI
 from core.content.sensors.plyer.framerate import FramerateSensor, FramerateSensor
 from core.content.sensors.plyer.gps_plyer import PlyerGPSSensor
 from core.content.sensors.plyer.battery_plyer import PlyerBatterySensor, PlyerBatterySensor
@@ -25,13 +25,13 @@ from core.logic.rocket_definition import Rocket
 
 from uuid import UUID
 
-from kivy_wrapper.app.content.measurement_sink.file_measurement_sink_download_ui import FileMeasurementSinkDownloadUI
-from kivy_wrapper.app.content.microcontroller.arduino_over_bluetooth import ArduinoOverBluetooth
-from kivy_wrapper.app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
-from kivy_wrapper.app.content.sensors.android_native.gps_pyjinius import PyjiniusGPSSensor
-from kivy_wrapper.app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
-from kivy_wrapper.app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
-from kivy_wrapper.app.flight_config import FlightConfig
+from app.content.measurement_sink.file_measurement_sink_download_ui import FileMeasurementSinkDownloadUI
+from app.content.microcontroller.arduino_over_bluetooth import ArduinoOverBluetooth
+from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
+from app.content.sensors.android_native.gps_pyjinius import PyjiniusGPSSensor
+from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
+from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
+from app.flight_config import FlightConfig
 
 def make_spatula() -> FlightConfig:
     ''' Makes the spatula rocket '''
@@ -49,7 +49,7 @@ def make_spatula() -> FlightConfig:
     # PlyerTemperatureSensor(UUID('db5f474d-2b83-4d38-b438-f94a21510c1e'), 'Temperature', rocket)
     # PlyerGyroscopeSensor(UUID('a2197a9f-37e9-46f4-ac19-32d3ea153d92'), 'Gyroscope', rocket)
     # PlyerBarometerSensor(UUID('d7a8e2e0-4e8f-4cfa-8921-d299d28b8182'), 'Barometer', rocket)
-    PlyerGravitySensor(UUID('cde714a2-2179-4b0d-964d-f1af4696bf2e'), 'Gravity', rocket)
+    # PlyerGravitySensor(UUID('cde714a2-2179-4b0d-964d-f1af4696bf2e'), 'Gravity', rocket)
     # PlyerLightSensor(UUID('1ae63061-2763-4374-80fd-8328ab8c30ef'), 'Light', rocket)
     # PlyerSpatialOrientationSensor(UUID('01219fb4-4f2f-42d8-a910-6aae01eee1c7'), 'Spatial Orientation', rocket)
 
@@ -63,8 +63,8 @@ def make_spatula() -> FlightConfig:
 
     # # Serial communication
     # Arduino parts
-    arduino_serial = ArduinoOverSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
-    # arduino_serial = ArduinoOverBluetooth(UUID('10b87ad8-497a-4d9f-8944-4499856a35e4'), 'Serial Port', rocket)
+    # arduino_serial = ArduinoOverSerial(UUID('cd170fff-0138-4820-8e97-969eb3f2f287'), 'Serial Port', rocket)
+    arduino_serial = ArduinoOverBluetooth(UUID('10b87ad8-497a-4d9f-8944-4499856a35e4'), 'Serial Port', rocket)
 
     parachute = ServoSensor(UUID('9f86acb1-9795-46fc-b083-e6451f214d1f'), 'Servo', rocket, arduino_serial)
     igniter = IgniterSensor(UUID('f309669d-6bd7-4ee3-90a5-45a0e1bdd60e'), 'Igniter', rocket, arduino_serial, parachute)
@@ -72,7 +72,6 @@ def make_spatula() -> FlightConfig:
     # Arduino sensorsd
     orientation = OrientationSensor(UUID('158314cc-6d1f-11ee-b962-0242ac120002'), 'Orientation', rocket, arduino_serial)
     pressure = PressureArduinoSensor(UUID('6277bf09-36ba-4e41-861f-df6169d83f5f'), 'Pressure', rocket, arduino_serial)
-
     altitude = BarometricAltitudeSensor(UUID('a7fc0eae-3e6d-4775-af07-d8ad7d871311'), 'Barometric Altitude', rocket, pressure, pressure)
 
     # Pressure arduino sensor

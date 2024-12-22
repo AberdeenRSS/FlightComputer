@@ -1,5 +1,5 @@
 import time
-from kivy_wrapper.app.ui.part_ui import PartUi
+from app.ui.part_ui import PartUi
 
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label

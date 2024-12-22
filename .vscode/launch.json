@@ -8,8 +8,9 @@
             "name": "Kivy",
             "type": "python",
             "request": "launch",
-            "module": "kivy_wrapper",
-            "justMyCode": true
+            "module": "app",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}/kivy_wrapper"
         },
         {
             "name": "Standalone",

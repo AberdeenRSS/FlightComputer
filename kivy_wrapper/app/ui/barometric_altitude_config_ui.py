@@ -6,8 +6,8 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 
-from kivy_wrapper.app.ui.helper.float_input import FloatInput
-from kivy_wrapper.app.ui.part_ui import PartUi
+from app.ui.helper.float_input import FloatInput
+from app.ui.part_ui import PartUi
 
 class BarometricAltitudeConfigUI(BoxLayout, PartUi[BarometricAltitudeSensor]):
 

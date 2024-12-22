@@ -10,7 +10,7 @@ from kivy.logger import Logger
 
 from os.path import join
 
-from kivy_wrapper.app.ui.part_ui import PartUi
+from app.ui.part_ui import PartUi
 
 
 

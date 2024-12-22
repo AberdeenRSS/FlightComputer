@@ -32,7 +32,7 @@ public class Accelerometer {
     static void accelerometerEnable(boolean enable) {
         Context context = (Context) PythonActivity.mActivity;
         SensorManager sm = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
-        Sensor accel = sm.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        Sensor accel = sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         if (accel == null)
             return;
