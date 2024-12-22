@@ -8,10 +8,10 @@ from datetime import datetime
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 
-from kivy_wrapper.app.flight_setup_handler import FlightSetupHandler
-from kivy_wrapper.app.helper.vessel_store import get_vessel_auth_code, set_vessel_auth_code
-from kivy_wrapper.app.rockets.make_spatula import make_spatula
-from kivy_wrapper.app.ui.data_download import DownloadDataUI
+from app.flight_setup_handler import FlightSetupHandler
+from app.helper.vessel_store import get_vessel_auth_code, set_vessel_auth_code
+from app.rockets.make_spatula import make_spatula
+from app.ui.data_download import DownloadDataUI
 
 class FlightCreator(BoxLayout):
 

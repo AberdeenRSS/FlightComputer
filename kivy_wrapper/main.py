@@ -1,0 +1,3 @@
+from app.kivy_entry_point import async_io_main_with_crash_handling
+
+async_io_main_with_crash_handling()

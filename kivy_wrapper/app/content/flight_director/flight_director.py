@@ -10,9 +10,9 @@ from core.content.general_commands.calibrate import CalibrateZeroCommand
 from core.content.microcontroller.arduino.sensors.orientation_arduino import OrientationSensor
 from core.content.microcontroller.arduino_serial import ArduinoOverSerial
 from core.content.motor_commands.open import IgniteCommand, OpenCommand
-from kivy_wrapper.app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
-from kivy_wrapper.app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
-from kivy_wrapper.app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
+from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
+from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
+from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
 from core.content.microcontroller.arduino.parts.igniter import IgniterSensor
 from core.content.microcontroller.arduino.parts.servo import ServoSensor
 from core.logic.commands.command import Command

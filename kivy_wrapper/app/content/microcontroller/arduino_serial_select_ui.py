@@ -9,7 +9,7 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 from kivy import Logger
 
-from kivy_wrapper.app.ui.part_ui import PartUi
+from app.ui.part_ui import PartUi
 
 class ArduinoSerialSelectUI(BoxLayout, PartUi[ArduinoHwSelectable]):
 

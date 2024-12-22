@@ -9,8 +9,8 @@ from kivy.uix.scrollview import ScrollView
 from kivy.uix.button import Button
 
 from core.content.microcontroller.arduino_serial_common import RssPacket
-from kivy_wrapper.app.content.microcontroller.arduino_serial import ArduinoOverSerial
-from kivy_wrapper.app.ui.part_ui import PartUi
+from app.content.microcontroller.arduino_serial import ArduinoOverSerial
+from app.ui.part_ui import PartUi
 
 class ArduinoSerialMonitorUI(BoxLayout, PartUi[ArduinoOverSerial]):
 

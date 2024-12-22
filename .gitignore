@@ -1,11 +1,12 @@
 /.venv
 /venv
 /config/api_secrets.json
-/bin
+kivy_wrapper/bin
 /.buildozer
 **/__pycache__
 Lib/
 .idea/
+/**/.buildozer
 
 /config/secret.json
 

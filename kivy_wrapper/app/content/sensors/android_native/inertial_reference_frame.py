@@ -10,8 +10,8 @@ from core.logic.rocket_definition import Measurements, Part, Rocket
 
 import numpy as np
 
-from kivy_wrapper.app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
-from kivy_wrapper.app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
+from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
+from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
 
 
 class InertialReferenceFrame(Part, IOrientationSensor):
