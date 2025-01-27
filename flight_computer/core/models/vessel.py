@@ -2,10 +2,10 @@ from dataclasses import dataclass, field
 from typing import Any, TypeVar, Union, cast
 from uuid import UUID
 from marshmallow import Schema, fields, post_load
-from core.models.vessel_part import VesselPart
-from core.helper.model_helper import SchemaExt, make_safe_schema
+from flight_computer.core.models.vessel_part import VesselPart
+from flight_computer.core.helper.model_helper import SchemaExt, make_safe_schema
 
-from core.models.vessel_part import VesselPartSchema
+from flight_computer.core.models.vessel_part import VesselPartSchema
 
 @dataclass
 class Vessel:

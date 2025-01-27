@@ -6,12 +6,12 @@ import jwt
 import json
 import httpx
 import socketio
-from core.logic.rocket_definition import Rocket
-from core.logic.to_vessel_and_flight import to_vessel_and_flight
-from core.models.command import Command, CommandSchema
-from core.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
-from core.models.vessel import Vessel, VesselSchema
-from core.models.flight import Flight, FlightSchema
+from flight_computer.core.logic.rocket_definition import Rocket
+from flight_computer.core.logic.to_vessel_and_flight import to_vessel_and_flight
+from flight_computer.core.models.command import Command, CommandSchema
+from flight_computer.core.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
+from flight_computer.core.models.vessel import Vessel, VesselSchema
+from flight_computer.core.models.flight import Flight, FlightSchema
 import time
 import gzip
 from logging import getLogger

@@ -4,9 +4,9 @@ from logging import getLogger
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
-from core.logic.commands.command import Command
-from core.content.general_commands.enable import DisableCommand, EnableCommand
-from core.logic.rocket_definition import Command, Part, Rocket
+from flight_computer.core.logic.commands.command import Command
+from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand
+from flight_computer.core.logic.rocket_definition import Command, Part, Rocket
 from plyer import battery
 from plyer.facades.battery import Battery
 
@@ -69,12 +69,16 @@ class PlyerBatterySensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('enabled', '?'),
-            ('sensor_failed', '?'),
-            ('is_charging', '?'),
-            ('battery_percentage', 'f'),
+            *super().get_measurement_shape(),
+            ('sensor_failed', 0, '?'),
+            ('is_charging', 0, '?'),
+            ('battery_percentage', 0, 'f'),
         ]
 
     def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:
-        return [[self.enabled, self.sensor_failed, self.is_charging or False, self.battery_percent or 0]]
+
+        return [
+            (now, 3, self.is_charging),
+            (now, 4, self.battery_percent)            
+        ]
     

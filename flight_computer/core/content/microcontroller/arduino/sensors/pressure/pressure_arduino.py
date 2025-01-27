@@ -4,9 +4,9 @@ from typing import Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 
 from dataclasses import dataclass
-from core.content.general_commands.enable import DisableCommand, EnableCommand
-from core.logic.commands.command import Command
-from core.logic.rocket_definition import Part, Rocket
+from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand
+from flight_computer.core.logic.commands.command import Command
+from flight_computer.core.logic.rocket_definition import Part, Rocket
 
 
 class PressureSensor(Part):

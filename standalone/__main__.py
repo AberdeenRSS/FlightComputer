@@ -2,14 +2,22 @@ import asyncio
 from datetime import datetime
 import json
 from logging import _nameToLevel, getLogger
+import os
+import time
 
-from core.api_client import ApiClient, RealtimeApiClient
-from core.flight_executer import FlightExecuter
+from flight_computer.core.api_client import ApiClient, RealtimeApiClient
+from flight_computer.core.flight_executer import FlightExecuter
+from flight_computer.core.helper.global_data_dir import set_user_data_dir
+from flight_computer.core.mqtt_client import MqttClient
 from standalone.make_rocket import make_rocket
+
 
 
 async def main():
 
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+
+    set_user_data_dir(f'{cur_dir}/logs')
     getLogger().setLevel(_nameToLevel['INFO'])
 
     rocket = make_rocket()
@@ -19,6 +27,20 @@ async def main():
         config = json.load(f)
 
     api_client = ApiClient(config['api_token'])
+
+    # mqtt = MqttClient(api_client)
+
+    # await mqtt.start()
+
+    # # Keep the script running to receive messages
+    # try:
+    #     while True:
+    #         time.sleep(1)  # Keep the script running
+    # except KeyboardInterrupt:
+    #     pass
+
+    # mqtt.stop()
+
 
     flight = await api_client.run_full_setup_handshake(rocket, f'Flight at {datetime.now()}')
 

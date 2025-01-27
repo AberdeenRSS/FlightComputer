@@ -3,10 +3,10 @@ from asyncio import Future, Task
 from dataclasses import dataclass
 from logging import getLogger
 from typing import Callable, Collection
-from core.content.microcontroller.arduino.messages.messages import ResponseMessage, SensorData
-from core.logic.commands.command import Command
+from flight_computer.core.content.microcontroller.arduino.messages.messages import ResponseMessage, SensorData
+from flight_computer.core.logic.commands.command import Command
 
-from core.logic.rocket_definition import Part
+from flight_computer.core.logic.rocket_definition import Part
 
 LOGGER_NAME = 'Serial Adapter'
 

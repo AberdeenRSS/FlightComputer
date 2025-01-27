@@ -2,9 +2,9 @@
 from typing import Iterable, Sequence, Tuple, Type, Union
 from typing_extensions import Self
 from uuid import UUID
-from core.logic.commands.command import Command
-from core.content.general_commands.enable import DisableCommand, EnableCommand
-from core.logic.rocket_definition import Command, Measurements, Part, Rocket
+from flight_computer.core.logic.commands.command import Command
+from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand
+from flight_computer.core.logic.rocket_definition import Command, Measurements, Part, Rocket
 from plyer.facades.battery import Battery
 from random import random
 from datetime import timedelta

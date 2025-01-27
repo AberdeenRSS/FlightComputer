@@ -5,8 +5,8 @@ from uuid import UUID
 from abc import ABC, abstractclassmethod
 from marshmallow import Schema
 
-from core.helper.model_helper import SchemaExt
-from core.logic.commands.command import Command, Command
+from flight_computer.core.helper.model_helper import SchemaExt
+from flight_computer.core.logic.commands.command import Command, Command
 
 #Maybe
 
@@ -26,8 +26,9 @@ from core.logic.commands.command import Command, Command
 #region: Definitions
 class Rocket: pass # type: ignore
 
-MeasurementTypes = Union[str, int, float, None]
-Measurements = Sequence[MeasurementTypes]
+MeasurementTypes = Union[str, int, float, bytes, None]
+Measurements = Sequence[Tuple[int, MeasurementTypes]]
+Measurement = Tuple[float, int, Union[MeasurementTypes, Sequence[MeasurementTypes]]]
 
 #endregion
 
@@ -89,10 +90,10 @@ class Part(ABC):
         self.children = list()
         self.dependencies = list()
 
-        if type(parent) is Rocket:
+        if isinstance(parent, Rocket):
             self.rocket = parent
             parent.add_part(self) # type: ignore
-        elif type(parent) is Part:
+        elif isinstance(parent, Part):
             parent.children.append(self) # type: ignore
             self.parent = parent
             parent.rocket.add_part(self) # type: ignore
@@ -113,17 +114,49 @@ class Part(ABC):
         pass
 
     @abstractclassmethod
-    def get_measurement_shape(self) -> Collection[Tuple[str, str]]:
-        """Name and struct descriptor of each measured value. See https://docs.python.org/3.5/library/struct.html for struct descriptor instructions"""
-        return list[Tuple[str, str]]()
+    def get_measurement_shape(self) -> Collection[Tuple[str, Union[Type, list[Tuple[str, str]]]]]:
+        """
+        List of measurements that can be returned by this part. The measurements will be indexed by the order they are in this
+        list. I.e. the first entry will be measurement of type 0, etc. If the order is changed external api providing readings
+        for this part might break.
+
+        You need to give each measurement:
+         - a name, 
+         - a Quality of Service (QoS) level. Use 0 if you are not sure: https://www.hivemq.com/blog/mqtt-essentials-part-6-mqtt-quality-of-service-levels/
+         - a type (see below)
+
+        Each measurement can either be one single type of raw data (string, binary, number, bool) or it can be a combination of values using
+        https://docs.python.org/3.5/library/struct.html. In that case the first string is the name of that
+        sub field and the second the struct descriptor used.
+
+        By default this reuturns:
+          - 0: Enabled measurement with QoS 1 and type `bool`
+          - 1: Log meassage with QoS 0 and type `str`
+
+        It is recomended to keep these for standardization, however if you need to you may overwrite these.
+
+        To combine your measurements with the defaults use:
+        ```
+            return [
+                *super.get_measurement_shape(),
+                ('your-measurement-1', 0, ('x', 'd'), ('y', 'd')) # measurement of QoS 0 with two double values x and y
+            ]
+        ```
+        """
+
+        return [
+            ('enabled', 1, '?'),
+            ('log', 0, str)
+            ]
 
     @abstractclassmethod
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
         '''Commands that can be processed by this part'''
-        return []
+        return [
+        ]
 
     @abstractclassmethod
-    def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:
+    def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurement]]:
         """Should give back all measurements obtained since the last tick"""
         return []
 

@@ -1,8 +1,8 @@
 from typing import Union
-from core.helper.model_helper import make_safe_schema
-from core.logic.commands.command import Command, Command, UnknownCommand
-from core.logic.rocket_definition import Rocket
-from core.models.command import Command as CommandModel, CommandSchema
+from flight_computer.core.helper.model_helper import make_safe_schema
+from flight_computer.core.logic.commands.command import Command, Command, UnknownCommand
+from flight_computer.core.logic.rocket_definition import Rocket
+from flight_computer.core.models.command import Command as CommandModel, CommandSchema
 from marshmallow import fields
 
 def is_completed_command(c: Command):

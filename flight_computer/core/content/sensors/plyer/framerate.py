@@ -5,9 +5,9 @@ import time
 from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
-from core.logic.commands.command import Command
-from core.content.general_commands.enable import DisableCommand, EnableCommand
-from core.logic.rocket_definition import Command, Part, Rocket
+from flight_computer.core.logic.commands.command import Command
+from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand
+from flight_computer.core.logic.rocket_definition import Command, Part, Rocket
 
 
 class FramerateSensor(Part):
@@ -37,7 +37,7 @@ class FramerateSensor(Part):
         
         self.frames_since_last_measurement += 1
 
-        if iteration % self.measurement_period > 0 or self.last_measurement is None:
+        if iteration % self.measurement_period > 0:
             return
         
         time_delta = now - self.last_measurement_time
@@ -50,11 +50,16 @@ class FramerateSensor(Part):
             
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            ('framerate', 'f')
+            *super().get_measurement_shape(),
+            ('framerate', 0, 'f')
         ]
 
     def collect_measurements(self, now, iteration) -> Union[None, Iterable[Iterable[Union[str, float, int, None]]]]:
 
-        return [[self.framerate or 0]]
+        if self.framerate is None:
+            return
+        return [
+            (now, 2, self.framerate)
+        ]
     
     

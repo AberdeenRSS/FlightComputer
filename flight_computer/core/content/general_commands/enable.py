@@ -1,5 +1,5 @@
-from core.content.general_commands.basic_success_response import BasicErrorResponseSchema
-from core.logic.rocket_definition import Command
+from flight_computer.core.content.general_commands.basic_success_response import BasicErrorResponseSchema
+from flight_computer.core.logic.rocket_definition import Command
 
 
 

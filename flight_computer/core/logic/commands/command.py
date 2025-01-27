@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Union
 from uuid import UUID
 
-from core.helper.model_helper import SchemaExt
+from flight_computer.core.helper.model_helper import SchemaExt
 
 
 class Command(ABC):

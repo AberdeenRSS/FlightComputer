@@ -1,3 +1,4 @@
+import base64
 import paho.mqtt.client as mqtt
 import time
 from paho.mqtt.enums import CallbackAPIVersion 
@@ -30,12 +31,15 @@ def on_message(client, userdata, msg):
     print(f"Received message: {msg.payload.decode()} on topic: {msg.topic}")
 
 # Initialize the MQTT client
-client = mqtt.Client(u7yj\)
+client = mqtt.Client()
 
+jwt_token = 'hFW6+kEe0DtFwEFQtuMpr2w9rovlL7vvY+g1bie+xcCSPply9xVfmghZX7GvwxBBloJlmH8jifTC9mNlr+Q1J0ru5vqpbVfyRHxpijeEmujwNHeolHyxxuvW6lu5zaDS1pG/6kuFHVi6eV3wOXy27TaJCl+c7b5xd9XnycDJoufHmkCZaHwsmvfyc4zul6K0uqm3DiUe8fVAwZejPA8jLS2kSp+hCsY4Twzu015TOKKn+BHeItuu6ao7IYzcpPauKdFg+gIDmwcQe9MlmScQNB9yXv3WBa0zeW/y1GSY2YowDS+F2gfgBoIr1thagcg8q/OJ48Q4JF6L1G7R5uU+vA=='
+
+client.username_pw_set("doesnotmatter", base64.b64decode(jwt_token.encode('utf8')).decode('utf8'))
 
 # Assign the callbacks
 client.on_connect = on_connect
-client.on_message = on_message
+client.on_message = on_message  
 
 # Connect to the MQTT broker
 client.connect(BROKER_ADDRESS, BROKER_PORT, 60)

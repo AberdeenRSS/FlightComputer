@@ -7,18 +7,18 @@ import time
 from typing import Iterable, Sequence, Tuple, Type, Union
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
-from core.helper.global_data_dir import get_cur_flight_data_dir, get_user_data_dir
-from core.logic.commands.command import Command, Command
-from core.logic.measurement_sink import MeasurementSinkBase
-from core.logic.rocket_definition import Measurements, Part, Rocket
-from core.models.flight import Flight
-from core.models.flight_measurement import FlightMeasurement
+from flight_computer.core.helper.global_data_dir import get_cur_flight_data_dir, get_user_data_dir
+from flight_computer.core.logic.commands.command import Command, Command
+from flight_computer.core.logic.measurement_sink import MeasurementSinkBase
+from flight_computer.core.logic.rocket_definition import Measurements, Part, Rocket
+from flight_computer.core.models.flight import Flight
+from flight_computer.core.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
 
 import os
 from pathlib import Path
 
-from core.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
+from flight_computer.core.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
 
 LOGGER_NAME = 'Measurement_Sink'
 

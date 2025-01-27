@@ -7,16 +7,16 @@ import time
 from typing import Iterable, Sequence, Tuple, Type, Union
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
-from core.api_client import ApiClient
-from core.helper.measurement_binary_helper import get_struct_format_for_part
-from core.logic.commands.command import Command, Command
-from core.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase
-from core.logic.rocket_definition import Measurements, Part, Rocket
-from core.models.flight import Flight
-from core.models.flight_measurement import FlightMeasurement
+from flight_computer.core.api_client import ApiClient
+from flight_computer.core.helper.measurement_binary_helper import get_struct_format_for_part
+from flight_computer.core.logic.commands.command import Command, Command
+from flight_computer.core.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase
+from flight_computer.core.logic.rocket_definition import Measurements, Part, Rocket
+from flight_computer.core.models.flight import Flight
+from flight_computer.core.models.flight_measurement import FlightMeasurement
 from typing_extensions import Self
 
-from core.models.flight_measurement_compact import FlightMeasurementCompact
+from flight_computer.core.models.flight_measurement_compact import FlightMeasurementCompact
 
 LOGGER_NAME = 'Measurement_Sink'
 

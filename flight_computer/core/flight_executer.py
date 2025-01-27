@@ -3,18 +3,18 @@ from logging import _nameToLevel, getLogger
 import time
 from typing import Callable, Collection, Iterable, cast
 from datetime import datetime
-from core.api_client import ApiClient, RealtimeApiClient
-from core.helper.file_logger import FileLogger
-from core.helper.global_data_dir import reset_flight_data_dir
-from core.logic.commands.command import Command, Command
-from core.logic.commands.command_helper import deserialize_command, gather_known_commands, is_completed_command, make_command_schemas
-from core.logic.to_vessel_and_flight import to_vessel_and_flight
-from core.models.command import Command as CommandModel, CommandSchema
-from core.logic.execution import topological_sort
-from core.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase, MeasurementsByPart
-from core.logic.rocket_definition import Part, Rocket
+from flight_computer.core.api_client import ApiClient, RealtimeApiClient
+from flight_computer.core.helper.file_logger import FileLogger
+from flight_computer.core.helper.global_data_dir import reset_flight_data_dir
+from flight_computer.core.logic.commands.command import Command, Command
+from flight_computer.core.logic.commands.command_helper import deserialize_command, gather_known_commands, is_completed_command, make_command_schemas
+from flight_computer.core.logic.to_vessel_and_flight import to_vessel_and_flight
+from flight_computer.core.models.command import Command as CommandModel, CommandSchema
+from flight_computer.core.logic.execution import topological_sort
+from flight_computer.core.logic.measurement_sink import ApiMeasurementSinkBase, MeasurementSinkBase, MeasurementsByPart
+from flight_computer.core.logic.rocket_definition import Part, Rocket
 
-from core.models.flight import Flight
+from flight_computer.core.models.flight import Flight
 
 LOGGER_NAME = 'FlightExecutor'
 
@@ -237,14 +237,14 @@ class FlightExecuter:
                 if measurements is None:
                     continue
 
-                shape =  p.get_measurement_shape()
+                # shape =  p.get_measurement_shape()
 
-                for m in measurements:
-                    if len(m) <= len(shape):
-                        continue
-                    raise Exception(f'A measurement of length {len(m)} was returned, but the part only supports measurements up to length {len(shape)}. Please verify that the get_measurement_shape method matches what is returned by collect_measurements')
+                # for m in measurements:
+                #     if len(m) <= len(shape):
+                #         continue
+                #     raise Exception(f'A measurement of length {len(m)} was returned, but the part only supports measurements up to length {len(shape)}. Please verify that the get_measurement_shape method matches what is returned by collect_measurements')
 
-                current_measurements[p] = (p.last_measurement or now, now, measurements)
+                current_measurements[p] = measurements
                 p.last_measurement = now
             except Exception as e:
                 self.logger.exception(f'{LOGGER_NAME}: Iteration {iteration}: Part {p.name} failed to take measurements: {e}')

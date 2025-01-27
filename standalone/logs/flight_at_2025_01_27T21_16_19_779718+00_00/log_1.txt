@@ -1,0 +1,1 @@
+2025-01-27T21:16:19.848060+00:00: FlightExecutor: Control loop startup done. Iteration wait time established at 0.000249420166015625s

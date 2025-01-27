@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 import time
 
-from core.helper.global_data_dir import get_cur_flight_data_dir
+from flight_computer.core.helper.global_data_dir import get_cur_flight_data_dir
 
 
 class FileLogger(logging.Handler):

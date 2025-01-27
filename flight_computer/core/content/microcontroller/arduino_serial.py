@@ -8,18 +8,18 @@ from typing import Callable, Collection, Iterable, Tuple, Type, Union
 from uuid import UUID
 
 from dataclasses import dataclass
-from core.content.microcontroller.arduino_serial_common import ArduinoHwBase, ArduinoSerialAdapter, make_default_command_callback
-from core.logic.commands.command import Command
-from core.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
-from core.content.motor_commands.open import SetIgnitionPhaseCommand
-from core.content.motor_commands.open import SetPreparationPhaseCommand
+from flight_computer.core.content.microcontroller.arduino_serial_common import ArduinoHwBase, ArduinoSerialAdapter, make_default_command_callback
+from flight_computer.core.logic.commands.command import Command
+from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
+from flight_computer.core.content.motor_commands.open import SetIgnitionPhaseCommand
+from flight_computer.core.content.motor_commands.open import SetPreparationPhaseCommand
 
-from core.logic.rocket_definition import Part, Rocket
+from flight_computer.core.logic.rocket_definition import Part, Rocket
 
 
 
 import tinyproto
-from core.content.microcontroller.arduino.messages.messages import SensorData, ResponseMessage
+from flight_computer.core.content.microcontroller.arduino.messages.messages import SensorData, ResponseMessage
 
 try:
     from kivy.utils import platform

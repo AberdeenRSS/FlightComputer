@@ -4,7 +4,7 @@ from uuid import UUID
 
 from marshmallow import fields
 
-from core.helper.model_helper import make_safe_schema
+from flight_computer.core.helper.model_helper import make_safe_schema
 
 
 @dataclass()

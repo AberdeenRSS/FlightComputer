@@ -1,12 +1,12 @@
 from typing import Type
 from uuid import uuid4, UUID
-from core.logic.rocket_definition import Command
-from core.models.command import CommandInfo
-from core.models.flight_measurement import FlightMeasurementDescriptor
-from core.models.vessel import Vessel
-from core.models.vessel_part import VesselPart
-from core.models.flight import Flight
-from core.logic.rocket_definition import Rocket
+from flight_computer.core.logic.rocket_definition import Command
+from flight_computer.core.models.command import CommandInfo
+from flight_computer.core.models.flight_measurement import FlightMeasurementDescriptor
+from flight_computer.core.models.vessel import Vessel
+from flight_computer.core.models.vessel_part import VesselPart
+from flight_computer.core.models.flight import Flight
+from flight_computer.core.logic.rocket_definition import Rocket
 from datetime import UTC, datetime
 from marshmallow_jsonschema_3 import JSONSchema
 
@@ -40,9 +40,11 @@ def get_measured_parts(rocket: Rocket) -> dict[str, list[FlightMeasurementDescri
 
         measurements = list()
 
-        for measurement_name, measurement_type in p.get_measurement_shape():
+        for measurement_name, qos, measurement_type in p.get_measurement_shape():
 
-            measurements.append(FlightMeasurementDescriptor(measurement_name, measurement_type))
+            serialized_type = '[str]' if measurement_type is str else measurement_type 
+
+            measurements.append(FlightMeasurementDescriptor(measurement_name, serialized_type))
     
         measured_parts[str(p._id)] = measurements
 
