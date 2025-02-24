@@ -30,8 +30,8 @@ class FlightMeasurementDescriptor:
 
     name: str
 
-    type: str
-    """The type of the that measurement. Can be a "string", "int" or a "float" """
+    type: str | list[tuple[str, str]]
+    """The type of the that measurement"""
 
 class FlightMeasurementDescriptorSchema(make_safe_schema(FlightMeasurementDescriptor)):
     """
@@ -40,7 +40,7 @@ class FlightMeasurementDescriptorSchema(make_safe_schema(FlightMeasurementDescri
 
     name = fields.String()
 
-    type = fields.String()
+    type = fields.Raw()
     """The type of the that measurement. Can be a "string", "int" or a "float" """
 
 @dataclass

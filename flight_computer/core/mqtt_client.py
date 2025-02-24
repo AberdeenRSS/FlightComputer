@@ -1,5 +1,7 @@
+import asyncio
 import base64
 from logging import getLogger
+from uuid import UUID
 import paho.mqtt.client as mqtt
 import time
 from paho.mqtt.enums import CallbackAPIVersion
@@ -17,11 +19,13 @@ class MqttClient:
 
     client: mqtt.Client
 
-    def __init__(self, api: ApiClient):
+    def __init__(self, api: ApiClient, flight_id: UUID):
 
         self.api = api
 
         self.logger = getLogger('Mqtt Client')
+
+        self.flight_id = flight_id
 
     # The callback for when the client receives a CONNACK response from the broker
     def make_on_connect(self):
@@ -29,20 +33,22 @@ class MqttClient:
         def connect(client, userdata, flags, rc):
             if rc == 0:
                 self.logger.info("Connected to broker successfully!")
-                # Subscribe to a test topic once connected
-                client.subscribe(TOPIC)
-                self.logger.info(f"Subscribed to topic: {TOPIC}")
-
-                # Now we can publish after subscribing
-                result = client.publish(TOPIC, MESSAGE)
-                if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                    self.logger.info(f"Message '{MESSAGE}' published successfully!")
-                else:
-                    self.logger.info(f"Failed to publish message. Error code: {result.rc}")
             else:
                 self.logger.info(f"Connection failed with code {rc}")
 
         return connect
+    
+    def make_on_pre_connect(self):
+
+        flight = str(self.flight_id)
+
+        def on_pre_connect(client, userdata, *kwargs):
+
+            # Reset password
+            bearer = asyncio.run(self.api.get_flight_bearer(flight))
+            client.username_pw_set("doesnotmatter",  bearer)
+
+        return on_pre_connect
     
     def make_on_event(self, event: str):
 
@@ -72,19 +78,20 @@ class MqttClient:
 
     async def start(self):
 
-        bearer = await self.api.authenticate()
+        # bearer = await self.api.get_flight_bearer(str(self.flight_id))
 
         # Initialize the MQTT client
         client = mqtt.Client()
         self.client = client
 
-        client.username_pw_set("doesnotmatter",  bearer)
+        # client.username_pw_set("doesnotmatter",  bearer)
 
         # Assign the callbacks
         client.on_connect = self.make_on_connect()
         client.on_message = self.make_on_message()
+        client.on_pre_connect = self.make_on_pre_connect()
         client.on_connect_fail = self.make_on_event('connect-failed')
-        client.on_pre_connect = self.make_on_event('pre-connect')
+        # client.on_pre_connect = self.make_on_event('pre-connect')
         client.on_disconnect = self.make_on_disconnect()
 
         # Connect to the MQTT broker
@@ -94,7 +101,6 @@ class MqttClient:
         err = client.loop_start()
 
         self.logger.info(f'started mqtt client')
-
 
     def stop(self):
 

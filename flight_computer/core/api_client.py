@@ -60,9 +60,51 @@ class ApiClient:
 
         self.logger = getLogger('API Client')
 
+        self.old_token_flight = dict()
+        self.old_token_flight_decoded = dict()
+
 
     old_token_decoded: Union[None, dict[str, Any]] = None
     old_token: Union[None, str] = None
+
+    old_token_flight: dict[str, str]
+    old_token_flight_decoded: dict[str, dict[str, Any]]
+
+    async def get_flight_bearer(self, flight_id: str):
+
+        # try to return a cached token if available
+        if flight_id in self.old_token_flight or flight_id in self.old_token_flight_decoded:
+            # Check that the old token does not expire in the next minute
+            if time.time() < (self.old_token_flight_decoded[flight_id]['exp'] - 60):
+                return self.old_token_flight[flight_id]
+
+        # First, the code looks up a token from the cache.
+        # Because we're looking for a token for the current app, not for a user,
+        # use None for the account parameter.
+        try:
+            result = await self.request_with_error_handling_and_retry(lambda client: client.post('/auth/authorization_code_flow', data=json.dumps({ 'token': self.auth_code, 'resources': [('flight', flight_id)] })), 3, False) # type: ignore
+        except Exception as e:
+            self.logger.exception(f'Authentication failed: {e.args}')
+            raise
+    
+        if result.is_error:
+            self.logger.exception(f'Authentication failed: {result.text}')
+            raise Exception(f'Authentication failed: {result.text}')
+
+        auth_response = result.json()
+        bearer = auth_response['token']
+
+        try:
+            header = jwt.get_unverified_header(bearer)
+            decoded_bearer = jwt.decode(bearer, algorithms=header['alg'], verify=False, options={'verify_signature': False})
+        except Exception as e:
+            self.logger.exception(f'Authentication failed: Invalid bearer token: {e}')
+            raise Exception(f'Authentication failed: Invalid bearer token: {e}')
+
+        self.old_token_flight[flight_id] = bearer
+        self.old_token_flight_decoded[flight_id] = decoded_bearer
+
+        return bearer
 
     async def authenticate(self):
 
@@ -132,8 +174,10 @@ class ApiClient:
                 curRetry += 1
 
             # assert response is not None
-            raise ConnectionError(
-                f'All retries to {response.url} failed with code {response.status_code}: {response.text}')
+            if response is not None:
+                raise ConnectionError(
+                    f'All retries to {response.url} failed with code {response.status_code}: {response.text}')
+            raise ConnectionError(f'All connection requests failed: no response received')
 
     async def register_vessel(self, vessel_req) -> Vessel:
 

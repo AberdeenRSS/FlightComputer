@@ -10,6 +10,7 @@ from flight_computer.core.logic.rocket_definition import Command, Measurements, 
 from random import random
 
 from flight_computer.core.models.flight import Flight
+from flight_computer.core.mqtt_client import MqttClient
 
 MeasurementsByPart = dict[Part, tuple[float, float, Sequence[Measurements]]]
 
@@ -45,5 +46,7 @@ class MeasurementSinkBase(Part):
 
 class ApiMeasurementSinkBase(MeasurementSinkBase):
     api_client: ApiClient
+
+    mqtt_client: MqttClient
 
     flight: Flight

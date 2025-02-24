@@ -3,9 +3,6 @@ import time
 from unittest import TestCase, main
 import uuid
 
-from app.content.sensors.android_native.acceleration_pyjinius import PyjiniusAccelerationSensor
-from app.content.sensors.android_native.gyroscope_pyjinius import PyjiniusGyroscopeSensor
-from app.content.sensors.android_native.inertial_reference_frame import InertialReferenceFrame
 
 class TestInertialReferenceFrame(TestCase):
 

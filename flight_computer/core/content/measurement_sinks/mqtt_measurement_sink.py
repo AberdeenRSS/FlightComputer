@@ -30,17 +30,7 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
 
     def update(self, commands: Iterable[Command], now: float, iteration):
 
-
-        if self.start_task is not None and self.start_task.done():
-            self.send_last_measurements(now)
-            return
-
-        if self.start_task is None or self.start_task.exception() is not None:
-            
-            if self.mqtt_client is None:
-                self.mqtt_client = MqttClient(self.api_client)
-
-            self.start_task = asyncio.create_task(self.mqtt_client.start())
+        self.send_last_measurements(now)
 
 
     def get_measurement_shape(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
@@ -50,13 +40,13 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
             ('commands_send_last', 0, 'd')
         ]
 
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
+    def get_accepted_commands(self):
+        return [
+            *super().get_accepted_commands()
+        ]
 
-        return []
-
-    def collect_measurements(self, now: float, iterations) -> Sequence[Measurement] | None:
-        
-        return None
+    def collect_measurements(self, now: float, iterations):
+        return
     
     def send_last_measurements(self, now: float):
 
@@ -64,7 +54,10 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
         old_buffer = self.measurement_buffer
         self.measurement_buffer = list()
 
+        count = 0
+
         for b in old_buffer:
+            count += len(b)
             for part, measurements in b.items():
 
                 shapes = part.get_measurement_shape()
@@ -74,12 +67,14 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
                     name, qos, shape = shapes[msg_index]
                     self.mqtt_client.client.publish(f'{self.flight._id}/m/{part._index}/{msg_index}', enconde_payload(shape, time, payload), qos)
 
+        self.submit_measurement(2, count, now)
+        
     
 def enconde_payload(shape, time, payload):
 
     if shape is str:
 
-        time_bytes = struct.pack('!d', payload)
+        time_bytes = struct.pack('!d', time)
         time_string = base64.b64encode(time_bytes).decode('utf-8') # convert bytes to string
         return  time_string + payload
     

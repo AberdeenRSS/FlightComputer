@@ -1,4 +1,5 @@
-from typing import Type
+import struct
+from typing import Collection, Tuple, Type
 from uuid import uuid4, UUID
 from flight_computer.core.logic.rocket_definition import Command
 from flight_computer.core.models.command import CommandInfo
@@ -42,32 +43,51 @@ def get_measured_parts(rocket: Rocket) -> dict[str, list[FlightMeasurementDescri
 
         for measurement_name, qos, measurement_type in p.get_measurement_shape():
 
-            serialized_type = '[str]' if measurement_type is str else measurement_type 
-
-            measurements.append(FlightMeasurementDescriptor(measurement_name, serialized_type))
+            measurements.append(FlightMeasurementDescriptor(measurement_name, make_format_descriptor(measurement_type)))
     
         measured_parts[str(p._id)] = measurements
 
     return measured_parts
 
-def get_commands(rocket: Rocket) -> dict[str, CommandInfo]:
+def make_format_descriptor(descriptor: Type | str | Collection[Tuple[str, str | Type]], allow_complex: bool = True):
 
-    commands = dict[Type[Command], list[UUID]]()
 
-    res = dict[str, CommandInfo]()
+    if descriptor == str:
+        return '[str]'
+
+    if isinstance(descriptor, str):
+        if descriptor.startswith('{'):
+            raise Exception('Invalid format descriptor: currently not supporting json schemas')
+        if descriptor.startswith('['):
+            descriptor = descriptor[1:-1]
+        try:
+            struct.calcsize(descriptor)
+            return descriptor
+        except Exception as e:
+            raise Exception('Descriptor is not a valid struct descriptor', e)
+    
+    if isinstance(descriptor, tuple):
+        return (descriptor[0], make_format_descriptor(descriptor[1], False))
+
+    if allow_complex and isinstance(descriptor, Collection):
+        return [make_format_descriptor(d, False) for d in descriptor]
+        
+    raise Exception(f'{descriptor} is not supported as a format')
+
+
+
+def get_commands(rocket: Rocket) -> dict[str, list[CommandInfo]]:
+
+    commands = dict[str, list[CommandInfo]]()
 
     for p in rocket.parts:
-        for c in p.get_accepted_commands():
 
-            if c not in commands:
-                commands[c] = list()
-            commands[c].append(p._id)
+        cmds = list()
 
-    for command, part_ids in commands.items():
+        for name, type in p.get_accepted_commands():
 
-        payload_schema = JSONSchema().dump(command.payload_schema) if command.payload_schema is not None else None
-        response_schema = JSONSchema().dump(command.response_schema) if command.response_schema is not None else None
-
-        res[command.command_type] = CommandInfo(supporting_parts=part_ids, payload_schema=payload_schema, response_schema=response_schema) # type: ignore
+            cmds.append(CommandInfo(name, make_format_descriptor(type)))
     
-    return res
+        commands[str(p._id)] = cmds
+
+    return commands

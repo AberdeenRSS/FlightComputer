@@ -59,9 +59,9 @@ class Flight:
     The list of vessel parts that have measurements for and how those measurements will look like
     """
 
-    available_commands: dict[str, CommandInfo] = field(default_factory=dict)
+    available_commands: dict[str, list[CommandInfo]] = field(default_factory=dict)
     """
-    List of available commands and their json schemas. The keys have to be the part the command is issued to
+    list of commands available on each part.
     """
 
     permissions: dict[str, str] = field(default_factory=dict)
@@ -112,7 +112,7 @@ class FlightSchema(make_safe_schema(Flight)):
     The list of vessel parts that have measurements for and how those measurements will look like
     """
 
-    available_commands = fields.Dict(keys= fields.Str(), values= fields.Nested(CommandInfoSchema))
+    available_commands = fields.Dict(keys= fields.Str(), values= fields.List(fields.Nested(CommandInfoSchema)))
     """
     List of available commands and their json schemas. The keys have to be the part the command is issued to
     """

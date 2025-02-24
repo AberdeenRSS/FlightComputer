@@ -38,8 +38,10 @@ class PlyerBatterySensor(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
-        return [EnableCommand, DisableCommand]
+    def get_accepted_commands(self):
+        return [
+            *super().get_accepted_commands()
+        ]
    
     def update(self, commands: Iterable[Command], now, iteration):
         
@@ -60,6 +62,10 @@ class PlyerBatterySensor(Part):
                 as_battery.get_state()
                 self.is_charging = as_battery.status['isCharging']
                 self.battery_percent = as_battery.status['percentage']
+
+                self.submit_measurement(3, self.is_charging, now)
+                self.submit_measurement(4, self.battery_percent, now)
+
             except Exception as e:
                 self.logger.error(f'Plyer battery sensor failed: {e}')
                 self.sensor_failed = True
@@ -75,10 +81,4 @@ class PlyerBatterySensor(Part):
             ('battery_percentage', 0, 'f'),
         ]
 
-    def collect_measurements(self, now, iteration) -> Iterable[Iterable[Union[str, float, int, None]]]:
-
-        return [
-            (now, 3, self.is_charging),
-            (now, 4, self.battery_percent)            
-        ]
     

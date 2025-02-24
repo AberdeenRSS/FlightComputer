@@ -1,4 +1,5 @@
-from typing import Any, Literal, Sequence, Union, cast, Iterable, Tuple, Type, Collection
+import time
+from typing import Any, Callable, Literal, Sequence, Union, cast, Iterable, Tuple, Type, Collection
 from datetime import datetime, timedelta
 from typing_extensions import Self
 from uuid import UUID
@@ -7,6 +8,9 @@ from marshmallow import Schema
 
 from flight_computer.core.helper.model_helper import SchemaExt
 from flight_computer.core.logic.commands.command import Command, Command
+from logging import getLogger, _nameToLevel
+
+INFO_LOG_LEVEL = _nameToLevel['INFO']
 
 #Maybe
 
@@ -54,6 +58,10 @@ class Part(ABC):
 
     dependencies: list[Self] 
 
+    enabled: bool = True
+
+    _last_enable_command: float = 0
+
     min_update_period: timedelta = timedelta(milliseconds=100)
     '''
     The minimum period with which the update method is called. Default is 100ms. Set to higher values for
@@ -76,8 +84,13 @@ class Part(ABC):
 
     last_measurement: Union[None, float] = None
     '''
-    Time in unix seconds since the parts measurements where returned
-    Set by the main execution loop after collect_measurements is called
+    Time in unix seconds since the parts measurement buffer was last swapped
+    Set by the main execution loop
+    '''
+
+    _measurement_buffer: list[Measurement] = None
+    '''
+    Measurements are buffered here between collection by the the main loop
     '''
 
     def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None], dependencies: Iterable[Self]):
@@ -89,6 +102,9 @@ class Part(ABC):
 
         self.children = list()
         self.dependencies = list()
+        self.logger = getLogger(f'p_{name}')
+
+        self._measurement_buffer = list()
 
         if isinstance(parent, Rocket):
             self.rocket = parent
@@ -101,7 +117,7 @@ class Part(ABC):
         self.dependencies.extend(dependencies)
 
     @abstractclassmethod
-    def update(self, commands: Iterable[Command], now: float, iteration: int) -> Union[None, Collection[Command]]:
+    def update(self, now: float, iteration: int) -> None:
         """
         Method called per tick on every part to get it's own information updated based
         on real parameters
@@ -114,20 +130,22 @@ class Part(ABC):
         pass
 
     @abstractclassmethod
-    def get_measurement_shape(self) -> Collection[Tuple[str, Union[Type, list[Tuple[str, str]]]]]:
+    def get_measurement_shape(self) -> Collection[Tuple[str, int, Union[Type, str, list[Tuple[str, str]]]]]:
         """
         List of measurements that can be returned by this part. The measurements will be indexed by the order they are in this
         list. I.e. the first entry will be measurement of type 0, etc. If the order is changed external api providing readings
         for this part might break.
 
         You need to give each measurement:
-         - a name, 
+         - a name (unique), 
          - a Quality of Service (QoS) level. Use 0 if you are not sure: https://www.hivemq.com/blog/mqtt-essentials-part-6-mqtt-quality-of-service-levels/
          - a type (see below)
 
-        Each measurement can either be one single type of raw data (string, binary, number, bool) or it can be a combination of values using
-        https://docs.python.org/3.5/library/struct.html. In that case the first string is the name of that
-        sub field and the second the struct descriptor used.
+        Each measurement can either be one single type of raw data using `str` or `bytes` or it can be a combination of values using
+        defined by https://docs.python.org/3.5/library/struct.html. The struct format is ammended by two things:
+         1. No endianes order allowed (always set to network by the system)
+         2. Use brackets around a struct type to signify that it will be an array of this type e.g. `[?]` for an array of bools.
+        A list of tuples with the name of the sub-element and one of the above listed descriptors is also allowed
 
         By default this reuturns:
           - 0: Enabled measurement with QoS 1 and type `bool`
@@ -139,26 +157,88 @@ class Part(ABC):
         ```
             return [
                 *super.get_measurement_shape(),
-                ('your-measurement-1', 0, ('x', 'd'), ('y', 'd')) # measurement of QoS 0 with two double values x and y
+                ('your-measurement-1', 0, [('x', 'd'), ('y', 'd')]) # measurement of QoS 0 with two double values x and y
             ]
         ```
         """
 
         return [
             ('enabled', 1, '?'),
-            ('log', 0, str)
+            ('log', 0, [('level', 'h'), ('msg', str)])
             ]
 
     @abstractclassmethod
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
-        '''Commands that can be processed by this part'''
-        return [
-        ]
+    def get_accepted_commands(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
+        """
+        List of commands accepted by this part. The command will be indexed by the order they are in this
+        list. I.e. the first entry will be command of type 0, etc. If the order is changed external APIs using
+        these indecies might break (it is heavily encoureged to use the command name instead for this reason)
 
+        You need to give each command:
+         - a name (unique), 
+         - a type (see below)
+
+       Each command can either be one single type of raw data using `str` or `bytes` or it can be a combination of values using
+        defined by https://docs.python.org/3.5/library/struct.html. The struct format is ammended by two things:
+         1. No endianes order allowed (always set to network by the system)
+         2. Use brackets around a struct type to signify that it will be an array of this type e.g. `[?]` for an array of bools.
+        A list of tuples with the name of the sub-element and one of the above listed descriptors is also allowed
+
+        By default this reuturns:
+          - 0: Enable command with a bool payload
+
+        It is recomended to keep these for standardization, however you may overwrite them
+
+        To combine your commands with the defaults use:
+        ```
+            return [
+                *super.get_accepted_commands(),
+                ('your-command-1', str) # command with a string payload
+            ]
+        ```
+        """        
+        return [
+            ('enable', '?')
+        ]
+    
     @abstractclassmethod
-    def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurement]]:
-        """Should give back all measurements obtained since the last tick"""
-        return []
+    def get_command_callbacks(self) -> Collection[Callable[[Self, float, Any], None]]:
+        '''
+        Provide callbacks for the commands defined in `get_accepted_commands`
+        
+        Methods need to accept a time and the payload for the command:
+
+        ```
+            def enable(self, time: float, payload: Any):
+                ...
+        ```
+
+        Extend the default callbacks like this:
+        ```
+        return [
+            *super().get_command_callbacks(),
+            self.your_command_callback
+        ]
+        '''
+        return [
+            self.enable
+        ]
+    
+    def enable(self, timestamp: float, enable: bool):
+
+        # Prevent out of order commands
+        if timestamp <= self._last_enable_command:
+            return
+        
+        self._last_enable_command = timestamp
+
+        self.enabled = enable
+
+        self.submit_measurement(1, enable, time.time())
+
+    def collect_measurements(self, now: float, iteration: int):
+        """Method called before measurement buffer is swapped. I.e. last chance to submit measurements this iteration"""
+        return 
 
     def flush(self):
         """Method called at the end of each flight tick. This is to release any memory from the last iteration"""
@@ -176,6 +256,19 @@ class Part(ABC):
             i += 1
         
         return res
+
+    def log(self, msg: str, level: int = INFO_LOG_LEVEL, datetime: float | None = None):
+        self.logger.log(level, msg)
+
+        # Emit measurement as 
+        if level >= INFO_LOG_LEVEL:
+            self.submit_measurement_raw([datetime or time.time(), 1, (level, msg)])
+
+    def submit_measurement_raw(self, measruement: Measurement):
+        self._measurement_buffer.append(measruement)
+
+    def submit_measurement(self, measurement_index: int, measurement: MeasurementTypes | Sequence[MeasurementTypes], datetime: float | None = None ):
+        self.submit_measurement_raw([datetime or time.time(), measurement_index, measurement])
 
 class Rocket:
     """ Class representing the rocket """
