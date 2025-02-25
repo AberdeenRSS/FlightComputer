@@ -1,22 +1,7 @@
 
-from flight_computer.core.content.flight_director.positive_attitude_alanyzer import PositiveAttitudeAnalyzer
-from flight_computer.core.content.measurement_sinks.api_measurement_sink import ApiMeasurementSink
-from flight_computer.core.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from flight_computer.core.content.measurement_sinks.mqtt_measurement_sink import MqttMeasurementSink
-from flight_computer.core.content.microcontroller.arduino_serial import ArduinoOverSerial
-from flight_computer.core.content.sensors.computed.barometric_altitude import BarometricAltitudeSensor
 from flight_computer.core.content.sensors.plyer.framerate import FramerateSensor, FramerateSensor
-from flight_computer.core.content.sensors.plyer.gps_plyer import PlyerGPSSensor
 from flight_computer.core.content.sensors.plyer.battery_plyer import PlyerBatterySensor, PlyerBatterySensor
-from flight_computer.core.content.microcontroller.arduino.parts.servo import ServoSensor
-from flight_computer.core.content.microcontroller.arduino.parts.igniter import IgniterSensor, IgniterSensor
-from flight_computer.core.content.microcontroller.arduino.sensors.pressure.temperature_arduino import TemperatureSensor
-from flight_computer.core.content.microcontroller.arduino.sensors.pressure.pressure_arduino import PressureSensor
-from flight_computer.core.content.microcontroller.arduino.sensors.pressure.altitude_arduino import AltitudeSensor
-from flight_computer.core.content.microcontroller.arduino.sensors.pressure.pressure_sensor_arduino import PressureArduinoSensor
-from flight_computer.core.content.microcontroller.arduino.sensors.orientation_arduino import OrientationSensor
-from flight_computer.core.content.sensors.plyer.gravity_plyer import PlyerGravitySensor
-from flight_computer.core.content.testing.periodic_tester import PeriodicTester
 from flight_computer.core.logic.rocket_definition import Rocket
 
 # frocorepp.ui.part_ui import PartUi

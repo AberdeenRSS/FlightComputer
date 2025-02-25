@@ -1,9 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Union
-from uuid import UUID
-from marshmallow import Schema, fields, validate
-from flight_computer.core.helper.json_schema_field import JSON_Schema_Field
+from marshmallow import fields
 from flight_computer.core.helper.model_helper import make_safe_schema
 
 @dataclass

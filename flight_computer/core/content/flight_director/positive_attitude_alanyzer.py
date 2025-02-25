@@ -1,18 +1,13 @@
-from asyncio import Future, Task
 from datetime import timedelta
-import struct
-from typing import Collection, Iterable, Tuple, Type, Union, cast
+from typing import Iterable, Tuple, Type, Union
 from uuid import UUID
 
 import numpy as np
 from flight_computer.core.content.common_sensor_interfaces.data_age import IDataAge
 from flight_computer.core.logic.math.linear import rotate_vector_by_quaternion
 
-from dataclasses import dataclass
 from flight_computer.core.content.common_sensor_interfaces.orientation_sensor import IOrientationSensor
-from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand
 from flight_computer.core.logic.commands.command import Command
-from flight_computer.core.content.microcontroller.arduino_serial import ArduinoOverSerial
 from flight_computer.core.logic.rocket_definition import Part, Rocket
 
 class PositiveAttitudeAnalyzer(Part, IDataAge):

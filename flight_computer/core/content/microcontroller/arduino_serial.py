@@ -10,9 +10,6 @@ from uuid import UUID
 from dataclasses import dataclass
 from flight_computer.core.content.microcontroller.arduino_serial_common import ArduinoHwBase, ArduinoSerialAdapter, make_default_command_callback
 from flight_computer.core.logic.commands.command import Command
-from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand, ResetCommand
-from flight_computer.core.content.motor_commands.open import SetIgnitionPhaseCommand
-from flight_computer.core.content.motor_commands.open import SetPreparationPhaseCommand
 
 from flight_computer.core.logic.rocket_definition import Part, Rocket
 

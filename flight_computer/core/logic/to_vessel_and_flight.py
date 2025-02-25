@@ -1,7 +1,6 @@
 import struct
 from typing import Collection, Tuple, Type
-from uuid import uuid4, UUID
-from flight_computer.core.logic.rocket_definition import Command
+from uuid import uuid4
 from flight_computer.core.models.command import CommandInfo
 from flight_computer.core.models.flight_measurement import FlightMeasurementDescriptor
 from flight_computer.core.models.vessel import Vessel
@@ -9,7 +8,6 @@ from flight_computer.core.models.vessel_part import VesselPart
 from flight_computer.core.models.flight import Flight
 from flight_computer.core.logic.rocket_definition import Rocket
 from datetime import UTC, datetime
-from marshmallow_jsonschema_3 import JSONSchema
 
 def to_vessel_and_flight(rocket: Rocket) -> tuple[Vessel, Flight]:
 
