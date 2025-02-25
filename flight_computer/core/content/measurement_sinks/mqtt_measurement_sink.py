@@ -28,7 +28,7 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
 
         self.logger = getLogger(LOGGER_NAME)
 
-    def update(self, commands: Iterable[Command], now: float, iteration):
+    def update(self, now: float, iteration):
 
         self.send_last_measurements(now)
 
@@ -43,6 +43,11 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
     def get_accepted_commands(self):
         return [
             *super().get_accepted_commands()
+        ]
+    
+    def get_command_callbacks(self):
+        return [
+            *super().get_command_callbacks()
         ]
 
     def collect_measurements(self, now: float, iterations):

@@ -42,19 +42,13 @@ class PlyerBatterySensor(Part):
         return [
             *super().get_accepted_commands()
         ]
+    
+    def get_command_callbacks(self):
+        return [
+            *super().get_command_callbacks()
+        ]
    
-    def update(self, commands: Iterable[Command], now, iteration):
-        
-        for c in commands:
-            if isinstance(c, EnableCommand):
-                self.enabled = True
-            elif isinstance(c, DisableCommand):
-                self.enabled = False
-            else:
-                c.state = 'failed' # Part cannot handle this command
-                continue
-            
-            c.state = 'success'
+    def update(self, now, iteration):
         
         if self.enabled and not self.sensor_failed:
             try:    

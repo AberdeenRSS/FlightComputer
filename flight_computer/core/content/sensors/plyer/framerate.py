@@ -35,7 +35,12 @@ class FramerateSensor(Part):
             *super().get_accepted_commands()
         ]
     
-    def update(self, commands: Iterable[Command], now: float, iteration):
+    def get_command_callbacks(self):
+        return [
+            *super().get_command_callbacks()
+        ]
+    
+    def update(self, now: float, iteration):
         
         self.frames_since_last_measurement += 1
 
