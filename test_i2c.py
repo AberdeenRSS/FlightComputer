@@ -27,4 +27,8 @@ while True:
 
     x, y, z = struct.unpack('hhh', bytearray(reg))
 
+    x = x/100
+    y = y/100
+    z = z/100
+
     print(f'x: {x}; y: {y}; z: {z}')
