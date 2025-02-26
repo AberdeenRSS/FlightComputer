@@ -22,13 +22,9 @@ print(f'Current mode: 0x{operating_mode:02x}')
 
 while True:
 
-    x0 = i2cbus.read_byte_data(BNO_DEVICE_ID, 0x08)
-    x1 = i2cbus.read_byte_data(BNO_DEVICE_ID, 0x09)
-    y0 = i2cbus.read_byte_data(BNO_DEVICE_ID, 0x0A)
-    y1 = i2cbus.read_byte_data(BNO_DEVICE_ID, 0x0B)
-    z0 = i2cbus.read_byte_data(BNO_DEVICE_ID, 0x0C)
-    z1 = i2cbus.read_byte_data(BNO_DEVICE_ID, 0x0D)
+    reg = i2cbus.read_i2c_block_data(BNO_DEVICE_ID,  0x08, 6)
 
-    x, y, z = struct.unpack('hhh', bytearray([x0, x1, y0, y1, z0, z1]))
+
+    x, y, z = struct.unpack('hhh', bytearray(reg))
 
     print(f'x: {x}; y: {y}; z: {z}')
