@@ -1,6 +1,7 @@
 import struct
 import time
 from smbus import SMBus
+import math
 
 BNO_DEVICE_ID = 0x28
 
@@ -24,7 +25,7 @@ while True:
 
     block = i2cbus.read_i2c_block_data(BNO_DEVICE_ID,  0x08, 6)
 
-    x, y, z = struct.unpack('hhh', block)
+    x, y, z = struct.unpack('hhh', bytearray(block))
 
     x = x/100
     y = y/100
@@ -36,6 +37,10 @@ while True:
 
     block = i2cbus.read_i2c_block_data(BNO_DEVICE_ID,  0x20, 8)
 
-    w, x, y, z = struct.unpack('hhhh', block)
+    w, x, y, z = struct.unpack('hhhh', bytearray(block))
 
-    print(f'w: {w}; x: {x}; y: {y}; z: {z}')
+    unit = math.sqrt(w**2 + x**2 + y**2 + z**2)
+
+    factor = 1/unit
+
+    print(f'w: {w}; x: {x}; y: {y}; z: {z}; factor: {factor}')
