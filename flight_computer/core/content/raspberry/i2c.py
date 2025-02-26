@@ -17,6 +17,8 @@ class RaspberryI2CInterface(Part):
 
     i2c_loop_callbacks: set[Callable[[SMBus, float, int], None]] = set()
 
+    i2cbus = None
+
     # Set update to only every 5 seconds as 
     # battery information is low frequency
     min_update_period = timedelta(milliseconds=10)
