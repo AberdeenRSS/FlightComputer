@@ -9,6 +9,8 @@ BNO_OPR_MODE_ADDR = 0x3D
 
 BNO_IMU_OPR_MODE = 0b1000
 
+QUAD_FATOR = 2**14
+
 i2cbus = SMBus(1)
 
 operating_mode = i2cbus.read_byte_data(BNO_DEVICE_ID, BNO_OPR_MODE_ADDR)
@@ -38,6 +40,11 @@ while True:
     block = i2cbus.read_i2c_block_data(BNO_DEVICE_ID,  0x20, 8)
 
     w, x, y, z = struct.unpack('hhhh', bytearray(block))
+
+    w = w/QUAD_FATOR
+    x = x/QUAD_FATOR
+    y = y/QUAD_FATOR
+    z = z/QUAD_FATOR
 
     unit = math.sqrt(w**2 + x**2 + y**2 + z**2)
 
