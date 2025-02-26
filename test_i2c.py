@@ -2,7 +2,7 @@ import struct
 import time
 from smbus import SMBus
 
-BNO_DEVICE_ID = 0x40
+BNO_DEVICE_ID = 0x28
 
 BNO_OPR_MODE_ADDR = 0x3D
 
@@ -30,5 +30,7 @@ while True:
     x = x/100
     y = y/100
     z = z/100
+
+    time.sleep(0.1)
 
     print(f'x: {x}; y: {y}; z: {z}')
