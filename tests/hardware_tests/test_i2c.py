@@ -9,7 +9,7 @@ from tests.helper.offline_env import get_test_vessel_setup
 from tests.mock.mock_measurement_sink import MockMeasurementSink
 
 
-def test_bno055():
+async def test_bno055():
 
 
     rocket = Rocket('Test Rocket')
@@ -24,4 +24,4 @@ def test_bno055():
     vessel, flight, executor = get_test_vessel_setup(make_rocket)
 
     # Run for 30s
-    executor.run_control_loop(until=time.time() + 30)
+    await executor.run_control_loop(until=time.time() + 30)
