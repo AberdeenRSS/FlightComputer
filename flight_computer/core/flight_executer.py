@@ -79,7 +79,7 @@ class FlightExecuter:
                 p.mqtt_client = self.mqtt_client
                 p.flight = self.flight
 
-    async def run_control_loop(self, update_ui_hook: Callable | None = None):
+    async def run_control_loop(self, update_ui_hook: Callable | None = None, until: float | None = None):
         '''
         Runs the control loop with throtteling
         '''
@@ -91,6 +91,10 @@ class FlightExecuter:
         while True:
 
             update_start_time = time.time()
+
+            # Stop if loop should only run for limited time
+            if until is not None and update_start_time > until:
+                return
             
             update_end_time = self.control_loop(flight_loop_iteration, last_update)
             
