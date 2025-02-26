@@ -7,7 +7,7 @@ from flight_computer.core.content.raspberry.i2c_devices.bno055 import BNO055_Ras
 from flight_computer.core.logic.rocket_definition import Rocket
 from tests.helper.offline_env import get_test_vessel_setup
 from tests.mock.mock_measurement_sink import MockMeasurementSink
-
+import asyncio
 
 async def test_bno055():
 
@@ -25,3 +25,4 @@ async def test_bno055():
 
     # Run for 30s
     await executor.run_control_loop(until=time.time() + 30)
+

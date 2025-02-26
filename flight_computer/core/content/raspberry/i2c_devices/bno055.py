@@ -63,7 +63,7 @@ class BNO055_Raspberry(Part):
             *super().get_command_callbacks()
         ]
    
-    def update(self):
+    def update(self, now, iteration):
 
         return
     
