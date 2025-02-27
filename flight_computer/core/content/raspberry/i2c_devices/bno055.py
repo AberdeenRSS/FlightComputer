@@ -135,7 +135,7 @@ class BNO055_Raspberry(Part):
 
             self.submit_measurement(7, (x, y, z))
 
-            temp =  struct.unpack('B', bytearray(temp))
+            temp =  struct.unpack('B', bytearray([temp]))
 
             self.submit_measurement(8, temp)
 
