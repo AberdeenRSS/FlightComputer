@@ -86,7 +86,7 @@ class MqttClient:
 
         # bearer = await self.api.get_flight_bearer(str(self.flight_id))
 
-        self.logger(f'Starting mqtt on {self.endpoint} on port {self.port}')
+        self.logger.info(f'Starting mqtt on {self.endpoint} on port {self.port}')
 
         # Initialize the MQTT client
         client = mqtt.Client()
