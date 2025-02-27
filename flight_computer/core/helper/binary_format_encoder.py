@@ -1,7 +1,7 @@
 import base64
 import struct
 import sys
-from typing import Collection, Iterable
+from typing import Collection, Iterable, Sequence
 
 INT_SIZE = struct.calcsize('i')
 DOUBLE_SIZE = struct.calcsize('d')
@@ -38,7 +38,7 @@ def enconde_payload_internal(shape: type | str | list[tuple[type | str]], payloa
 
             return res, offset
 
-        struct.pack_into(f'!{shape}', res, offset, *payload if isinstance(payload, Collection) else payload)
+        struct.pack_into(f'!{shape}', res, offset, *payload if isinstance(payload, Sequence) else payload)
         offset += struct.calcsize(shape)
         return res, offset
 
