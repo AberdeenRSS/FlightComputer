@@ -11,7 +11,7 @@ from uuid import UUID
 from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
 from flight_computer.core.logic.rocket_definition import Part, Rocket
 
-BNO_DEVICE_ID = 0x28
+BMP_DEVICE_ID = 0x28
 BNO_OPR_MODE_ADDR = 0x3D
 BNO_IMU_OPR_MODE = 0b1000
 

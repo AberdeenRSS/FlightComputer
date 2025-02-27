@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import json
 from logging import getLogger
 from uuid import UUID
 import paho.mqtt.client as mqtt
@@ -22,6 +23,11 @@ class MqttClient:
     def __init__(self, api: ApiClient, flight_id: UUID):
 
         self.api = api
+
+        self._config = json.load(open('./config/config.json'))
+
+        self.endpoint = self._config['MQQT_ENDPOINT'] or BROKER_ADDRESS
+        self.port = self._config['MQTT_PORT'] or BROKER_PORT
 
         self.logger = getLogger('Mqtt Client')
 
@@ -80,6 +86,8 @@ class MqttClient:
 
         # bearer = await self.api.get_flight_bearer(str(self.flight_id))
 
+        self.logger(f'Starting mqtt on {self.endpoint} on port {self.port}')
+
         # Initialize the MQTT client
         client = mqtt.Client()
         self.client = client
@@ -95,7 +103,7 @@ class MqttClient:
         client.on_disconnect = self.make_on_disconnect()
 
         # Connect to the MQTT broker
-        client.connect_async(BROKER_ADDRESS, BROKER_PORT, 60)
+        client.connect_async(self.endpoint, self.port, 60)
 
         # Start the loop in a non-blocking way to process network traffic
         err = client.loop_start()
