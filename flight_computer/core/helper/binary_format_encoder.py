@@ -38,7 +38,11 @@ def enconde_payload_internal(shape: type | str | list[tuple[type | str]], payloa
 
             return res, offset
 
-        struct.pack_into(f'!{shape}', res, offset, *payload if isinstance(payload, Sequence) else payload)
+        if isinstance(payload, Sequence):
+            struct.pack_into(f'!{shape}', res, offset, *payload)
+        else:
+            struct.pack_into(f'!{shape}', res, offset, payload)
+            
         offset += struct.calcsize(shape)
         return res, offset
 
