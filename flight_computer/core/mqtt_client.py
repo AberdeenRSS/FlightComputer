@@ -27,7 +27,7 @@ class MqttClient:
         self._config = json.load(open('./config/config.json'))
 
         self.endpoint =  self._config['MQQT_ENDPOINT'] if 'MQQT_ENDPOINT' in self._config else BROKER_ADDRESS
-        self.port = self._config['MQTT_PORT'] if self._config['MQTT_PORT'] else BROKER_PORT
+        self.port = self._config['MQTT_PORT'] if 'MQTT_PORT' in self._config else BROKER_PORT
 
         self.logger = getLogger('Mqtt Client')
 
