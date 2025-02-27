@@ -5,6 +5,7 @@ from logging import getLogger
 import struct
 from typing import Collection, Iterable, Self, Sequence, Tuple, Type, Union
 from uuid import UUID
+from flight_computer.core.helper.binary_format_encoder import enconde_payload
 from flight_computer.core.logic.measurement_sink import MeasurementSinkBase
 
 
@@ -75,15 +76,4 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
         self.submit_measurement(2, count, now)
         
     
-def enconde_payload(shape, time, payload):
-
-    if shape is str:
-
-        time_bytes = struct.pack('!d', time)
-        time_string = base64.b64encode(time_bytes).decode('utf-8') # convert bytes to string
-        return  time_string + payload
-    
-    payload_bytes = struct.pack(f'!d{shape}', time, *payload) if isinstance(payload, Iterable) else struct.pack(f'!d{shape}', time, payload)
-
-    return payload_bytes
         
