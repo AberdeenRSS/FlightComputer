@@ -1,3 +1,4 @@
+
 import struct
 import time
 from smbus import SMBus
@@ -57,8 +58,8 @@ def compensate_temp(temp_calibration, uncomp_temp):
     partial_data1 = uncomp_temp - temp_calibration[0]
     partial_data2 = uncomp_temp * temp_calibration[1]
 
-    # Update the compensated temperature in calib structure since this is
-    # needed for pressure calculation
+    print(partial_data1)
+
     return partial_data2 + (partial_data1 * partial_data1) * temp_calibration[2]
 
 def compensate_pressure(p_calib, uncomp_pressure, temp):
@@ -125,11 +126,14 @@ while True:
 
     pressure, temp = struct.unpack('>II', block_padded)
 
-    temp_compensated = compensate_temp(calib_data[0], temp)
-    pressure_compensated = compensate_pressure(calib_data[1], pressure, temp_compensated)
+    pressure = block[0]<<16 | block[1]<<8 | block[2]
+    temp = block[3]<<16 | block[4]<<8 | block[5]
 
-    print(f'Temp raw: {temp:.3f}; Compensated: {temp_compensated:.3f}')
-    print(f'Pres raw: {pressure:.3f}; Compensated: {pressure_compensated:.3f}')
+    temp_compensated = compensate_temp(calib_data[0], temp)
+    pressure_compensated = compensate_pressure(calib_data[1], pressure, temp_compensated)/100
+
+    print(f'Temp raw: {temp:.3f}; Compensated: {temp_compensated:.3f}C')
+    print(f'Pres raw: {pressure:.3f}; Compensated: {pressure_compensated:.3f}kPa')
 
 
     time.sleep(1)
