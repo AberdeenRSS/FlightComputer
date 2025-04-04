@@ -1,9 +1,10 @@
 import asyncio
 from datetime import datetime
 import json
-from logging import _nameToLevel, getLogger
+from logging import _nameToLevel, getLogger, StreamHandler
 import os
 import time
+import sys
 
 from flight_computer.core.api_client import ApiClient, RealtimeApiClient
 from flight_computer.core.flight_executer import FlightExecuter
@@ -17,6 +18,8 @@ async def main():
 
     set_user_data_dir(f'{cur_dir}/logs')
     getLogger().setLevel(_nameToLevel['INFO'])
+
+    getLogger().addHandler(StreamHandler(sys.stdout))
 
     rocket = make_rocket()
 
