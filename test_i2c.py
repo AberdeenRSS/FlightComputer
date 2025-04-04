@@ -53,6 +53,14 @@ def parse_calib_data(reg_data):
 
     return ((quanpar_t1, quanpar_t2, quanpar_t3), (quanpar_p1, quanpar_p2, quanpar_p3, quanpar_p4, quanpar_p5, quanpar_p6, quanpar_p7, quanpar_p8, quanpar_p9, quanpar_p10, quanpar_p11))
 
+def compensate_temp(temp_calibration, uncomp_temp):
+    partial_data1 = uncomp_temp - temp_calibration[0]
+    partial_data2 = uncomp_temp * temp_calibration[1]
+
+    # Update the compensated temperature in calib structure since this is
+    # needed for pressure calculation
+    return partial_data2 + (partial_data1 * partial_data1) * temp_calibration[2]
+
 
 BMP_DEVICE_ID = 0x77
 
@@ -98,8 +106,9 @@ while True:
     block_padded[1:4] = block[0:3]
     block_padded[5:8] = block[3:6]
 
-    pressure, temp = struct.unpack('!II', block_padded)
+    pressure, temp = struct.unpack('<II', block_padded)
 
+    temp = compensate_temp(calib_data[0], compensate_temp(temp))
     pressure = pressure/1000
 
     print(f'Pressure {pressure:.3f}kPa Temp: {temp:.3f}K')
