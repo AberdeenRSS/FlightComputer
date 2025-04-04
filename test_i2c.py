@@ -3,42 +3,27 @@ import time
 from smbus import SMBus
 import math
 
-BNO_DEVICE_ID = 0x28
+BMP_DEVICE_ID = 0x77
 
-BNO_OPR_MODE_ADDR = 0x3D
-
-BNO_IMU_OPR_MODE = 0b1000
 
 i2cbus = SMBus(1)
 
-operating_mode = i2cbus.read_byte_data(BNO_DEVICE_ID, BNO_OPR_MODE_ADDR)
-print(f'Current mode: 0x{operating_mode:02x}')
+# operating_mode = i2cbus.read_byte_data(BNO_DEVICE_ID, BNO_OPR_MODE_ADDR)
+# print(f'Current mode: 0x{operating_mode:02x}')
 
-i2cbus.write_byte_data(BNO_DEVICE_ID, BNO_OPR_MODE_ADDR, BNO_IMU_OPR_MODE)
+# i2cbus.write_byte_data(BNO_DEVICE_ID, BNO_OPR_MODE_ADDR, BNO_IMU_OPR_MODE)
 
-time.sleep(0.1) # Sensor need time to switch modes
+# time.sleep(0.1) # Sensor need time to switch modes
 
-operating_mode = i2cbus.read_byte_data(BNO_DEVICE_ID, BNO_OPR_MODE_ADDR)
-print(f'Current mode: 0x{operating_mode:02x}')
+# operating_mode = i2cbus.read_byte_data(BNO_DEVICE_ID, BNO_OPR_MODE_ADDR)
+# print(f'Current mode: 0x{operating_mode:02x}')
 
 while True:
 
-    block = i2cbus.read_i2c_block_data(BNO_DEVICE_ID,  0x08, 6)
+    block = i2cbus.read_i2c_block_data(BMP_DEVICE_ID,  0x04, 6)
 
-    x, y, z = struct.unpack('hhh', bytearray(block))
 
-    x = x/100
-    y = y/100
-    z = z/100
+    pressure = struct.unpack('h', bytearray(block))
+
 
     time.sleep(0.1)
-
-    print(f'x: {x}; y: {y}; z: {z}')
-
-    block = i2cbus.read_i2c_block_data(BNO_DEVICE_ID,  0x20, 8)
-
-    w, x, y, z = struct.unpack('hhhh', bytearray(block))
-
-    unit = math.sqrt(w**2 + x**2 + y**2 + z**2)
-
-    print(f'w: {w}; x: {x}; y: {y}; z: {z}')
