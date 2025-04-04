@@ -55,8 +55,10 @@ def parse_calib_data(reg_data):
     reg_par_p11= reg_data[20]
     temp_var = 36893488147419103232.0
     quanpar_p11 = reg_par_p11 / temp_var
+    
+    return ((reg_par_t1, reg_par_t2, reg_par_t3), (reg_par_p1, reg_par_p2, reg_par_p3, reg_par_p4, reg_par_p5, reg_par_p6, reg_par_p7, reg_par_p8, reg_par_p9, reg_par_p10, reg_par_p11))
+    # return ((quanpar_t1, quanpar_t2, quanpar_t3), (quanpar_p1, quanpar_p2, quanpar_p3, quanpar_p4, quanpar_p5, quanpar_p6, quanpar_p7, quanpar_p8, quanpar_p9, quanpar_p10, quanpar_p11))
 
-    return ((quanpar_t1, quanpar_t2, quanpar_t3), (quanpar_p1, quanpar_p2, quanpar_p3, quanpar_p4, quanpar_p5, quanpar_p6, quanpar_p7, quanpar_p8, quanpar_p9, quanpar_p10, quanpar_p11))
 
 def compensate_temp(temp_calibration, uncomp_temp):
     partial_data1 = uncomp_temp - temp_calibration[0]
@@ -65,6 +67,18 @@ def compensate_temp(temp_calibration, uncomp_temp):
     print(partial_data1)
 
     return partial_data2 + (partial_data1 * partial_data1) * temp_calibration[2]
+
+def compensate_int_temp(uncomp_temp, calib_data):
+
+    partial_data1 = uncomp_temp - 256 * calib_data[0]
+    partial_data2 = calib_data[1] * partial_data1
+    partial_data3 = partial_data1 * partial_data1
+    partial_data4 = partial_data3 * calib_data[2]
+    partial_data5 = partial_data2 * 262144 + partial_data4
+    partial_data6 = partial_data5 / 4294967296
+
+    return (partial_data6 * 25) / 16384, partial_data6
+
 
 def compensate_pressure(p_calib, uncomp_pressure, temp):
 
@@ -133,11 +147,11 @@ while True:
     pressure = block[0]<<16 | block[1]<<8 | block[2]
     temp = block[3]<<16 | block[4]<<8 | block[5]
 
-    temp_compensated = compensate_temp(calib_data[0], temp)
-    pressure_compensated = compensate_pressure(calib_data[1], pressure, temp_compensated)/100
+    temp_compensated = compensate_int_temp(calib_data[0], temp)/100
+    # pressure_compensated = compensate_pressure(calib_data[1], pressure, temp_compensated)/100
 
     print(f'Temp raw: {temp:.3f}; Compensated: {temp_compensated:.3f}C')
-    print(f'Pres raw: {pressure:.3f}; Compensated: {pressure_compensated:.3f}kPa')
+    # print(f'Pres raw: {pressure:.3f}; Compensated: {pressure_compensated:.3f}kPa')
 
 
     time.sleep(1)
