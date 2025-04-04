@@ -11,16 +11,12 @@ from uuid import UUID
 from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
 from flight_computer.core.logic.rocket_definition import Part, Rocket
 
-BMP_DEVICE_ID = 0x28
-BNO_OPR_MODE_ADDR = 0x3D
-BNO_IMU_OPR_MODE = 0b1000
+BMP_DEVICE_ID = 0x77
 
-QUAD_FATOR = 2**14
-MAG_FACTOR = 1e-6/16
 
 class BNO055_Raspberry(Part):
 
-    type = 'Sensor.IMU'
+    type = 'Sensor.Barometetric_Altimeter'
 
     state_check_interval = 5
     '''Configures how often the setup state of the sensor is being checked in seconds'''
@@ -40,21 +36,12 @@ class BNO055_Raspberry(Part):
 
         i2c.i2c_loop_callbacks.add(self.make_i2c_callback())
 
-        self.desired_operating_mode = BNO_IMU_OPR_MODE
-        self.i2c_device_id = BNO_DEVICE_ID
-
         super().__init__(_id, name, parent, list()) # type: ignore
 
     def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             *super().get_measurement_shape(),
             ('i2c_address', 1, 'i'),
-            ('operating_mode', 1, 'i'),
-            ('acceleration', 0, [('x', 'f'), ('y', 'f'), ('z', 'f')]),
-            ('orientation',  0, [('x', 'f'), ('y', 'f'), ('z', 'f'), ('w', 'f')]),
-            ('magnetic_field', 0, [('x', 'f'), ('y', 'f'), ('z', 'f')]),
-            ('gyro', 0, [('x', 'f'), ('y', 'f'), ('z', 'f')]),
-            ('temp', 0, 'f')
         ]
 
     def get_accepted_commands(self):

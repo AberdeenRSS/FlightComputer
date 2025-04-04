@@ -22,8 +22,12 @@ while True:
 
     block = i2cbus.read_i2c_block_data(BMP_DEVICE_ID,  0x04, 6)
 
+    block_padded = bytearray([0, 0, 0, 0, 0, 0, 0, 0])
+    block_padded[1:4] = block[0:3]
+    block_padded[5:8] = block[3:6]
 
-    pressure = struct.unpack('h', bytearray(block))
+    pressure, temp = struct.unpack('hh', bytearray(block))
 
+    print(f'Pressure {pressure}; Temp: {temp}')
 
     time.sleep(0.1)

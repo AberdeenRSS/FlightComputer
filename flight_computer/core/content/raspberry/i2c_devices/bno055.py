@@ -127,7 +127,7 @@ class BNO055_Raspberry(Part):
 
             self.submit_measurement(6, (x, y, z))
 
-            x, y, z =  struct.unpack('hhh', bytearray(gyro))
+            x, y, z =  struct.unpack('hhh', bytearray(mag))
 
             x = x/16
             y = y/16
