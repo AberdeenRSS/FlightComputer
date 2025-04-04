@@ -4,51 +4,55 @@ import time
 from smbus import SMBus
 import math
 
+def to_in16(msb, lsb):
+    return msb << 8 | lsb
+    
+
 def parse_calib_data(reg_data):
 
     # 1 / 2^8 */
     temp_var = 0.00390625
-    reg_par_t1, = struct.unpack('<H', bytearray([reg_data[0], reg_data[1]]))
+    reg_par_t1= to_in16(reg_data[1], reg_data[0])
     quanpar_t1 = reg_par_t1 / temp_var
-    reg_par_t2, = struct.unpack('<H', bytearray([reg_data[2], reg_data[3]]))
+    reg_par_t2= to_in16(reg_data[3], reg_data[2])
     temp_var = 1073741824.0
     quanpar_t2 = reg_par_t2 / temp_var
-    reg_par_t3, = struct.unpack('<B', bytearray([reg_data[4]]))
+    reg_par_t3 = reg_data[4]
     temp_var = 281474976710656.0
     quanpar_t3 = reg_par_t3 / temp_var
-    reg_par_p1, = struct.unpack('<H', bytearray([reg_data[5], reg_data[6]]))
+    reg_par_p1= to_in16(reg_data[6], reg_data[5])
     temp_var = 1048576.0
     quanpar_p1 = (reg_par_p1 - (16384)) / temp_var
-    reg_par_p2, = struct.unpack('<H', bytearray([reg_data[7], reg_data[8]]))
+    reg_par_p2= to_in16(reg_data[8], reg_data[7])
     temp_var = 536870912.0
     quanpar_p2 = (reg_par_p2 - (16384)) / temp_var
-    reg_par_p3, = struct.unpack('<B', bytearray([reg_data[9]]))
+    reg_par_p3= reg_data[9]
     temp_var = 4294967296.0
     quanpar_p3 = reg_par_p3 / temp_var
-    reg_par_p4, = struct.unpack('<B', bytearray([reg_data[10]]))
+    reg_par_p4= reg_data[10]
     temp_var = 137438953472.0
     quanpar_p4 = reg_par_p4 / temp_var
-    reg_par_p5, = struct.unpack('<H', bytearray([reg_data[11], reg_data[12]]))
+    reg_par_p5= to_in16(reg_data[12], reg_data[11])
 
     # 1 / 2^3 
     temp_var = 0.125
     quanpar_p5 = reg_par_p5 / temp_var
-    reg_par_p6, = struct.unpack('<H', bytearray([reg_data[13], reg_data[14]]))
+    reg_par_p6= to_in16(reg_data[14], reg_data[13])
     temp_var = 64.0
     quanpar_p6 = reg_par_p6 / temp_var
-    reg_par_p7, = struct.unpack('<B', bytearray([reg_data[15]]))
+    reg_par_p7= reg_data[15]
     temp_var = 256.0
     quanpar_p7 = reg_par_p7 / temp_var
-    reg_par_p8, = struct.unpack('<B', bytearray([reg_data[16]]))
+    reg_par_p8= reg_data[16]
     temp_var = 32768.0
     quanpar_p8 = reg_par_p8 / temp_var
-    reg_par_p9, = struct.unpack('<H', bytearray([reg_data[17], reg_data[18]]))
+    reg_par_p9= to_in16(reg_data[18], reg_data[17])
     temp_var = 281474976710656.0
     quanpar_p9 = reg_par_p9 / temp_var
-    reg_par_p10, = struct.unpack('<B', bytearray([reg_data[19]]))
+    reg_par_p10= reg_data[19]
     temp_var = 281474976710656.0
     quanpar_p10 = reg_par_p10 / temp_var
-    reg_par_p11, = struct.unpack('<B', bytearray([reg_data[20]]))
+    reg_par_p11= reg_data[20]
     temp_var = 36893488147419103232.0
     quanpar_p11 = reg_par_p11 / temp_var
 
