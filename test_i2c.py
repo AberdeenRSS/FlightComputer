@@ -32,7 +32,7 @@ def parse_calib_data(reg_data):
     # 1 / 2^3 
     temp_var = 0.125
     quanpar_p5 = reg_par_p5 / temp_var
-    reg_par_p6, = struct.unpack('<H', bytearray([reg_data[14], reg_data[13]]))
+    reg_par_p6, = struct.unpack('<H', bytearray([reg_data[13], reg_data[14]]))
     temp_var = 64.0
     quanpar_p6 = reg_par_p6 / temp_var
     reg_par_p7, = struct.unpack('<B', bytearray([reg_data[15]]))
