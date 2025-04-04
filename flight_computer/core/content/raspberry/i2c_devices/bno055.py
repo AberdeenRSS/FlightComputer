@@ -102,7 +102,7 @@ class BNO055_Raspberry(Part):
             temp = i2c.read_byte_data(self.i2c_device_id, 0x34)
 
 
-            x, y, z = struct.unpack('hhh', bytearray(acc))
+            x, y, z = struct.unpack('<hhh', bytearray(acc))
 
             x = x/100
             y = y/100
@@ -110,7 +110,7 @@ class BNO055_Raspberry(Part):
 
             self.submit_measurement(4, (x, y, z))
 
-            w, x, y, z = struct.unpack('hhhh', bytearray(orientation))
+            w, x, y, z = struct.unpack('<hhhh', bytearray(orientation))
 
             w = w/QUAD_FATOR
             x = x/QUAD_FATOR
@@ -119,7 +119,7 @@ class BNO055_Raspberry(Part):
 
             self.submit_measurement(5, (x, y, z, w))
 
-            x, y, z =  struct.unpack('hhh', bytearray(gyro))
+            x, y, z =  struct.unpack('<hhh', bytearray(gyro))
 
             x = x/MAG_FACTOR
             y = y/MAG_FACTOR
@@ -127,7 +127,7 @@ class BNO055_Raspberry(Part):
 
             self.submit_measurement(6, (x, y, z))
 
-            x, y, z =  struct.unpack('hhh', bytearray(mag))
+            x, y, z =  struct.unpack('<hhh', bytearray(mag))
 
             x = x/16
             y = y/16
@@ -135,7 +135,7 @@ class BNO055_Raspberry(Part):
 
             self.submit_measurement(7, (x, y, z))
 
-            temp =  struct.unpack('B', bytearray([temp]))
+            temp =  struct.unpack('<B', bytearray([temp]))
 
             self.submit_measurement(8, temp)
 
