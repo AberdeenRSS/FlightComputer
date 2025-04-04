@@ -108,9 +108,9 @@ while True:
 
     pressure, temp = struct.unpack('<II', block_padded)
 
-    temp = compensate_temp(calib_data[0], temp)
+    temp_compensated = compensate_temp(calib_data[0], temp)
     pressure = pressure/1000
 
-    print(f'Pressure {pressure:.3f}kPa Temp: {temp:.3f}K')
+    print(f'Temp raw: {temp}; Compensated: {temp_compensated}')
 
     time.sleep(1)
