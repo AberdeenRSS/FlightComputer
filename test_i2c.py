@@ -61,6 +61,23 @@ def compensate_temp(temp_calibration, uncomp_temp):
     # needed for pressure calculation
     return partial_data2 + (partial_data1 * partial_data1) * temp_calibration[2]
 
+def compensate_pressure(p_calib, uncomp_pressure, temp):
+
+    partial_data1 = p_calib[5] * temp
+    partial_data2 = p_calib[6] * temp**2
+    partial_data3 = p_calib[7] * temp**3
+    partial_out1 = p_calib[4] + partial_data1 + partial_data2 + partial_data3
+    partial_data1 = p_calib[1] * temp
+    partial_data2 = p_calib[2] *temp**2
+    partial_data3 = p_calib[3] * temp**3
+    partial_out2 = uncomp_pressure * (p_calib[0] + partial_data1 + partial_data2 + partial_data3)
+    partial_data1 = uncomp_pressure**2
+    partial_data2 = p_calib[8] + p_calib[9] * temp
+    partial_data3 = partial_data1 * partial_data2
+    partial_data4 = partial_data3 + uncomp_pressure**3 * p_calib[10]
+
+    return partial_out1 + partial_out2 + partial_data4
+
 
 BMP_DEVICE_ID = 0x77
 
@@ -106,11 +123,13 @@ while True:
     block_padded[1:4] = block[0:3]
     block_padded[5:8] = block[3:6]
 
-    pressure, temp = struct.unpack('<II', block_padded)
+    pressure, temp = struct.unpack('>II', block_padded)
 
     temp_compensated = compensate_temp(calib_data[0], temp)
-    pressure = pressure/1000
+    pressure_compensated = compensate_pressure(calib_data[1], pressure, temp_compensated)
 
-    print(f'Temp raw: {temp}; Compensated: {temp_compensated}')
+    print(f'Temp raw: {temp:.3f}; Compensated: {temp_compensated:.3f}')
+    print(f'Pres raw: {pressure:.3f}; Compensated: {pressure_compensated:.3f}')
+
 
     time.sleep(1)
