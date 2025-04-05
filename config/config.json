@@ -1,6 +1,7 @@
 {
     "API_ENDPOINT": "https://api.uoarocketry.org",
     "MQQT_ENDPOINT": "api.uoarocketry.org",
+    "FLIGHT_DATA_DIR": "/home/sidney/repos/rocketry/flightcomputer/data",
     "MQTT_PORT": "1883",
     "rocket_id": "88bf1fcf-620b-4285-8d41-a54b04064981"
 }

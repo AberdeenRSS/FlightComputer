@@ -1,232 +1,143 @@
+
 import asyncio
-from io import TextIOWrapper
+import base64
 import json
-from logging import _nameToLevel, getLogger
-import math
-import time
-from typing import Iterable, Sequence, Tuple, Type, Union
-from datetime import datetime, timedelta, timezone
-from uuid import UUID, uuid4
-from flight_computer.core.helper.global_data_dir import get_cur_flight_data_dir, get_user_data_dir
-from flight_computer.core.logic.commands.command import Command, Command
+from logging import getLogger
+import struct
+from typing import Collection, Iterable, Self, Sequence, Tuple, Type, Union
+from uuid import UUID
+from flight_computer.core.helper.binary_format_encoder import enconde_payload
 from flight_computer.core.logic.measurement_sink import MeasurementSinkBase
-from flight_computer.core.logic.rocket_definition import Measurements, Part, Rocket
-from flight_computer.core.models.flight import Flight
-from flight_computer.core.models.flight_measurement import FlightMeasurement
-from typing_extensions import Self
 
-import os
+
+from flight_computer.core.logic.commands.command import Command
+from flight_computer.core.logic.measurement_sink import ApiMeasurementSinkBase
+from flight_computer.core.logic.rocket_definition import Part, Rocket, Measurement
 from pathlib import Path
+import os
 
-from flight_computer.core.models.flight_measurement_compact import FlightMeasurementCompact, FlightMeasurementCompactSchema
 
-LOGGER_NAME = 'Measurement_Sink'
+LOGGER_NAME = 'FileMeasurementSink'
 
-class FileMeasurementSink(MeasurementSinkBase):
+class FileMeasurementSink(ApiMeasurementSinkBase):
      
     type = 'Measurement_Sink.File'
 
-    target_store_period = timedelta(seconds=0.3)
-
-    store_timeout = timedelta(seconds=1)
-
-    store_task: Union[None, asyncio.Task] = None
-
-    last_store_success_time: Union[None, float] = None
-
-    last_store_attempt_time: Union[None, float] = None
-
-    last_store_success: bool = True
-
-    last_store_duration: Union[None, float] = None
-
-    drop_rate: float = 1
-
-    folder_created = False
-
-    max_file_iterations = 256
-    '''Max number of measurement "packets" stored to a single file'''
-
-    current_file_count = 0
-
-    current_file_iteration = 0
-
-    current_file_handle: Union[None, TextIOWrapper] = None
+    start_task = None
+    mqtt_client = None
 
     def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None]):
         super().__init__(_id, name, parent)
 
-        self.flight_data_folder = Path(get_cur_flight_data_dir())
+        self._config = json.load(open('./config/config.json'))
+        self.global_data_dir = Path(self._config['FLIGHT_DATA_DIR'])
+        self.files = dict()
+        self.setup = False
+        self.logger = getLogger(LOGGER_NAME)
 
-        self.logger = getLogger('File Measurement Sink')
 
-    def update(self, commands: Iterable[Command], now: float, iteration):
+    def update(self, now: float, iteration):
 
-        # If the last store was not completed yet do nothing
-        if self.store_task is not None and not self.store_task.done():
-            return
+        if not self.setup:
+            self.setup = True
+
+            self.flight_data_dir = self.global_data_dir.joinpath(self.flight.name.replace('-', '_'))
+
+            if not os.path.exists(self.flight_data_dir): 
+                os.makedirs(self.flight_data_dir) 
+
+        self.send_last_measurements(now)
+
+
+    def get_measurement_shape(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
         
-        # Otherwise initiate next store
-        self.store_task = asyncio.create_task(self.store_last_measurements(now))
-
-    def get_measurement_shape(self) -> Iterable[Tuple[str, str]]:
         return [
-            ('store_success', 'i'),
-            ('store_duration', 'f'),
-            ('drop_rate', 'f')
+            *super().get_measurement_shape(),   
+            ('commands_send_last', 0, 'd')
         ]
 
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
-        return []
-
-    def collect_measurements(self, now: float, iterations) -> Sequence[Measurements]:
-
-        if self.last_measurement is not None and self.last_store_attempt_time is not None and self.last_measurement < self.last_store_attempt_time:
-            return []
-        
+    def get_accepted_commands(self):
         return [
-            [1 if self.last_store_success else 0, self.last_store_duration or 0, self.drop_rate]
+            *super().get_accepted_commands()
         ]
     
-    async def store_last_measurements(self, now: float):
+    def get_command_callbacks(self):
+        return [
+            *super().get_command_callbacks()
+        ]
 
-        await asyncio.sleep(0.1)
+    def collect_measurements(self, now: float, iterations):
+        return
+    
+    def get_or_create_csv(self, part: Part, shape: Tuple[str, int, Type | str | list[Tuple[str, str]]]):
 
-        if not self.folder_created:
-            try:
+        if part.name in self.files:
+            return self.files[part.name]
+        
+        f = self.files[part.name] = open(self.flight_data_dir.joinpath(f'{part.name}_{shape[0]}.csv'), 'a')
+        f.write('time,')
 
-                self.flight_data_folder.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                self.logger.error(f'Failed instantiating measurement folder {e}')
-            self.folder_created = True
+        if isinstance(shape, Iterable) and not isinstance(shape, tuple):
+            len_m = len(shape)
+            i = 0
+            for d in shape:
+                f.write(f'{d[0]}')
+                if i < len_m-1:
+                    f.write(',')
+                i+=1
+        else:
+            f.write(shape[0])
 
-        self.open_new_file_if_required()
+        f.write('\n')
+        f.flush()
 
-        if self.current_file_handle is None:
-            return
+        return f
+
+    
+    def send_last_measurements(self, now: float):
 
         # Swap measurement buffer
         old_buffer = self.measurement_buffer
         self.measurement_buffer = list()
 
-        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
-            self.logger.debug(f'Starting measurment dispatch. {len(old_buffer)} in curent buffer')
+        count = 0
 
-        # A drop rate of 1 means every measurement is store
-        # 2 only every second, etc.
-        drop_rate = 1
+        for b in old_buffer:
+            count += len(b)
+            for part, measurements in b.items():
 
-        # If the last store took too long adjust the drop rate as a percentage of the overshoot
-        if self.last_store_duration is not None and self.last_store_duration > self.target_store_period.total_seconds():
-            drop_rate = self.last_store_duration/self.target_store_period.total_seconds()
+                shapes = part.get_measurement_shape()
 
+                for time, msg_index, payload in measurements:
 
-        combined_measurement_dict = dict[Part, list[Tuple[float, list[Union[float, int, str]]]]]()
+                    shape = shapes[msg_index]
 
-        for measurement_dicts in old_buffer:
+                    f = self.get_or_create_csv(part, shape)
 
+                    res = f'{time},'
 
-            for part, (start, end, measurements) in measurement_dicts.items():
+                    if isinstance(payload, Iterable):
+                        len_m = len(payload)
+                        i = 0
+                        for d in payload:
+                            res += str(d)
+                            if i < len_m-1:
+                                res += ','
+                            i+=1
+                    else:
+                        res += str(payload)
 
-                m_count = len(measurements)
-                i = 0
-                time_increment = end-start
-                for m in measurements:
+                res += '\n'
 
-                    # try:
-                    #     inflated = part.inflate_measurement(m)
-                    # except:
-                    #     print(f'Failed inflating measurement for part {part.name}')
-                    #     continue
+                f.write(res)
+                f.flush()
 
-                    measurement_timestamp = start + (time_increment*i)
-                    # as_date = datetime.fromtimestamp(measurement_timestamp, tz=timezone.utc)
-                    if part not in combined_measurement_dict:
-                        combined_measurement_dict[part] = list()
-                    combined_measurement_dict[part].append((measurement_timestamp, m))
-                    i += 1
+        self.submit_measurement(2, count, now)
 
-        flight_measurements = list[FlightMeasurementCompact]()
-
-        for part, measurements in combined_measurement_dict.items():
-            m_count = len(measurements)
-            filtered_measurements = list[Tuple[float, list[Union[float, int, str]]]]()
-            # Drop the measurement if overwhelmed
-            # Start with the last measurement as index 0
-            # to ensure it gets store
-            i = m_count
-            for m in measurements:
-                if ((m_count-i) % drop_rate) < 1:
-                    filtered_measurements.append(m)
-                i -= 1
-
-            parts = [s[0] for s in part.get_measurement_shape()]
-
-            flight_measurements.append(FlightMeasurementCompact(part._id, parts, filtered_measurements))
+    def __del__(self):
+        for f in self.files.keys():
+            f.close()
 
         
-        # print(f'storeing measurements for {len(flight_measurements)} parts. Drop rate: {drop_rate}.')
-
-        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
-            self.logger.debug(f'Prepared measurements to be store over the Api. Trying to store measurements for {len(flight_measurements)} parts. Drop Rate: {drop_rate}')
-
-        store_start = time.time()
-
-        store_success = False
-
-        serialized = FlightMeasurementCompactSchema().dump_list(flight_measurements)
-
-        try:
-            self.current_file_handle.write(json.dumps(serialized))
-            store_success = True
-        except Exception as e:
-            self.logger.error(f'Failed writing measurements to file: {e}')
-            self.current_file_handle = None # Reset file
-
-
-        self.drop_rate = drop_rate
-        self.last_store_attempt_time = now
-
-        store_end = time.time()
-
-        store_duration = store_end - store_start
-
-        # Data was not store, therefore return old store date
-        if not store_success:
-
-            self.logger.warning(f'Failed storeing measurements. Took {store_duration:02}ms')
-
-            self.last_store_success = False
-            self.last_store_duration = self.store_timeout.total_seconds()
-            return
-        
-        if(self.logger.isEnabledFor(_nameToLevel['DEBUG'])):
-            self.logger.debug(f'Successfully store  measurements. Took {store_duration:02}ms')
-
-        self.last_store_success = True
-        self.last_store_success_time = store_end
-        self.last_store_duration = store_duration
     
-    def open_new_file_if_required(self):
-
-        self.current_file_iteration = self.current_file_iteration + 1
-
-        if self.current_file_handle is not None and self.current_file_iteration < self.max_file_iterations:
-            return
         
-        if self.current_file_handle:
-            try:
-                self.current_file_handle.close()
-            except:
-                self.logger.error('Error closing last file handle')
-        
-        self.current_file_iteration = 0
-        self.current_file_count = self.current_file_count + 1
-
-
-        path = Path(f'{self.flight_data_folder.as_posix()}/{self.current_file_count}.json')
-
-        try:
-            self.current_file_handle = path.open('a')
-        except Exception as e:
-            self.logger.error(f'Failed creating measurement file: {e}')

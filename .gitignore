@@ -87,3 +87,4 @@ pyvenv.cfg
 Include/site/python3.10/greenlet/greenlet.h
 submodules/tinyproto
 */logs/
+/data

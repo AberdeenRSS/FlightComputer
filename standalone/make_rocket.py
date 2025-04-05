@@ -1,4 +1,5 @@
 
+from flight_computer.core.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from flight_computer.core.content.measurement_sinks.mqtt_measurement_sink import MqttMeasurementSink
 from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
 from flight_computer.core.content.raspberry.i2c_devices.bmp390 import BMP390_Raspberry
@@ -19,6 +20,7 @@ def make_rocket(name = 'New rocket') -> Rocket:
     # Computer status parts
     FramerateSensor(UUID('8d45c8e7-7ae2-4496-a5e0-047a631ef17c'), 'Framerate', rocket)
     measurement_sink = MqttMeasurementSink(UUID('fa9eac88-5d2f-41a6-aeab-85c1591433a2'), 'Measurement dispatch', rocket)
+    file_sink = FileMeasurementSink(UUID('80262be7-2396-4d30-8091-7060ccaa6842'), 'File measurement sink', rocket)
 
     # File sink has to be made working with standalone
     # file_sink = FileMeasurementSink(UUID('ebcf7ca3-9757-42f8-b972-af769e5d0d75'), 'Measurement File Storage', rocket)
