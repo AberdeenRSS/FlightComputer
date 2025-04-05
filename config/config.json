@@ -1,5 +1,6 @@
 {
-    "API_ENDPOINT": "http://192.168.230.142:8000",
-    "MQQT_ENDPOINT": "192.168.230.142",
+    "API_ENDPOINT": "https://api.uoarocketry.org",
+    "MQQT_ENDPOINT": "api.uoarocketry.org",
+    "MQTT_PORT": "1883",
     "rocket_id": "88bf1fcf-620b-4285-8d41-a54b04064981"
 }

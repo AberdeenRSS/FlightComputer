@@ -103,7 +103,7 @@ class MqttClient:
         client.on_disconnect = self.make_on_disconnect()
 
         # Connect to the MQTT broker
-        client.connect_async(self.endpoint, self.port, 60)
+        client.connect_async(self.endpoint, int(self.port), 60)
 
         # Start the loop in a non-blocking way to process network traffic
         err = client.loop_start()
