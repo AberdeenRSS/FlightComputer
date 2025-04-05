@@ -1,5 +1,6 @@
 from asyncio import Task
 import asyncio
+import math
 import struct
 import time
 from smbus import SMBus
@@ -91,6 +92,9 @@ def compensate_pressure(p_calib, uncomp_pressure, temp):
 
     return partial_out1 + partial_out2 + partial_data4
 
+p_0 = 102420
+# p_0 = 103000
+
 class BMP390_Raspberry(Part):
 
     type = 'Sensor.Barometetric_Altimeter'
@@ -122,6 +126,7 @@ class BMP390_Raspberry(Part):
             ('i2c_address', 1, 'i'),
             ('temperature', 0, 'f'),
             ('pressure', 0, 'f'),
+            ('altitude', 0, 'f'),
         ]
 
     def get_accepted_commands(self):
@@ -183,5 +188,9 @@ class BMP390_Raspberry(Part):
             self.submit_measurement(3, temp_compensated)
             self.submit_measurement(4, pressure_compensated)
 
+            __ALTITUDE_EQ_EXPONENT__ = 1/5.257
+            alt = ((math.pow(p_0/pressure_compensated, __ALTITUDE_EQ_EXPONENT__) - 1) * temp_compensated) / 0.0065
+
+            self.submit_measurement(5, alt)
         
         return i2c_callback
