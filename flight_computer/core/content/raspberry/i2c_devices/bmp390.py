@@ -91,7 +91,7 @@ def compensate_pressure(p_calib, uncomp_pressure, temp):
 
     return partial_out1 + partial_out2 + partial_data4
 
-class BNO055_Raspberry(Part):
+class BMP390_Raspberry(Part):
 
     type = 'Sensor.Barometetric_Altimeter'
 
