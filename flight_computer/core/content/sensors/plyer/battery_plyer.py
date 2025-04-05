@@ -1,6 +1,6 @@
 
 from datetime import timedelta
-from logging import getLogger
+from logging import getLogger, _nameToLevel
 from typing import Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 from flight_computer.core.logic.rocket_definition import Part, Rocket
@@ -58,7 +58,7 @@ class PlyerBatterySensor(Part):
                 self.submit_measurement(4, self.battery_percent, now)
 
             except Exception as e:
-                self.logger.error(f'Plyer battery sensor failed: {e}')
+                self.log(f'Plyer battery sensor failed: {e}', _nameToLevel['ERROR'])
                 self.sensor_failed = True
         else:
             self.is_charging = None

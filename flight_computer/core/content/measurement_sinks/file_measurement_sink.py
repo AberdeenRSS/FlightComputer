@@ -71,10 +71,12 @@ class FileMeasurementSink(ApiMeasurementSinkBase):
     
     def get_or_create_csv(self, part: Part, shape: Tuple[str, int, Type | str | list[Tuple[str, str]]]):
 
-        if part.name in self.files:
-            return self.files[part.name]
+        series_name = f'{part.name}_{shape[0]}'
+
+        if series_name in self.files:
+            return self.files[series_name]
         
-        f = self.files[part.name] = open(self.flight_data_dir.joinpath(f'{part.name}_{shape[0]}.csv'), 'a')
+        f = self.files[series_name] = open(self.flight_data_dir.joinpath(f'{series_name}.csv'), 'a')
         f.write('time,')
 
         if isinstance(shape, Iterable) and not isinstance(shape, tuple):
