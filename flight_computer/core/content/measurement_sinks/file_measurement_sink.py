@@ -46,6 +46,8 @@ class FileMeasurementSink(ApiMeasurementSinkBase):
             if not os.path.exists(self.flight_data_dir): 
                 os.makedirs(self.flight_data_dir) 
 
+            self.log(f'Created directory for flight data: {self.flight_data_dir}')
+
         self.send_last_measurements(now)
 
 
@@ -122,17 +124,20 @@ class FileMeasurementSink(ApiMeasurementSinkBase):
                         len_m = len(payload)
                         i = 0
                         for d in payload:
-                            res += str(d)
+                            if isinstance(d, str):
+                                res += f'"{d}"'
+                            else:
+                                res += str(d)
                             if i < len_m-1:
                                 res += ','
                             i+=1
                     else:
                         res += str(payload)
 
-                res += '\n'
+                    res += '\n'
 
-                f.write(res)
-                f.flush()
+                    f.write(res)
+                    f.flush()
 
         self.submit_measurement(2, count, now)
 
