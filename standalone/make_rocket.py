@@ -28,7 +28,7 @@ def make_rocket(name = 'New rocket') -> Rocket:
 
     i2c = RaspberryI2CInterface(UUID('ef616406-fe02-4282-9f7d-d8238be9e17c'), 'I2C', rocket)
     bno055 = BNO055_Raspberry(UUID('49d9ae27-13a2-4d3a-b751-09fc52b5bd77'), 'Bno055', rocket, i2c)
-    bmp390 = BMP390_Raspberry(UUID('6181a2c8-994a-419e-84fb-44bfd5ab6516'), rocket, i2c)
+    bmp390 = BMP390_Raspberry(UUID('6181a2c8-994a-419e-84fb-44bfd5ab6516'), 'Bmp390', rocket, i2c)
 
     # PlyerAccelerationSensor(UUID('5cefc100-3e52-401c-9dfc-e6331355eb55'), 'Accelerometer', rocket)
     # PlyerTemperatureSensor(UUID('db5f474d-2b83-4d38-b438-f94a21510c1e'), 'Temperature', rocket)
