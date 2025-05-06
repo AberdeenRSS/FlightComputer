@@ -1,0 +1,13 @@
+[Unit]
+Description=Flight computer
+After=network.target
+
+[Service]
+User=rocketry
+Group=rocketry
+WorkingDirectory=/home/rocketry/repos/FlightComputer
+ExecStart=/home/rocketry/repos/FlightComputer/.venv/bin/python -m standalone
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

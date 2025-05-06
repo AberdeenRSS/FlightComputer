@@ -19,6 +19,15 @@ class RaspberryI2CInterface(Part):
 
     i2cbus = None
 
+    cur_retry_delay = None
+    '''Current delay before retrying i2c connection'''
+
+    initial_retry_delay = 0.1
+    '''Initial retry delay in seconds (increased exponentially)'''
+
+    max_retry_delay = 30
+    '''Max retry delay in seconds'''
+
     # Set update to only every 5 seconds as 
     # battery information is low frequency
     min_update_period = timedelta(milliseconds=10)
@@ -67,10 +76,16 @@ class RaspberryI2CInterface(Part):
     async def connect(self):
 
         self.i2cbus = None
+
+        if self.cur_retry_delay is not None:
+            self.log(f'Waiting {self.cur_retry_delay}s before retrying i2c setup')
+            await asyncio.sleep(self.cur_retry_delay)
+        
         self.log('Creating new smbus hardware interface')
 
         try:
             self.i2cbus = SMBus(self.i2c_device_port)
+            self.cur_retry_delay = None
             self.log(f'Successfully set up smbus hardware interface on device port {self.i2c_device_port}')
             self.submit_measurement(2, self.i2c_device_port)
             self.submit_measurement(3, True)
@@ -79,4 +94,11 @@ class RaspberryI2CInterface(Part):
             self.log(f'Failed setting up device i2c: \n {e}', level=_nameToLevel['ERROR'])
             self.submit_measurement(3, False)
             self.i2cbus = None
+            if self.cur_retry_delay is None:
+                self.cur_retry_delay = self.initial_retry_delay
+            else:
+                self.cur_retry_delay = self.cur_retry_delay * 2
+            
+            if self.cur_retry_delay > self.max_retry_delay:
+                self.cur_retry_delay = self.max_retry_delay
 
