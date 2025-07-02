@@ -5,7 +5,6 @@ from typing import Iterable, Tuple, Type, Union, cast
 from typing_extensions import Self
 from uuid import UUID
 from flight_computer.core.logic.commands.command import Command
-from flight_computer.core.content.general_commands.enable import DisableCommand, EnableCommand
 from flight_computer.core.logic.rocket_definition import Command, Part, Rocket
 from plyer import barometer
 from plyer.facades.barometer import Barometer

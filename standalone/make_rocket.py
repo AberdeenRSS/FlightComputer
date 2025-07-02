@@ -1,11 +1,12 @@
 
 from flight_computer.core.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from flight_computer.core.content.measurement_sinks.mqtt_measurement_sink import MqttMeasurementSink
-from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
-from flight_computer.core.content.raspberry.i2c_devices.bmp390 import BMP390_Raspberry
-from flight_computer.core.content.raspberry.i2c_devices.bno055 import BNO055_Raspberry
+# from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
+# from flight_computer.core.content.raspberry.i2c_devices.bmp390 import BMP390_Raspberry
+# from flight_computer.core.content.raspberry.i2c_devices.bno055 import BNO055_Raspberry
 from flight_computer.core.content.sensors.plyer.framerate import FramerateSensor, FramerateSensor
 from flight_computer.core.content.sensors.plyer.battery_plyer import PlyerBatterySensor, PlyerBatterySensor
+from flight_computer.core.content.testing.command_tester import CommandTestPart
 from flight_computer.core.logic.rocket_definition import Rocket
 
 # frocorepp.ui.part_ui import PartUi
@@ -28,9 +29,11 @@ def make_rocket(name = 'New rocket') -> Rocket:
     # # Plyer sensors
     PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
 
-    i2c = RaspberryI2CInterface(UUID('ef616406-fe02-4282-9f7d-d8238be9e17c'), 'I2C', rocket)
-    bno055 = BNO055_Raspberry(UUID('49d9ae27-13a2-4d3a-b751-09fc52b5bd77'), 'Bno055', rocket, i2c)
-    bmp390 = BMP390_Raspberry(UUID('6181a2c8-994a-419e-84fb-44bfd5ab6516'), 'Bmp390', rocket, i2c)
+    CommandTestPart(UUID('de6e93c0-eaf4-496f-913a-4cbbd89c1c7a'), 'Command tester', rocket)
+
+    # i2c = RaspberryI2CInterface(UUID('ef616406-fe02-4282-9f7d-d8238be9e17c'), 'I2C', rocket)
+    # bno055 = BNO055_Raspberry(UUID('49d9ae27-13a2-4d3a-b751-09fc52b5bd77'), 'Bno055', rocket, i2c)
+    # bmp390 = BMP390_Raspberry(UUID('6181a2c8-994a-419e-84fb-44bfd5ab6516'), 'Bmp390', rocket, i2c)
 
     # PlyerAccelerationSensor(UUID('5cefc100-3e52-401c-9dfc-e6331355eb55'), 'Accelerometer', rocket)
     # PlyerTemperatureSensor(UUID('db5f474d-2b83-4d38-b438-f94a21510c1e'), 'Temperature', rocket)

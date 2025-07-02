@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 from logging import getLogger
+from typing import Callable
 from uuid import UUID
 import paho.mqtt.client as mqtt
 import time
@@ -33,12 +34,31 @@ class MqttClient:
 
         self.flight_id = flight_id
 
+        self.connected = False
+
+        self.connect_listeners = set()
+        self.message_listeners = set()
+
+
+    def add_on_connect_listener(self, listener: Callable[[mqtt.Client], None], call_immediately: bool = False):
+
+        self.connect_listeners.add(listener)
+        if call_immediately and self.connected:
+            listener(self.client)
+
+    def add_message_listener(self, listener: Callable[[mqtt.MQTTMessage], None]):
+        self.message_listeners.add(listener)
+
+
     # The callback for when the client receives a CONNACK response from the broker
     def make_on_connect(self):
 
         def connect(client, userdata, flags, rc):
             if rc == 0:
                 self.logger.info("Connected to broker successfully!")
+                self.connected = True
+                for l in self.connect_listeners:
+                    l(client)
             else:
                 self.logger.info(f"Connection failed with code {rc}")
 
@@ -67,7 +87,7 @@ class MqttClient:
     def make_on_disconnect(self):
 
         def on_disconnect(client, userdata, reason_code):
-
+            self.connected = False
             self.logger.info(f'disconnect. Reason {reason_code}')
 
         return on_disconnect
@@ -78,7 +98,10 @@ class MqttClient:
 
         def on_message(client, userdata, msg):
             
-            self.logger.info(f"Received message: {msg.payload.decode()} on topic: {msg.topic}")
+            for l in self.message_listeners:
+                l(msg)
+
+            # self.logger.info(f"Received message: {msg.payload.decode()} on topic: {msg.topic}")
 
         return on_message
 

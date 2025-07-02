@@ -4,6 +4,7 @@ import time
 from typing import Any, Callable, Collection, Iterable, cast
 from datetime import datetime
 from flight_computer.core.api_client import ApiClient, RealtimeApiClient
+from flight_computer.core.helper.binary_format_encoder import decode_payload
 from flight_computer.core.helper.file_logger import FileLogger
 from flight_computer.core.helper.global_data_dir import reset_flight_data_dir
 from flight_computer.core.logic.commands.command import Command, Command
@@ -16,6 +17,7 @@ from flight_computer.core.logic.rocket_definition import Part, Rocket
 
 from flight_computer.core.models.flight import Flight
 from flight_computer.core.mqtt_client import MqttClient
+import paho.mqtt.client as mqtt
 
 LOGGER_NAME = 'FlightExecutor'
 
@@ -69,6 +71,8 @@ class FlightExecuter:
         self.file_logger = FileLogger()
         self.logger.addHandler(self.file_logger)
 
+        self.mqtt_client.add_on_connect_listener(self.make_subscribe_commands())
+
         # Get list of all available measurement sinks
         self.measurement_sinks = [p for p in self.rocket.parts if isinstance(p, MeasurementSinkBase)]
 
@@ -78,6 +82,15 @@ class FlightExecuter:
                 p.api_client = self.api_client
                 p.mqtt_client = self.mqtt_client
                 p.flight = self.flight
+
+    def make_subscribe_commands(self):
+
+        def subscribe_commands(client: mqtt.Client):
+            client.subscribe(f'{self.flight._id}/c/#', 2)
+            self.mqtt_client.add_message_listener(self.make_on_command_raw())
+            
+
+        return subscribe_commands
 
     async def run_control_loop(self, update_ui_hook: Callable | None = None, until: float | None = None):
         '''
@@ -192,6 +205,25 @@ class FlightExecuter:
             sink.measurement_buffer.append(current_measurements)
 
         return now
+    
+    def make_on_command_raw(self):
+        def on_command_raw(command: mqtt.MQTTMessage):
+
+            split_topic = command.topic.split('/')
+    
+            # Either not for this rocket or not a command
+            if(split_topic[0] != str(self.flight._id) or split_topic[1] != 'c'):
+                return
+            
+            part_index = int(split_topic[2])
+            command_index = int(split_topic[3])
+            
+            time, payload =  decode_payload(self.rocket.parts[part_index].get_accepted_commands()[command_index][1], command.payload)
+
+            self.on_command((part_index, command_index, time, payload))
+
+        return on_command_raw
+
 
     def on_command(self,command: tuple[int, int, float, Any]):
 

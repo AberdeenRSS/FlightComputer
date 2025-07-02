@@ -1,4 +1,3 @@
-
 from typing import Sequence, Union
 from typing_extensions import Self
 from uuid import UUID

@@ -1,14 +1,8 @@
 from datetime import timedelta
 from typing import Collection, Iterable, Sequence, Tuple, Type, Union
-from uuid import UUID, uuid4
-from flight_computer.core.content.microcontroller.arduino.parts.igniter import IgniterSensor
-from flight_computer.core.content.microcontroller.arduino.parts.servo import ServoSensor
-from flight_computer.core.content.microcontroller.arduino_serial_common import ArduinoHwBase
-from flight_computer.core.content.motor_commands.open import CloseCommand, IgniteCommand, OpenCommand
+from uuid import UUID
 from flight_computer.core.logic.commands.command import Command
-from flight_computer.core.logic.commands.command_helper import is_completed_command
 from flight_computer.core.logic.rocket_definition import Measurements, Part, Rocket
-from logging import _nameToLevel
 
 class CommandTestPart(Part):
     '''Triggers things periodically for testing'''
@@ -30,7 +24,7 @@ class CommandTestPart(Part):
 
         self.submit_measurement(2, 'String command acknowledgement')
 
-        self.log('Received string command')        
+        self.log(f'Received string command with payload: {payload}')        
 
     def on_complex_command(self, timestamp: float, payload: tuple[str, bool]):
 
@@ -38,11 +32,16 @@ class CommandTestPart(Part):
 
         self.log('Complex msg received')
 
+    def on_int_command(self, timestamp: float, payload: int):
+
+        self.log(f'Received integer payload: {payload}')
+
+
     def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         return [
             *super().get_measurement_shape(),
             ('string-command-callback', 2, str),
-            ('complex-payload-callback', 2, [('value-a', str), ('value-b', '?')])
+            ('complex-payload-callback', 2, [('value-a', str), ('value-b', '?')]),
             ]
     
     def get_command_callbacks(self):
@@ -50,14 +49,16 @@ class CommandTestPart(Part):
         return [
             *super().get_command_callbacks(),
             self.on_string_command,
-            self.on_complex_command
+            self.on_complex_command,
+            self.on_int_command
         ]
 
     def get_accepted_commands(self) -> Iterable[Type[Command]]:
         return [
             *super().get_accepted_commands(),
             ('string-payload-command', str),
-            ('complex-payload', [('value-a', str), ('value-b', '?')])
+            ('complex-payload', [('value-a', str), ('value-b', '?')]),
+            ('int-payload', 'i')
         ]
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:

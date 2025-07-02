@@ -4,7 +4,6 @@ from typing import Iterable, Tuple, Type, Union
 from uuid import UUID
 from flight_computer.core.content.microcontroller.arduino_serial_common import ArduinoHwBase
 
-from flight_computer.core.content.motor_commands.open import IgniteCommand
 from flight_computer.core.content.microcontroller.arduino.parts.servo import ServoSensor
 from flight_computer.core.logic.commands.command import Command
 from flight_computer.core.content.microcontroller.arduino_serial import ArduinoOverSerial, make_default_command_callback
