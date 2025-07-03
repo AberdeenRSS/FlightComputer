@@ -6,7 +6,7 @@ import os
 import time
 import sys
 
-from flight_computer.core.api_client import ApiClient, RealtimeApiClient
+from flight_computer.core.api_client import ApiClient
 from flight_computer.core.flight_executer import FlightExecuter
 from flight_computer.core.helper.global_data_dir import set_user_data_dir
 from flight_computer.core.mqtt_client import MqttClient
