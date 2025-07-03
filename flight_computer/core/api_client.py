@@ -5,7 +5,7 @@ from uuid import UUID
 import jwt
 import json
 import httpx
-import socketio
+# import socketio
 from flight_computer.core.logic.rocket_definition import Rocket
 from flight_computer.core.logic.to_vessel_and_flight import to_vessel_and_flight
 from flight_computer.core.models.command import Command, CommandSchema
@@ -346,59 +346,59 @@ class ApiClient:
         return await self.create_new_flight(FlightSchema().dump(flight))
 
 
-class RealtimeApiClient():
-    base_client: ApiClient
+# class RealtimeApiClient():
+#     base_client: ApiClient
 
-    def __init__(self, base_client: ApiClient, flight: Flight):
+#     def __init__(self, base_client: ApiClient, flight: Flight):
 
-        self.base_client = base_client
-        self.flight = flight
+#         self.base_client = base_client
+#         self.flight = flight
 
-        self.sio = socketio.Client(logger=False)
-        self.logger = getLogger('Realtime Client')
-        self.commands_buffer = list[Command]()
+#         self.sio = socketio.Client(logger=False)
+#         self.logger = getLogger('Realtime Client')
+#         self.commands_buffer = list[Command]()
 
-    async def connect(self, command_callback: Callable[[Collection[Command]], None]):
-        self.init_events(command_callback)
+#     async def connect(self, command_callback: Callable[[Collection[Command]], None]):
+#         self.init_events(command_callback)
 
-        bearer = await self.base_client.authenticate()
+#         bearer = await self.base_client.authenticate()
 
-        self.sio.connect(self.base_client.endpoint, auth={'token': bearer})
+#         self.sio.connect(self.base_client.endpoint, auth={'token': bearer})
         
 
-    def init_events(self, command_callback: Callable[[Collection[Command]], None]):
+#     def init_events(self, command_callback: Callable[[Collection[Command]], None]):
 
-        logger = self.logger
-        sio = self.sio
+#         logger = self.logger
+#         sio = self.sio
 
-        @sio.event
-        def connect():
-            try:
-                self.sio.call('command.subscribe_as_vessel', str(self.flight._id))
-            except Exception as e:
-                logger.info(f'Failed to subscribe to command stream: {e}')
+#         @sio.event
+#         def connect():
+#             try:
+#                 self.sio.call('command.subscribe_as_vessel', str(self.flight._id))
+#             except Exception as e:
+#                 logger.info(f'Failed to subscribe to command stream: {e}')
 
-        @sio.event
-        def connect_error(data):
-            logger.error(f"The connection failed: {data}")
+#         @sio.event
+#         def connect_error(data):
+#             logger.error(f"The connection failed: {data}")
 
-        @sio.event
-        def disconnect():
-            logger.info("Socket io lost connection")
+#         @sio.event
+#         def disconnect():
+#             logger.info("Socket io lost connection")
 
-        @sio.on('command.new')
-        def command_new(data: Any):
-            try:
-                commands = CommandSchema().load_list_safe(Command, data['commands'])
-                command_callback(commands)
+#         @sio.on('command.new')
+#         def command_new(data: Any):
+#             try:
+#                 commands = CommandSchema().load_list_safe(Command, data['commands'])
+#                 command_callback(commands)
 
-            except:
-                logger.info(f'Failed parsing command')
+#             except:
+#                 logger.info(f'Failed parsing command')
 
-        @sio.on('*')
-        def catch_all(event, data):
-            logger.info(f'received unknown event {event}')
+#         @sio.on('*')
+#         def catch_all(event, data):
+#             logger.info(f'received unknown event {event}')
 
-    def __del__(self):
-        if self.sio.connected:
-            self.sio.disconnect() 
+#     def __del__(self):
+#         if self.sio.connected:
+#             self.sio.disconnect() 
