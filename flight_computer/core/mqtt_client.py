@@ -71,8 +71,8 @@ class MqttClient:
         def on_pre_connect(client, userdata, *kwargs):
 
             # Reset password
-            bearer = asyncio.run(self.api.get_flight_bearer(flight))
-            client.username_pw_set("doesnotmatter",  bearer)
+            # bearer = asyncio.run(self.api.get_flight_bearer(flight))
+            client.username_pw_set("doesnotmatter",  'bearer')
 
         return on_pre_connect
     
