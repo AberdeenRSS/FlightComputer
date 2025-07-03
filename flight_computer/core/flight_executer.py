@@ -3,7 +3,7 @@ from logging import _nameToLevel, getLogger
 import time
 from typing import Any, Callable, Collection, Iterable, cast
 from datetime import datetime
-from flight_computer.core.api_client import ApiClient, RealtimeApiClient
+from flight_computer.core.api_client import ApiClient
 from flight_computer.core.helper.binary_format_encoder import decode_payload
 from flight_computer.core.helper.file_logger import FileLogger
 from flight_computer.core.helper.global_data_dir import reset_flight_data_dir
