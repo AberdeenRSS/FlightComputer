@@ -1,0 +1,13 @@
+[Unit]
+Description=UART bridge for the py gsm hat to use both gps and gsm
+After=network.target
+
+[Service]
+User=rocketry
+Group=rocketry
+WorkingDirectory=/home/rocketry/pyhat
+ExecStart=/home/rocketry/pyhat/.venv/bin/python py_bridge.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

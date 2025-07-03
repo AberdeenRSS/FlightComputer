@@ -1,0 +1,10 @@
+[Unit]
+Description=Run netfailover script every minute
+
+[Timer]
+OnBootSec=15
+OnUnitActiveSec=15
+Unit=netfailover.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Network Failover Script
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/netfailover.sh
+StandardOutput=append:/var/log/netfailover.log
+StandardError=append:/var/log/netfailover.err

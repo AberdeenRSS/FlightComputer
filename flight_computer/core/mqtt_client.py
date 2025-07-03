@@ -87,8 +87,14 @@ class MqttClient:
     def make_on_disconnect(self):
 
         def on_disconnect(client, userdata, reason_code):
-            self.connected = False
-            self.logger.info(f'disconnect. Reason {reason_code}')
+            self.connected = False    
+            print(f"Disconnected with result code {reason_code}")
+            if reason_code != 0:
+                try:
+                    print("Attempting reconnect...")
+                    client.reconnect()
+                except Exception as e:
+                    print(f"Reconnect failed: {e}")
 
         return on_disconnect
 
