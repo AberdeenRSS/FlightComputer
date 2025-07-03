@@ -183,7 +183,7 @@ class ApiClient:
 
 
         vessel_creation_res = await self.request_with_error_handling_and_retry(
-            lambda client: client.post("/vessel/register", json=vessel_req),
+            lambda client: client.post("/vessel/register", json=vessel_req, timeout=30),
             3
         )
 
@@ -192,7 +192,7 @@ class ApiClient:
     async def create_new_flight(self, flight_req):
 
         flight_res = await self.request_with_error_handling_and_retry(
-            lambda client: client.post("/flight/create", json=flight_req),
+            lambda client: client.post("/flight/create", json=flight_req, timeout=30),
             3
         )
 
