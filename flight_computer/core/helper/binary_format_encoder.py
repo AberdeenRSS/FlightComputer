@@ -118,6 +118,9 @@ def decode_payload_internal(shape: type | str | list[tuple[type | str]], payload
     # Hot path for struct shaped payloads (high performance case as high frequency values are like this) 
     if isinstance(shape, str):
 
+        if shape == '':
+            return None, offset
+
         # Array of data case
         if shape.startswith('['):
 

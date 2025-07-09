@@ -218,7 +218,7 @@ class FlightExecuter:
             part_index = int(split_topic[2])
             command_index = int(split_topic[3])
             
-            time, payload =  decode_payload(self.rocket.parts[part_index].get_accepted_commands()[command_index][1], command.payload)
+            time, payload = decode_payload(self.rocket.parts[part_index].get_accepted_commands()[command_index][1], command.payload)
 
             self.on_command((part_index, command_index, time, payload))
 
@@ -229,14 +229,17 @@ class FlightExecuter:
 
         try:
            
-           # Get the part the command is for
-           part = self.rocket.parts[command[0]]
+            # Get the part the command is for
+            part = self.rocket.parts[command[0]]
 
-           # Execute the command on the part
-           part.get_command_callbacks()[command[1]](command[2], command[3])
+            # Execute the command on the part
+            if command[3] is not None:
+                part.get_command_callbacks()[command[1]](command[2], command[3])
+            else:
+                part.get_command_callbacks()[command[1]](command[2])
 
-        except:
-            self.logger.warning(f'Failed executing command for part {command[0]}')
+        except Exception as e:
+            self.logger.warning(f'Failed executing command for part {command[0]}: {e}')
 
     def __del__(self):
 
