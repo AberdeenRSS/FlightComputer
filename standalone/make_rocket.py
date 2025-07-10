@@ -4,6 +4,7 @@ from flight_computer.core.content.measurement_sinks.mqtt_measurement_sink import
 # from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
 # from flight_computer.core.content.raspberry.i2c_devices.bmp390 import BMP390_Raspberry
 # from flight_computer.core.content.raspberry.i2c_devices.bno055 import BNO055_Raspberry
+from flight_computer.core.content.raspberry.gpio.igniter import GPIO_Igniter
 from flight_computer.core.content.sensors.plyer.framerate import FramerateSensor, FramerateSensor
 from flight_computer.core.content.sensors.plyer.battery_plyer import PlyerBatterySensor, PlyerBatterySensor
 from flight_computer.core.content.testing.command_tester import CommandTestPart
@@ -30,6 +31,8 @@ def make_rocket(name = 'New rocket') -> Rocket:
     PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
 
     CommandTestPart(UUID('de6e93c0-eaf4-496f-913a-4cbbd89c1c7a'), 'Command tester', rocket)
+
+    GPIO_Igniter(UUID('a49d09da-c327-4656-9d36-25b211858fa0'), 'R2S Igniter', 24, rocket)
 
     # i2c = RaspberryI2CInterface(UUID('ef616406-fe02-4282-9f7d-d8238be9e17c'), 'I2C', rocket)
     # bno055 = BNO055_Raspberry(UUID('49d9ae27-13a2-4d3a-b751-09fc52b5bd77'), 'Bno055', rocket, i2c)

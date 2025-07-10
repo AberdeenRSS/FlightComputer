@@ -47,7 +47,6 @@ class GPIO_Igniter(Part):
             import RPi.GPIO as GPIO
 
             servoPIN = 12
-            GPIO.setmode(GPIO.BCM)
             GPIO.setup(self.gpio_pin, GPIO.OUT)
             GPIO.output(self.gpio_pin, GPIO.LOW)
 

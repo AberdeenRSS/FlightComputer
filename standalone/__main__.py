@@ -41,8 +41,27 @@ async def main():
 
     mqtt.stop()
 
+def raspberry_setup():
 
+    try:
+        import RPi.GPIO as GPIO
+        GPIO.setmode(GPIO.BCM)
+    except Exception as e:
+        getLogger().error(f'Raspberry setup not possible: {e}')
+
+
+def raspberry_teardown():
+    try:
+        import RPi.GPIO as GPIO
+        GPIO.cleanup()
+    except Exception as e:
+        getLogger().error(f'Raspberry setup not possible: {e}')
 
 if __name__ == '__main__':
+
+    raspberry_setup()
+    
     with asyncio.Runner() as runner:
         runner.run(main())
+
+    raspberry_teardown()
