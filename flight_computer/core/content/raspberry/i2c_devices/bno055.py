@@ -1,7 +1,7 @@
 from asyncio import Task
 import asyncio
 import struct
-from smbus import SMBus
+from smbus3 import SMBus
 
 
 from datetime import timedelta

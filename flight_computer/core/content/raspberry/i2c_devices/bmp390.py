@@ -3,7 +3,7 @@ import asyncio
 import math
 import struct
 import time
-from smbus import SMBus
+from smbus3 import SMBus
 from logging import _nameToLevel
 
 from datetime import timedelta

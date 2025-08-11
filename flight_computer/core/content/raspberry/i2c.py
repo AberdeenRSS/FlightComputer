@@ -1,8 +1,6 @@
 from asyncio import Task
 import asyncio
-from smbus import SMBus
-
-
+from smbus3 import SMBus
 from datetime import timedelta
 from logging import _nameToLevel
 from typing import Callable, Iterable, Tuple, Type, Union
