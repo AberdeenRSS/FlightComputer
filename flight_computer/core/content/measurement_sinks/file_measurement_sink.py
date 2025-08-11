@@ -46,7 +46,7 @@ class FileMeasurementSink(ApiMeasurementSinkBase):
             if not os.path.exists(self.flight_data_dir): 
                 os.makedirs(self.flight_data_dir) 
 
-            self.log(f'Created directory for flight data: {self.flight_data_dir}')
+                self.log(f'Created directory for flight data: {self.flight_data_dir}')
 
         self.send_last_measurements(now)
 
