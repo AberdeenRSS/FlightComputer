@@ -110,6 +110,13 @@ class MqttClient:
             # self.logger.info(f"Received message: {msg.payload.decode()} on topic: {msg.topic}")
 
         return on_message
+    
+    def make_on_log(self):
+
+        def on_log(client, userdata, level, msg):
+            self.logger.log(level, msg)
+
+        return on_log
 
     async def start(self):
 
@@ -130,9 +137,10 @@ class MqttClient:
         client.on_connect_fail = self.make_on_event('connect-failed')
         # client.on_pre_connect = self.make_on_event('pre-connect')
         client.on_disconnect = self.make_on_disconnect()
+        client.on_log = self.make_on_log()
 
         # Connect to the MQTT broker
-        client.connect_async(self.endpoint, int(self.port), 60)
+        client.connect_async(self.endpoint, int(self.port), 10, clean_start=True)
 
         # Start the loop in a non-blocking way to process network traffic
         err = client.loop_start()
