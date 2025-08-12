@@ -180,7 +180,9 @@ class MqttClient:
                     
                     # Gracefully handle name reasuliton errors, these can happen if the network changes (e.g. between wifi and lte)
                     except socket.gaierror as e:
-                        self.logger.warning(f'Client disconnected due to name resolution error, trying reconnect in {self._cur_reconnect_timeout}')
+                        self.logger.error(f'Client disconnected due to name resolution error, trying reconnect in {self._cur_reconnect_timeout}s')
+                    except TimeoutError as e:
+                        self.logger.error(f'Client disconnected due to timeout, trying reconnect in {self._cur_reconnect_timeout}s')
 
                     break
 
