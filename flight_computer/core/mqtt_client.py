@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 from logging import getLogger
+from threading import Thread
 from typing import Callable
 from uuid import UUID
 import paho.mqtt.client as mqtt
@@ -19,7 +20,11 @@ MESSAGE = "Hello from the Python MQTT client!"
 
 class MqttClient:
 
-    client: mqtt.Client
+    client: mqtt.Client | None = None
+
+    _thread: Thread | None = None
+
+    thread_abort: bool = False
 
     def __init__(self, api: ApiClient, flight_id: UUID):
 
@@ -43,7 +48,7 @@ class MqttClient:
     def add_on_connect_listener(self, listener: Callable[[mqtt.Client], None], call_immediately: bool = False):
 
         self.connect_listeners.add(listener)
-        if call_immediately and self.connected:
+        if call_immediately and self.client is not None and self.connected:
             listener(self.client)
 
     def add_message_listener(self, listener: Callable[[mqtt.MQTTMessage], None]):
@@ -86,17 +91,17 @@ class MqttClient:
     
     def make_on_disconnect(self):
 
-        def on_disconnect(client, userdata, reason_code):
-            self.connected = False    
-            self.client.loop_stop()
+        def on_disconnect(client: mqtt.Client, userdata, reason_code):
 
-            print(f"Disconnected with result code {reason_code}")
-            if reason_code != 0:
-                try:
-                    print("Attempting reconnect...")
-                    self.start()
-                except Exception as e:
-                    print(f"Reconnect failed: {e}")
+            # if reason_code == mqtt.MQTT_ERR_PROTOCOL:
+            #     self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
+            #     try:
+            #         client.reconnect()
+            #     except Exception as e:
+            #         self.logger.error(f'Reconnect failed: {e}')
+            #     return
+            
+            self.logger.info(f'Client disconnected, reason: {reason_code}')
 
         return on_disconnect
 
@@ -119,40 +124,70 @@ class MqttClient:
             self.logger.log(level, msg)
 
         return on_log
+    
+
+    def _thread_main(self) -> None:
+
+        try:
+
+            self.logger.info(f'Starting mqtt on {self.endpoint} on port {self.port}')
+
+            while not self.thread_abort:
+
+                # Initialize the MQTT client
+                client = mqtt.Client(reconnect_on_failure=False, protocol=mqtt.MQTTv31)
+                self.client = client
+
+                # client.username_pw_set("doesnotmatter",  bearer)
+                client.max_queued_messages = 10
+                client.reconnect_delay_set(1, 10)
+
+                # Assign the callbacks
+                client.on_connect = self.make_on_connect()
+                client.on_message = self.make_on_message() 
+                client.on_pre_connect = self.make_on_pre_connect()
+                client.on_connect_fail = self.make_on_event('connect-failed')
+                # client.on_pre_connect = self.make_on_event('pre-connect')
+                client.on_disconnect = self.make_on_disconnect()
+                client.on_log = self.make_on_log()
+
+                # Connect to the MQTT broker
+                client.connect_async(self.endpoint, int(self.port), 10)
+
+                self.logger.info(f'started mqtt client')
+
+                while not self.thread_abort and not client._thread_terminate:
+                    err = client.loop_forever()
+
+                    if err == mqtt.MQTT_ERR_PROTOCOL:
+                        self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
+                        client.reconnect()
+                        continue
+
+                    break
+
+        finally:
+            self._thread = None
 
     def start(self):
 
-        # bearer = await self.api.get_flight_bearer(str(self.flight_id))
+        if self._thread is not None:
+            raise Exception('Client already running, call stop first')
+        
+        self.thread_abort = False
+        self._thread = Thread(target=self._thread_main, name='FlightComputer_Mqtt')
+        self._thread.daemon = True
+        self._thread.start()
 
-        self.logger.info(f'Starting mqtt on {self.endpoint} on port {self.port}')
-
-        # Initialize the MQTT client
-        client = mqtt.Client(reconnect_on_failure=True)
-        self.client = client
-
-        # client.username_pw_set("doesnotmatter",  bearer)
-        client.max_queued_messages = 10
-        client.reconnect_delay_set(1, 10)
-
-        # Assign the callbacks
-        client.on_connect = self.make_on_connect()
-        client.on_message = self.make_on_message() 
-        client.on_pre_connect = self.make_on_pre_connect()
-        client.on_connect_fail = self.make_on_event('connect-failed')
-        # client.on_pre_connect = self.make_on_event('pre-connect')
-        client.on_disconnect = self.make_on_disconnect()
-        client.on_log = self.make_on_log()
-
-        # Start the loop in a non-blocking way to process network traffic
-        err = client.loop_start()
-
-        # Connect to the MQTT broker
-        client.connect_async(self.endpoint, int(self.port), 10)
-
-        self.logger.info(f'started mqtt client')
 
     def stop(self):
 
-        self.client.loop_stop()
-        self.client.diconnect()
-
+        if self._thread is None:
+            return
+        
+        self.thread_abort = True
+        
+        if self.client is None:
+            return
+        
+        self.client._thread_terminate = True
