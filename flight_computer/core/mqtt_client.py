@@ -169,9 +169,10 @@ class MqttClient:
                     try:
                         err = client.loop_forever()
 
-                        # if err == mqtt.MQTT_ERR_PROTOCOL:
-                        #     self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
-                        #     reconnect = True
+                        # Reconnect if keep alive fails (this might be caused due to excessive traffic)
+                        if err == mqtt.MQTT_ERR_KEEPALIVE:
+                            self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
+                            reconnect = True
 
                         if reconnect:
                             self.wait_and_update_reconnect_timeout()
@@ -180,9 +181,13 @@ class MqttClient:
                     
                     # Gracefully handle name reasuliton errors, these can happen if the network changes (e.g. between wifi and lte)
                     except socket.gaierror as e:
-                        self.logger.error(f'Client disconnected due to name resolution error, trying reconnect in {self._cur_reconnect_timeout}s')
+                        self.logger.error(f'Client connection error due to name resolution error, trying reconnect in {self._cur_reconnect_timeout}s')
                     except TimeoutError as e:
-                        self.logger.error(f'Client disconnected due to timeout, trying reconnect in {self._cur_reconnect_timeout}s')
+                        self.logger.error(f'Client connection error due to timeout, trying reconnect in {self._cur_reconnect_timeout}s')
+                    except ConnectionRefusedError:
+                        self.logger.error(f'Client connection refused, trying reconnect in {self._cur_reconnect_timeout}s')
+                    except socket.error as e:
+                        self.logger.error(f'Client connection error due to general socket error, trying reconnect in {self._cur_reconnect_timeout}s. Error {e}')
 
                     break
 
