@@ -88,11 +88,13 @@ class MqttClient:
 
         def on_disconnect(client, userdata, reason_code):
             self.connected = False    
+            self.client.loop_stop()
+
             print(f"Disconnected with result code {reason_code}")
             if reason_code != 0:
                 try:
                     print("Attempting reconnect...")
-                    client.reconnect()
+                    self.start()
                 except Exception as e:
                     print(f"Reconnect failed: {e}")
 
@@ -118,32 +120,34 @@ class MqttClient:
 
         return on_log
 
-    async def start(self):
+    def start(self):
 
         # bearer = await self.api.get_flight_bearer(str(self.flight_id))
 
         self.logger.info(f'Starting mqtt on {self.endpoint} on port {self.port}')
 
         # Initialize the MQTT client
-        client = mqtt.Client()
+        client = mqtt.Client(reconnect_on_failure=True)
         self.client = client
 
         # client.username_pw_set("doesnotmatter",  bearer)
+        client.max_queued_messages = 10
+        client.reconnect_delay_set(1, 10)
 
         # Assign the callbacks
         client.on_connect = self.make_on_connect()
-        client.on_message = self.make_on_message()
+        client.on_message = self.make_on_message() 
         client.on_pre_connect = self.make_on_pre_connect()
         client.on_connect_fail = self.make_on_event('connect-failed')
         # client.on_pre_connect = self.make_on_event('pre-connect')
         client.on_disconnect = self.make_on_disconnect()
         client.on_log = self.make_on_log()
 
-        # Connect to the MQTT broker
-        client.connect_async(self.endpoint, int(self.port), 10, clean_start=True)
-
         # Start the loop in a non-blocking way to process network traffic
         err = client.loop_start()
+
+        # Connect to the MQTT broker
+        client.connect_async(self.endpoint, int(self.port), 10)
 
         self.logger.info(f'started mqtt client')
 
