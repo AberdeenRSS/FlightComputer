@@ -172,16 +172,16 @@ class MqttClient:
                         # if err == mqtt.MQTT_ERR_PROTOCOL:
                         #     self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
                         #     reconnect = True
+
+                        if reconnect:
+                            self.wait_and_update_reconnect_timeout()
+                            client.reconnect()
+                            continue
                     
                     # Gracefully handle name reasuliton errors, these can happen if the network changes (e.g. between wifi and lte)
                     except socket.gaierror as e:
                         self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
                         reconnect = True
-
-                    if reconnect:
-                        self.wait_and_update_reconnect_timeout()
-                        client.reconnect()
-                        continue
 
                     break
 
