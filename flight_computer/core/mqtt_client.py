@@ -2,6 +2,7 @@ import asyncio
 import base64
 import json
 from logging import getLogger
+import socket
 from threading import Thread
 from typing import Callable
 from uuid import UUID
@@ -26,6 +27,10 @@ class MqttClient:
 
     thread_abort: bool = False
 
+    initial_reconnect_timeout = 1
+
+    max_reconnect_timeout = 10
+
     def __init__(self, api: ApiClient, flight_id: UUID):
 
         self.api = api
@@ -44,6 +49,7 @@ class MqttClient:
         self.connect_listeners = set()
         self.message_listeners = set()
 
+        self._cur_reconnect_timeout = self.initial_reconnect_timeout
 
     def add_on_connect_listener(self, listener: Callable[[mqtt.Client], None], call_immediately: bool = False):
 
@@ -60,6 +66,7 @@ class MqttClient:
 
         def connect(client, userdata, flags, rc):
             if rc == 0:
+                self._cur_reconnect_timeout = self.initial_reconnect_timeout
                 self.logger.info("Connected to broker successfully!")
                 self.connected = True
                 for l in self.connect_listeners:
@@ -157,10 +164,22 @@ class MqttClient:
                 self.logger.info(f'started mqtt client')
 
                 while not self.thread_abort and not client._thread_terminate:
-                    err = client.loop_forever()
 
-                    if err == mqtt.MQTT_ERR_PROTOCOL:
+                    reconnect = False
+                    try:
+                        err = client.loop_forever()
+
+                        # if err == mqtt.MQTT_ERR_PROTOCOL:
+                        #     self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
+                        #     reconnect = True
+                    
+                    # Gracefully handle name reasuliton errors, these can happen if the network changes (e.g. between wifi and lte)
+                    except socket.gaierror as e:
                         self.logger.warning('Client disconnected, due to protocol error, trying reconnect')
+                        reconnect = True
+
+                    if reconnect:
+                        self.wait_and_update_reconnect_timeout()
                         client.reconnect()
                         continue
 
@@ -168,6 +187,18 @@ class MqttClient:
 
         finally:
             self._thread = None
+
+    def wait_and_update_reconnect_timeout(self):
+
+        wait_time = 0
+
+        while not self.thread_abort and wait_time < self._cur_reconnect_timeout:
+            time.sleep(0.1)
+            wait_time += 0.1
+
+        self._cur_reconnect_timeout = self._cur_reconnect_timeout*2
+        if self._cur_reconnect_timeout > self.max_reconnect_timeout:
+            self._cur_reconnect_timeout = self.max_reconnect_timeout
 
     def start(self):
 
