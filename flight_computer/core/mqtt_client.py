@@ -50,6 +50,8 @@ class MqttClient:
         self.message_listeners = set()
 
         self._cur_reconnect_timeout = self.initial_reconnect_timeout
+        self._broker_ip = None
+        self.last_address = None
 
     def add_on_connect_listener(self, listener: Callable[[mqtt.Client], None], call_immediately: bool = False):
 
@@ -141,6 +143,20 @@ class MqttClient:
 
             while not self.thread_abort:
 
+                if self.last_address != self.endpoint:
+                    self._broker_ip = None
+
+                try:
+                    address_info = socket.getaddrinfo(self.endpoint, self.port)
+                    self._broker_ip = str(address_info[0][4][0])
+                except socket.gaierror:
+                    if self._broker_ip is None:
+                        self.logger.error(f'Could not resolve address for broker, retrying in {self._cur_reconnect_timeout}')
+                        self.wait_and_update_reconnect_timeout()
+                        continue
+                    else:
+                        self.logger.warning(f'Could not resolve address for broker, using cached address: {self._broker_ip}')
+
                 # Initialize the MQTT client
                 client = mqtt.Client(reconnect_on_failure=False, protocol=mqtt.MQTTv31)
                 self.client = client
@@ -159,7 +175,7 @@ class MqttClient:
                 client.on_log = self.make_on_log()
 
                 # Connect to the MQTT broker
-                client.connect_async(self.endpoint, int(self.port), 10)
+                client.connect_async(self._broker_ip, int(self.port), 10)
 
                 self.logger.info(f'started mqtt client')
 
