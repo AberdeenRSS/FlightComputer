@@ -33,7 +33,7 @@ async def main():
 
     mqtt = MqttClient(api_client, flight._id)
 
-    await mqtt.start()
+    mqtt.start()
 
     executor = FlightExecuter(rocket, flight, api_client, mqtt)
 

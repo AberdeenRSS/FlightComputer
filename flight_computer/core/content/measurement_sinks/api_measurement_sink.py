@@ -57,14 +57,14 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         # Otherwise initiate next send
         self.send_task = asyncio.create_task(self.send_last_measurements(now))
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('send_success', '?'),
             ('send_duration', 'f'),
             ('drop_rate', 'f')
         ]
 
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
+    def make_accepted_commands(self) -> Iterable[Type[Command]]:
         return []
 
     def collect_measurements(self, now: float, iterations) -> Sequence[Measurements]:
@@ -119,7 +119,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         for part, measurements in combined_measurement_dict.items():
             m_count = len(measurements)
 
-            format = get_struct_format_for_part([t[1] for t in part.get_measurement_shape()])
+            format = get_struct_format_for_part([t[1] for t in part.make_measurement_shape()])
 
             total_size += CHAR_SIZE + SHORT_SIZE # Add size for part index and number of measurements
 
@@ -131,7 +131,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
                     total_size += mesurement_size    
                 i -= 1
 
-            parts = [s[0] for s in part.get_measurement_shape()]
+            parts = [s[0] for s in part.make_measurement_shape()]
 
         measurement_bytes = bytearray(total_size)
         cur = 0
@@ -139,7 +139,7 @@ class ApiMeasurementSink(ApiMeasurementSinkBase):
         for part, measurements in combined_measurement_dict.items():
             m_count = len(measurements)
 
-            format = get_struct_format_for_part([t[1] for t in part.get_measurement_shape()])
+            format = get_struct_format_for_part([t[1] for t in part.make_measurement_shape()])
 
             struct.pack_into('!B', measurement_bytes, cur, part._index)
             

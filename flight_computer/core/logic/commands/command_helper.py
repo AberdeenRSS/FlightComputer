@@ -26,7 +26,7 @@ def gather_known_commands(rocket: Rocket):
     res = dict[str, type[Command]]()
 
     for p in rocket.parts:
-        for c in p.get_accepted_commands():
+        for c in p.make_accepted_commands():
             res[c.command_type] = c
     
     return res

@@ -1,9 +1,10 @@
+import json
 import time
 from typing import Any, Callable, Sequence, Union, Iterable, Tuple, Type, Collection
 from datetime import timedelta
 from typing_extensions import Self
 from uuid import UUID
-from abc import ABC, abstractclassmethod
+from abc import ABC, ABCMeta, abstractclassmethod, abstractmethod
 
 from logging import getLogger, _nameToLevel
 
@@ -31,10 +32,15 @@ MeasurementTypes = Union[str, int, float, bytes, None]
 Measurements = Sequence[Tuple[int, MeasurementTypes]]
 Measurement = Tuple[float, int, Union[MeasurementTypes, Sequence[MeasurementTypes]]]
 
+ShapeDefType = str | Type
+
+BaseShapeType = float | int | bool
+ComplexShapeType = str | bytes | BaseShapeType | Iterable[BaseShapeType]
+
 #endregion
 
     
-class Part(ABC):
+class Part(metaclass=ABCMeta):
     """ Base class for all parts. Inherit to define a specific part"""
 
     _id: UUID
@@ -58,6 +64,8 @@ class Part(ABC):
     enabled: bool = True
 
     _last_enable_command: float = 0
+
+    start_enabled: bool = True
 
     min_update_period: timedelta = timedelta(milliseconds=100)
     '''
@@ -90,6 +98,36 @@ class Part(ABC):
     Measurements are buffered here between collection by the the main loop
     '''
 
+    _measurement_shape: list[Tuple[str, int, Type | str | list[Tuple[str, Type | str]]]]
+
+    @property
+    def measurement_shape(self):
+        return self._measurement_shape
+    
+    _measurement_index_lookup: dict[str, int]
+
+    @property
+    def measurement_index_lookup(self):
+        return self._measurement_index_lookup 
+    
+    _accepted_commands: list[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]       
+
+    @property
+    def accepted_command(self):
+        return self._accepted_commands
+    
+    _command_index_lookup: dict[str, int]
+
+    @property
+    def command_index_lookup(self):
+        return self._command_index_lookup
+
+    _command_callbacks: list[Callable[[float, Any], None]]
+
+    @property
+    def command_callbacks(self):
+        return self._command_callbacks
+
     def __init__(self, _id: UUID, name: str, parent: Union[Self, Rocket, None], dependencies: Iterable[Self]):
         '''
         :param dependencies: parts that will be updated before this part
@@ -97,11 +135,20 @@ class Part(ABC):
         self._id = _id
         self.name = name
 
+        self._measurement_shape = list(self.make_measurement_shape())
+        self._accepted_commands = list(self.make_accepted_commands())
+        self._command_callbacks = list(self.make_command_callbacks())
+
+        self._measurement_index_lookup = dict((m[0], i) for i, m in enumerate(self.measurement_shape))
+        self._command_index_lookup = dict((m[0], i) for i, m in enumerate(self.accepted_command))
+
         self.children = list()
         self.dependencies = list()
         self.logger = getLogger(f'p_{name}')
 
         self._measurement_buffer = list()
+
+        self.enabled = self.start_enabled
 
         if isinstance(parent, Rocket):
             self.rocket = parent
@@ -113,7 +160,6 @@ class Part(ABC):
 
         self.dependencies.extend(dependencies)
 
-    @abstractclassmethod
     def update(self, now: float, iteration: int) -> None:
         """
         Method called per tick on every part to get it's own information updated based
@@ -126,8 +172,7 @@ class Part(ABC):
         """
         pass
 
-    @abstractclassmethod
-    def get_measurement_shape(self) -> Collection[Tuple[str, int, Union[Type, str, list[Tuple[str, str]]]]]:
+    def make_measurement_shape(self) -> Collection[Tuple[str, int, Type | str | list[Tuple[str, Type | str]]]]:
         """
         List of measurements that can be returned by this part. The measurements will be indexed by the order they are in this
         list. I.e. the first entry will be measurement of type 0, etc. If the order is changed external api providing readings
@@ -153,7 +198,7 @@ class Part(ABC):
         To combine your measurements with the defaults use:
         ```
             return [
-                *super.get_measurement_shape(),
+                *super.make_measurement_shape(),
                 ('your-measurement-1', 0, [('x', 'd'), ('y', 'd')]) # measurement of QoS 0 with two double values x and y
             ]
         ```
@@ -161,11 +206,11 @@ class Part(ABC):
 
         return [
             ('enabled', 1, '?'),
-            ('log', 0, [('level', 'h'), ('msg', str)])
+            ('log', 0, [('level', 'h'), ('msg', str)]),
+            ('config', 1, self.make_config_shape())
             ]
 
-    @abstractclassmethod
-    def get_accepted_commands(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
+    def make_accepted_commands(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
         """
         List of commands accepted by this part. The command will be indexed by the order they are in this
         list. I.e. the first entry will be command of type 0, etc. If the order is changed external APIs using
@@ -182,26 +227,32 @@ class Part(ABC):
         A list of tuples with the name of the sub-element and one of the above listed descriptors is also allowed
 
         By default this reuturns:
-          - 0: Enable command with a bool payload
+          - 0:   Enable command with a bool payload
+          - 1:   Prints the config as a log statement
+          - 2-?: Auto generated configure commands
 
         It is recomended to keep these for standardization, however you may overwrite them
 
         To combine your commands with the defaults use:
         ```
             return [
-                *super.get_accepted_commands(),
+                *super.make_accepted_commands(),
                 ('your-command-1', str) # command with a string payload
             ]
         ```
         """        
+
+        configure_commands = [(f'configure_{x[0]}', x[1]) for x in self.make_config_shape()]
+
         return [
-            ('enable', '?')
+            ('enable', '?'),
+            ('print_config', ''),
+            *configure_commands
         ]
     
-    @abstractclassmethod
-    def get_command_callbacks(self) -> Collection[Callable[[Self, float, Any], None]]:
+    def make_command_callbacks(self) -> Iterable[Callable[[float, Any], None]]:
         '''
-        Provide callbacks for the commands defined in `get_accepted_commands`
+        Provide callbacks for the commands defined in `make_accepted_commands`
         
         Methods need to accept a time and the payload for the command:
 
@@ -213,25 +264,107 @@ class Part(ABC):
         Extend the default callbacks like this:
         ```
         return [
-            *super().get_command_callbacks(),
+            *super().make_command_callbacks(),
             self.your_command_callback
         ]
         '''
+        
+        configure_callbacks = [self.make_configure_command(x[0]) for x in self.make_config_shape()]
+        
         return [
-            self.enable
+            self.enable,
+            self.print_config,
+            *configure_callbacks
         ]
     
-    def enable(self, timestamp: float, enable: bool):
+    def make_config_shape(self) -> list[Tuple[str, str | Type]]:
+        '''
+        Method returning the shape of this parts' configuration.
+        The shape is defined in a similar format to make_measurement_shape (this is because the configuration becomes one of
+        the measurements that can be taken). The format needs to be of type `list[(str, str | Type)]`
 
-        # Prevent out of order commands
-        if timestamp <= self._last_enable_command:
-            return
+        An example configuration could look like this:
+
+        ```
+            return [
+                *super().get_config_shape(), # Don't forget to include the bath config using super()
+                ('some_float_config_value', 'f'),
+                ('some_vector_config_value', 'fff') #3d vector made out of 3 floats
+            ]
+        ```
+
+        By default this returns:
+
+        ```
+             return [
+                ('start_enabled', '?'),
+                ('min_update_period', 'f'),
+                ('min_measurement_period', 'f')
+            ]
+        ```
+
+        '''
+    
+        return [
+           ('start_enabled', '?'),
+           ('min_update_period', 'f'),
+           ('min_measurement_period', 'f')
+        ]
+
+    def dump_config(self) -> dict[str, ComplexShapeType]:
+        '''
+        Needs to return a config as laid out by `make_config_shape` as a dictionary
+        of config key name mapped to the value. Don't forget to extend
+        your config with the base definition:
+
+        ```
+        return {
+            **super().dump_config(),
+            'your_config_parameter': self.some_property
+        }
+        ```
+
+        As an example the default method looks like this:
         
-        self._last_enable_command = timestamp
+        ```
+        return {
+            'start_enabled': self.start_enabled,
+            'min_update_period': self.min_update_period.total_seconds(),
+            'min_measurement_period': self.min_measurement_period.total_seconds()
+        }
+        ```
 
-        self.enabled = enable
+        '''
 
-        self.submit_measurement(1, enable, time.time())
+        return {
+            'start_enabled': self.start_enabled,
+            'min_update_period': self.min_update_period.total_seconds(),
+            'min_measurement_period': self.min_measurement_period.total_seconds()
+        }
+    
+    def load_config(self, config: dict[str, ComplexShapeType]):
+        '''
+        Counterpart to `dump_config()`
+        
+        Don't forget to call the base definition:
+        ```
+        super().read_config(config)
+        ```
+
+        Note: make sure to check if the key is in the config with
+        ```
+        if 'config_key' in config:
+            self.parameter = config['config_key']
+
+        ```
+        '''
+
+        if 'start_enabled' in config:
+            self.start_enabled = bool(config['start_enabled'])
+        if 'min_update_period' in config:
+            self.min_update_period = timedelta(seconds=float(config['min_update_period'])) # type: ignore
+        if 'min_update_period' in config:
+            self.min_update_period = timedelta(seconds=float(config['min_update_period'])) # type: ignore
 
     def collect_measurements(self, now: float, iteration: int):
         """Method called before measurement buffer is swapped. I.e. last chance to submit measurements this iteration"""
@@ -244,7 +377,7 @@ class Part(ABC):
     def inflate_measurement(self, measurement: Measurements) -> dict[str, Union[str, int, float]]:
         res = dict[str, Union[str, int, float]]()
         i = 0
-        for (key, _) in self.get_measurement_shape():
+        for (key, _) in self.make_measurement_shape():
             if measurement[i] is None:
                 continue
             m = measurement[i]
@@ -253,6 +386,33 @@ class Part(ABC):
             i += 1
         
         return res
+
+    def enable(self, timestamp: float, enable: bool):
+
+        # Prevent out of order commands
+        if timestamp <= self._last_enable_command:
+            return
+        
+        self._last_enable_command = timestamp
+
+        self.enabled = enable
+
+        self.submit_measurement_by_name('enable', enable, time.time())
+
+    def print_config(self, timestamp: float, _):
+        '''Prints the config as a log message'''
+
+        self.log(json.dumps(self.dump_config()))
+
+    def make_configure_command(self, config_parameter_name: str):
+
+        def configure_parameter(timestamp: float, *values):
+            if len(values) > 1:
+                self.load_config({config_parameter_name: values})
+            else:
+                self.load_config({config_parameter_name: values[0]}) # type: ignore
+
+        return configure_parameter
 
     def log(self, msg: str, level: int = INFO_LOG_LEVEL, datetime: float | None = None):
         self.logger.log(level, msg)
@@ -265,7 +425,11 @@ class Part(ABC):
         self._measurement_buffer.append(measruement)
 
     def submit_measurement(self, measurement_index: int, measurement: MeasurementTypes | Sequence[MeasurementTypes], datetime: float | None = None ):
-        self.submit_measurement_raw([datetime or time.time(), measurement_index, measurement])
+        self.submit_measurement_raw((datetime or time.time(), measurement_index, measurement))
+
+    def submit_measurement_by_name(self, measurement_name: str, measurement: MeasurementTypes | Sequence[MeasurementTypes], datetime: float | None = None):
+        '''Uses `measurement_index_lookup` and is therefore slower. Consider using `submit_measurement` for high performance cases'''
+        self.submit_measurement_raw((datetime or time.time(), self.measurement_index_lookup[measurement_name], measurement))
 
 class Rocket:
     """ Class representing the rocket """

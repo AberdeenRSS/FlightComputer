@@ -51,21 +51,21 @@ class FileMeasurementSink(ApiMeasurementSinkBase):
         self.send_last_measurements(now)
 
 
-    def get_measurement_shape(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
+    def make_measurement_shape(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
         
         return [
-            *super().get_measurement_shape(),   
+            *super().make_measurement_shape(),   
             ('commands_send_last', 0, 'd')
         ]
 
-    def get_accepted_commands(self):
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
 
     def collect_measurements(self, now: float, iterations):
@@ -110,7 +110,7 @@ class FileMeasurementSink(ApiMeasurementSinkBase):
             count += len(b)
             for part, measurements in b.items():
 
-                shapes = part.get_measurement_shape()
+                shapes = part.make_measurement_shape()
 
                 for time, msg_index, payload in measurements:
 
@@ -139,7 +139,7 @@ class FileMeasurementSink(ApiMeasurementSinkBase):
                     f.write(res)
                     f.flush()
 
-        self.submit_measurement(2, count, now)
+        self.submit_measurement_by_name('commands_send_last', count, now)
 
     def __del__(self):
         for f in self.files.keys():

@@ -34,20 +34,24 @@ class BNO055_Raspberry(Part):
     min_update_period = timedelta(milliseconds=10)
     min_measurement_period = timedelta(milliseconds=5)
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], i2c: RaspberryI2CInterface, start_enabled = True):
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], i2c: RaspberryI2CInterface):
 
-        self.enabled = start_enabled
+        super().__init__(_id, name, parent, list()) # type: ignore
 
         i2c.i2c_loop_callbacks.add(self.make_i2c_callback())
 
         self.desired_operating_mode = BNO_IMU_OPR_MODE
         self.i2c_device_id = BNO_DEVICE_ID
 
-        super().__init__(_id, name, parent, list()) # type: ignore
+        self.M_ACC = self.measurement_index_lookup['acceleration']
+        self.M_ORIENTATION = self.measurement_index_lookup['orientation']
+        self.M_MAG = self.measurement_index_lookup['magnetic_field']
+        self.M_GYRO = self.measurement_index_lookup['gyro']
+        self.M_TEMP = self.measurement_index_lookup['temp']
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self):
         return [
-            *super().get_measurement_shape(),
+            *super().make_measurement_shape(),
             ('i2c_address', 1, 'i'),
             ('operating_mode', 1, 'i'),
             ('acceleration', 0, [('x', 'f'), ('y', 'f'), ('z', 'f')]),
@@ -57,14 +61,14 @@ class BNO055_Raspberry(Part):
             ('temp', 0, 'f')
         ]
 
-    def get_accepted_commands(self):
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
    
     def update(self, now, iteration):
@@ -82,7 +86,7 @@ class BNO055_Raspberry(Part):
 
                 if operating_mode != self.operating_mode:
                     self.operating_mode = operating_mode
-                    self.submit_measurement(3, operating_mode) # Report new operating mode
+                    self.submit_measurement_by_name('operating_mode', operating_mode) # Report new operating mode
                     self.log(f'Changed operating mode to 0x{operating_mode:02x}')
 
                 # Device is in config mode or changed config -> we need to configure it
@@ -108,7 +112,7 @@ class BNO055_Raspberry(Part):
             y = y/100
             z = z/100
 
-            self.submit_measurement(4, (x, y, z))
+            self.submit_measurement(self.M_ACC, (x, y, z))
 
             w, x, y, z = struct.unpack('<hhhh', bytearray(orientation))
 
@@ -117,7 +121,7 @@ class BNO055_Raspberry(Part):
             y = y/QUAD_FATOR
             z = z/QUAD_FATOR
 
-            self.submit_measurement(5, (x, y, z, w))
+            self.submit_measurement(self.M_ORIENTATION, (x, y, z, w))
 
             x, y, z =  struct.unpack('<hhh', bytearray(gyro))
 
@@ -125,7 +129,7 @@ class BNO055_Raspberry(Part):
             y = y/MAG_FACTOR
             z = z/MAG_FACTOR
 
-            self.submit_measurement(6, (x, y, z))
+            self.submit_measurement(self.M_MAG, (x, y, z))
 
             x, y, z =  struct.unpack('<hhh', bytearray(mag))
 
@@ -133,11 +137,11 @@ class BNO055_Raspberry(Part):
             y = y/16
             z = z/16
 
-            self.submit_measurement(7, (x, y, z))
+            self.submit_measurement(self.M_GYRO, (x, y, z))
 
             temp =  struct.unpack('<B', bytearray([temp]))
 
-            self.submit_measurement(8, temp)
+            self.submit_measurement(self.M_TEMP, temp)
 
         
         return i2c_callback

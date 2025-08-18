@@ -51,13 +51,13 @@ class BarometricAltitudeSensor(Part):
         self.altitude = calculate_altitude(self.pressure_sea_level, pressure, temperature)
 
 
-    def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         return [
             ('altitude', 'f'),
             # ('pressure-sea-lvl', float),
             ]
 
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
+    def make_accepted_commands(self) -> Iterable[Type[Command]]:
         return []
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:

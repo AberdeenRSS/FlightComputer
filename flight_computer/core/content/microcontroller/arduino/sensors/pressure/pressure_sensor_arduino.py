@@ -50,7 +50,7 @@ class PressureArduinoSensor(Part, IDataAge, IPressureSensor, ITemperatureSensor)
         self.temperature = struct.unpack_from('<f', data[4:8])[0]
         self.last_data_received = time()
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
 
     def update(self, commands: Iterable[Command], now, iteration):
@@ -65,7 +65,7 @@ class PressureArduinoSensor(Part, IDataAge, IPressureSensor, ITemperatureSensor)
                 self.enabled = False
                 c.state = "success"
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('temperature', 'f'),
             ('pressure', 'f'),

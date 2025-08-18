@@ -35,14 +35,14 @@ class PlyerBatterySensor(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_accepted_commands(self):
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
    
     def update(self, now, iteration):
@@ -54,8 +54,8 @@ class PlyerBatterySensor(Part):
                 self.is_charging = as_battery.status['isCharging']
                 self.battery_percent = as_battery.status['percentage']
 
-                self.submit_measurement(3, self.is_charging, now)
-                self.submit_measurement(4, self.battery_percent, now)
+                self.submit_measurement_by_name('is_charging', self.is_charging, now)
+                self.submit_measurement_by_name('battery_percentage', self.battery_percent, now)
 
             except Exception as e:
                 self.log(f'Plyer battery sensor failed: {e}', _nameToLevel['ERROR'])
@@ -64,9 +64,9 @@ class PlyerBatterySensor(Part):
             self.is_charging = None
             self.battery_percent = None
             
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self):
         return [
-            *super().get_measurement_shape(),
+            *super().make_measurement_shape(),
             ('sensor_failed', 0, '?'),
             ('is_charging', 0, '?'),
             ('battery_percentage', 0, 'f'),

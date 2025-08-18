@@ -39,7 +39,7 @@ def get_measured_parts(rocket: Rocket) -> dict[str, list[FlightMeasurementDescri
 
         measurements = list()
 
-        for measurement_name, qos, measurement_type in p.get_measurement_shape():
+        for measurement_name, qos, measurement_type in p.make_measurement_shape():
 
             measurements.append(FlightMeasurementDescriptor(measurement_name, make_format_descriptor(measurement_type)))
     
@@ -82,7 +82,7 @@ def get_commands(rocket: Rocket) -> dict[str, list[CommandInfo]]:
 
         cmds = list()
 
-        for name, type in p.get_accepted_commands():
+        for name, type in p.make_accepted_commands():
 
             cmds.append(CommandInfo(name, make_format_descriptor(type)))
     

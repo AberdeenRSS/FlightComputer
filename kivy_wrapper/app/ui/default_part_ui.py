@@ -25,7 +25,7 @@ class DefaultPartUI(BoxLayout, PartUi[Part]):
 
 
     def add_labels_for_measurements(self):
-        for name, type in self.part.get_measurement_shape():
+        for name, type in self.part.make_measurement_shape():
             self.labels[name] = Label(text=name)
             self.add_widget(self.labels[name])
 
@@ -36,7 +36,7 @@ class DefaultPartUI(BoxLayout, PartUi[Part]):
             return
 
         i = 0
-        for name, type in self.part.get_measurement_shape():
+        for name, type in self.part.make_measurement_shape():
             self.labels[name].text = f'{name}: {measurement[-1][i]}'
             i += 1
 

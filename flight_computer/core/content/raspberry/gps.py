@@ -30,19 +30,19 @@ class RaspberryI2CInterface(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            *super().get_measurement_shape(),
+            *super().make_measurement_shape(),
         ]
 
-    def get_accepted_commands(self):
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
    
     def update(self, now, iteration):

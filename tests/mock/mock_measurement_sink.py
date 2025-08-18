@@ -31,21 +31,21 @@ class MockMeasurementSink(ApiMeasurementSinkBase):
 
         return
 
-    def get_measurement_shape(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
+    def make_measurement_shape(self) -> Collection[Tuple[str, Union[Type, str, list[Tuple[str, str]]]]]:
         
         return [
-            *super().get_measurement_shape(),   
+            *super().make_measurement_shape(),   
             ('commands_send_last', 0, 'd')
         ]
 
-    def get_accepted_commands(self):
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
 
     def collect_measurements(self, now: float, iterations):

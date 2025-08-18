@@ -26,14 +26,16 @@ class FramerateSensor(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_accepted_commands(self):
+        self.M_FPS = self.measurement_index_lookup['framerate']
+
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
     
     def update(self, now: float, iteration):
@@ -50,12 +52,12 @@ class FramerateSensor(Part):
         self.framerate = 1/frame_time
         self.frames_since_last_measurement = 0
 
-        self.submit_measurement(2, self.framerate, now)
+        self.submit_measurement(self.M_FPS, self.framerate, now)
 
             
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self):
         return [
-            *super().get_measurement_shape(),
+            *super().make_measurement_shape(),
             ('framerate', 0, 'f')
         ]
 

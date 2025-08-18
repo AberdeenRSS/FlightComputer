@@ -147,7 +147,7 @@ class InertialReferenceFrame(Part, IOrientationSensor):
         self.update_angular_velocity()
         self.update_velocity()
 
-    def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         return [
             # ('angular_velocity-x', float),
             # ('angular_velocity-y', float),
@@ -167,7 +167,7 @@ class InertialReferenceFrame(Part, IOrientationSensor):
             ('position-z', 'f'),
         ]
 
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
+    def make_accepted_commands(self) -> Iterable[Type[Command]]:
         return [CalibrateZeroCommand]
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:

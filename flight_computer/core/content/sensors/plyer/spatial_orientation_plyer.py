@@ -37,7 +37,7 @@ class PlyerSpatialOrientationSensor(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
     
     def try_enable_spatial_orientation(self, enable: bool) -> bool:
@@ -78,7 +78,7 @@ class PlyerSpatialOrientationSensor(Part):
         else:
             self.iteration_spacial_orientation = self.spatial_orientation = None
             
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', '?'),
             ('sensor_failed', '?'),

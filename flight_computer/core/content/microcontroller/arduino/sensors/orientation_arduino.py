@@ -66,7 +66,7 @@ class OrientationSensor(Part, IOrientationSensor, IDataAge):
 
         self.last_data_received = time()
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand, CalibrateZeroCommand]
 
     def calibrate(self, c: CalibrateZeroCommand):
@@ -100,7 +100,7 @@ class OrientationSensor(Part, IOrientationSensor, IDataAge):
             if isinstance(c, CalibrateZeroCommand):
                 self.calibrate(c)
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('calibrated', '?'),
             ('W', 'f'),

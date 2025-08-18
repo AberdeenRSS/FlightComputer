@@ -81,7 +81,7 @@ class FlightDirector(Part):
         self.attitude_smartphone = attitude_smartphone
         self.attitude_external = attitude_external
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [CalibrateZeroCommand, ArmDirectorCommand, StartCountDownCommand, AbortCommand]
     
     def run_calibrate(self, c: CalibrateZeroCommand, now) -> Iterable[Command]:
@@ -325,7 +325,7 @@ class FlightDirector(Part):
         return new_commands
 
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, str]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, str]]:
         return [
             ('state', '16s'),
             ('calibrated', '?'),

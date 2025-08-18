@@ -40,7 +40,7 @@ class ServoSensor(Part):
     def proccessCommand(self, command : Command):
         command.response_message = 'Servo activated'
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [DisableCommand, EnableCommand, OpenCommand, CloseCommand]
     
     def make_command_callback(self, c: Command):
@@ -84,7 +84,7 @@ class ServoSensor(Part):
                 continue
 
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', '?'),
             ('communication_failure', '?')

@@ -215,7 +215,7 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
 
             self.serial_adapter.flush_command_futures('Lost connection')
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand, ResetCommand, SetPreparationPhaseCommand, SetIgnitionPhaseCommand]
     
     def send_message_hdlc(self, message: bytearray):
@@ -267,7 +267,7 @@ class ArduinoOverBluetooth(ArduinoHwSelectable, ArduinoHwBase):
         self.try_connect_last_device_background()
         self.last_get_device_list_time = now
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', '?'),
             ('available_devices', 'i'),

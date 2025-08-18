@@ -74,7 +74,7 @@ class PyjiniusAccelerationSensor(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand, CalibrateZeroCommand]
     
     def try_enable(self, enable: bool) -> bool:
@@ -163,7 +163,7 @@ class PyjiniusAccelerationSensor(Part):
             self.iteration_acceleration = self.acceleration = None
             self.iteration_accuracy = self.accuracy = None
             
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', '?'),
             ('sensor_failed', '?'),

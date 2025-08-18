@@ -33,10 +33,10 @@ class TemperatureSensor(Part):
     def update(self, commands: Iterable[Command], now):
         self.temperature = random()
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         '''Commands that can be processed by this part'''
         return [
             ('enabled', '?'),

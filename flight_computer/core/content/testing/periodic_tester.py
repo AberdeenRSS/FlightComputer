@@ -77,13 +77,13 @@ class PeriodicTester(Part):
 
         return new_commands
 
-    def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Collection[Tuple[str, Type]]:
         return [
             ('igniter-success', 'i'),
             ('parachute-success', 'i'),
             ]
 
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
+    def make_accepted_commands(self) -> Iterable[Type[Command]]:
         return []
 
     def collect_measurements(self, now: float, iteration: int) -> Union[None, Sequence[Measurements]]:

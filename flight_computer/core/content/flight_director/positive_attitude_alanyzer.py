@@ -36,7 +36,7 @@ class PositiveAttitudeAnalyzer(Part, IDataAge):
 
         super().__init__(_id, name, parent, [orientation_sensor])   # type: ignore
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return []
 
     def update(self, commands: Iterable[Command], now, iteration):
@@ -65,7 +65,7 @@ class PositiveAttitudeAnalyzer(Part, IDataAge):
         self.last_good_data_update = now
         
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, str]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, str]]:
         return [
             ('pointing_up', 'i')
         ]

@@ -51,7 +51,7 @@ class PlyerBarometerSensor(Part):
     
         return True
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
    
     def update(self, commands: Iterable[Command], now, iteration):
@@ -78,7 +78,7 @@ class PlyerBarometerSensor(Part):
         else:
             self.iteration_pressure_value = self.pressure_value = None
             
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', '?'),
             ('sensor_failed', '?'),

@@ -39,21 +39,21 @@ class RaspberryI2CInterface(Part):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
-            *super().get_measurement_shape(),
+            *super().make_measurement_shape(),
             ('i2c_port', 1, 'i'),
             ('i2c_connected', 1, '?'),
         ]
 
-    def get_accepted_commands(self):
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
    
     def update(self, now, iteration):
@@ -85,12 +85,12 @@ class RaspberryI2CInterface(Part):
             self.i2cbus = SMBus(self.i2c_device_port)
             self.cur_retry_delay = None
             self.log(f'Successfully set up smbus hardware interface on device port {self.i2c_device_port}')
-            self.submit_measurement(2, self.i2c_device_port)
-            self.submit_measurement(3, True)
+            self.submit_measurement_by_name('i2c_port', self.i2c_device_port)
+            self.submit_measurement_by_name('i2c_connected', True)
 
         except Exception as e:
             self.log(f'Failed setting up device i2c: \n {e}', level=_nameToLevel['ERROR'])
-            self.submit_measurement(3, False)
+            self.submit_measurement_by_name('i2c_connected', False)
             self.i2cbus = None
             if self.cur_retry_delay is None:
                 self.cur_retry_delay = self.initial_retry_delay

@@ -8,7 +8,7 @@ from logging import _nameToLevel
 
 from datetime import timedelta
 from logging import _nameToLevel
-from typing import Callable, Iterable, Tuple, Type, Union
+from typing import Callable, Collection, Iterable, Tuple, Type, Union
 from uuid import UUID
 from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
 from flight_computer.core.logic.rocket_definition import Part, Rocket
@@ -111,32 +111,34 @@ class BMP390_Raspberry(Part):
     min_update_period = timedelta(milliseconds=10)
     min_measurement_period = timedelta(milliseconds=5)
 
-    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], i2c: RaspberryI2CInterface, start_enabled = True):
-
-        self.enabled = start_enabled
-        self.configured = False
-
-        i2c.i2c_loop_callbacks.add(self.make_i2c_callback())
+    def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], i2c: RaspberryI2CInterface):
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+        self.configured = False
+        i2c.i2c_loop_callbacks.add(self.make_i2c_callback())
+
+        self.M_TEMP = self.measurement_index_lookup['temperature']
+        self.M_PRESS = self.measurement_index_lookup['pressure']
+        self.M_ALT = self.measurement_index_lookup['altitude']
+
+    def make_measurement_shape(self) -> Collection[Tuple[str, int, Type | str | list[Tuple[str, Type | str]]]]:
         return [
-            *super().get_measurement_shape(),
+            *super().make_measurement_shape(),
             ('i2c_address', 1, 'i'),
             ('temperature', 0, 'f'),
             ('pressure', 0, 'f'),
             ('altitude', 0, 'f'),
         ]
 
-    def get_accepted_commands(self):
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands()
+            *super().make_accepted_commands()
         ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
         return [
-            *super().get_command_callbacks()
+            *super().make_command_callbacks()
         ]
    
     def update(self, now, iteration):
@@ -185,12 +187,12 @@ class BMP390_Raspberry(Part):
             temp_compensated = compensate_temp(self.calib_data[0], temp_uncomp)
             pressure_compensated = compensate_pressure(self.calib_data[1], pressure_uncomp, temp_compensated)
 
-            self.submit_measurement(3, temp_compensated)
-            self.submit_measurement(4, pressure_compensated)
+            self.submit_measurement(self.M_TEMP, temp_compensated)
+            self.submit_measurement(self.M_PRESS, pressure_compensated)
 
             __ALTITUDE_EQ_EXPONENT__ = 1/5.257
             alt = ((math.pow(p_0/pressure_compensated, __ALTITUDE_EQ_EXPONENT__) - 1) * temp_compensated) / 0.0065
 
-            self.submit_measurement(5, alt)
+            self.submit_measurement(self.M_ALT, alt)
         
         return i2c_callback

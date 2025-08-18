@@ -22,13 +22,13 @@ class CommandTestPart(Part):
 
     def on_string_command(self, timestamp: float, payload: str):
 
-        self.submit_measurement(2, 'String command acknowledgement')
+        self.submit_measurement_by_name('string-command-callback', 'String command acknowledgement')
 
         self.log(f'Received string command with payload: {payload}')        
 
     def on_complex_command(self, timestamp: float, payload: tuple[str, bool]):
 
-        self.submit_measurement(3, ('Command received', True))
+        self.submit_measurement_by_name('complex-payload-callback', ('Command received', True))
 
         self.log('Complex msg received')
 
@@ -37,25 +37,25 @@ class CommandTestPart(Part):
         self.log(f'Received integer payload: {payload}')
 
 
-    def get_measurement_shape(self) -> Collection[Tuple[str, Type]]:
+    def make_measurement_shape(self):
         return [
-            *super().get_measurement_shape(),
+            *super().make_measurement_shape(),
             ('string-command-callback', 2, str),
             ('complex-payload-callback', 2, [('value-a', str), ('value-b', '?')]),
             ]
     
-    def get_command_callbacks(self):
+    def make_command_callbacks(self):
 
         return [
-            *super().get_command_callbacks(),
+            *super().make_command_callbacks(),
             self.on_string_command,
             self.on_complex_command,
             self.on_int_command
         ]
 
-    def get_accepted_commands(self) -> Iterable[Type[Command]]:
+    def make_accepted_commands(self):
         return [
-            *super().get_accepted_commands(),
+            *super().make_accepted_commands(),
             ('string-payload-command', str),
             ('complex-payload', [('value-a', str), ('value-b', '?')]),
             ('int-payload', 'i')

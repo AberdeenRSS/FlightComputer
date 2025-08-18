@@ -28,7 +28,7 @@ class PressureSensor(Part):
         self.pressure = 0.0
 
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [EnableCommand, DisableCommand]
 
     def update(self, commands: Iterable[Command], now, iteration):
@@ -44,7 +44,7 @@ class PressureSensor(Part):
                 c.state = "success"
 
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('pressure', 'f'),
         ]

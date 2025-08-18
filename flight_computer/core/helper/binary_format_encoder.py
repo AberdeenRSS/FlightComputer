@@ -133,6 +133,9 @@ def decode_payload_internal(shape: type | str | list[tuple[type | str]], payload
                 resi, offset = decode_payload_internal(shape[1:-1], payload, offset, False)
                 res.append(resi)
             return res, offset
+        
+        if shape == '':
+            return None, offset
 
         res = struct.unpack_from(f'!{shape}', payload, offset)
         offset += struct.calcsize(shape)

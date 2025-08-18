@@ -40,7 +40,7 @@ class IgniterSensor(Part):
         self.partID = 2
         self.commandList = { 'Ignite' : 0 }
 
-    def get_accepted_commands(self) -> list[Type[Command]]:
+    def make_accepted_commands(self) -> list[Type[Command]]:
         return [IgniteCommand]
 
     def update(self, commands: Iterable[Command], now, iteration):
@@ -62,7 +62,7 @@ class IgniterSensor(Part):
                 c.state = 'failed'  # Part cannot handle this command
                 continue
 
-    def get_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
+    def make_measurement_shape(self) -> Iterable[Tuple[str, Type]]:
         return [
             ('enabled', '?'),
             ('Ignited', '?'),
