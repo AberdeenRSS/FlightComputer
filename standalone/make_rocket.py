@@ -1,4 +1,5 @@
 
+from flight_computer.core.content.flight_director.simple_flight_director import SimpleFlightDirector
 from flight_computer.core.content.measurement_sinks.file_measurement_sink import FileMeasurementSink
 from flight_computer.core.content.measurement_sinks.mqtt_measurement_sink import MqttMeasurementSink
 from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
@@ -7,6 +8,7 @@ from flight_computer.core.content.raspberry.i2c_devices.bno055 import BNO055_Ras
 from flight_computer.core.content.sensors.plyer.framerate import FramerateSensor, FramerateSensor
 from flight_computer.core.content.sensors.plyer.battery_plyer import PlyerBatterySensor, PlyerBatterySensor
 from flight_computer.core.content.testing.command_tester import CommandTestPart
+from flight_computer.core.content.testing.mock_altimeter import MockAltimeter
 from flight_computer.core.logic.rocket_definition import Rocket
 
 # frocorepp.ui.part_ui import PartUi
@@ -30,6 +32,11 @@ def make_rocket(name = 'New rocket') -> Rocket:
     PlyerBatterySensor(UUID('547a50de-589e-4744-aada-a85bd72deba0'), 'Battery Sensor', rocket)
 
     CommandTestPart(UUID('de6e93c0-eaf4-496f-913a-4cbbd89c1c7a'), 'Command tester', rocket)
+
+    altimeter = MockAltimeter(UUID('5b213500-8e8e-4375-bf5d-2dac477db8a4'), 'Mock altimeter', rocket)
+
+    SimpleFlightDirector(UUID('b95dda37-c592-48ac-8658-e053f6d60045'), 'Simple flight director', rocket, altimeter, None, None)
+
 
     # i2c = RaspberryI2CInterface(UUID('ef616406-fe02-4282-9f7d-d8238be9e17c'), 'I2C', rocket, 3)
     # bno055 = BNO055_Raspberry(UUID('49d9ae27-13a2-4d3a-b751-09fc52b5bd77'), 'Bno055', rocket, i2c)

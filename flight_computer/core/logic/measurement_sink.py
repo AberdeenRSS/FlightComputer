@@ -42,6 +42,6 @@ class MeasurementSinkBase(Part):
 class ApiMeasurementSinkBase(MeasurementSinkBase):
     api_client: ApiClient
 
-    mqtt_client: MqttClient
+    mqtt_client: MqttClient | None
 
     flight: Flight

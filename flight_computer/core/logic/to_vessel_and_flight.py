@@ -64,11 +64,12 @@ def make_format_descriptor(descriptor: Type | str | Collection[Tuple[str, str | 
         except Exception as e:
             raise Exception('Descriptor is not a valid struct descriptor', e)
     
+    if allow_complex and isinstance(descriptor, Collection) and isinstance(descriptor[0], tuple):
+        return [make_format_descriptor(d, False) for d in descriptor]
+
     if isinstance(descriptor, tuple):
         return (descriptor[0], make_format_descriptor(descriptor[1], False))
 
-    if allow_complex and isinstance(descriptor, Collection):
-        return [make_format_descriptor(d, False) for d in descriptor]
         
     raise Exception(f'{descriptor} is not supported as a format')
 

@@ -46,7 +46,7 @@ class FlightExecuter:
 
     iteration_wait: int = 0
 
-    def __init__(self, rocket: Rocket, flight: Flight, api_client: ApiClient, mqtt_client: MqttClient, min_computation_frame_time: float = 0.050, min_ui_frame_time: float = 0.050) -> None:
+    def __init__(self, rocket: Rocket, flight: Flight, api_client: ApiClient, mqtt_client: MqttClient | None, min_computation_frame_time: float = 0.050, min_ui_frame_time: float = 0.050) -> None:
     
         self.logger = getLogger('Flight Exector')
 
@@ -71,7 +71,8 @@ class FlightExecuter:
         self.file_logger = FileLogger()
         self.logger.addHandler(self.file_logger)
 
-        self.mqtt_client.add_on_connect_listener(self.make_subscribe_commands())
+        if self.mqtt_client:
+            self.mqtt_client.add_on_connect_listener(self.make_subscribe_commands())
 
         # Get list of all available measurement sinks
         self.measurement_sinks = [p for p in self.rocket.parts if isinstance(p, MeasurementSinkBase)]
@@ -87,7 +88,8 @@ class FlightExecuter:
 
         def subscribe_commands(client: mqtt.Client):
             client.subscribe(f'{self.flight._id}/c/#', 2)
-            self.mqtt_client.add_message_listener(self.make_on_command_raw())
+            if self.mqtt_client is not None:
+                self.mqtt_client.add_message_listener(self.make_on_command_raw())
             
 
         return subscribe_commands
@@ -218,7 +220,10 @@ class FlightExecuter:
             part_index = int(split_topic[2])
             command_index = int(split_topic[3])
             
-            time, payload =  decode_payload(self.rocket.parts[part_index].make_accepted_commands()[command_index][1], command.payload)
+            time, payload =  decode_payload(self.rocket.parts[part_index].accepted_command[command_index][1], command.payload)
+
+            if isinstance(time, Iterable):
+                time = time[0]
 
             self.on_command((part_index, command_index, time, payload))
 
@@ -233,8 +238,10 @@ class FlightExecuter:
            part = self.rocket.parts[command[0]]
 
            # Execute the command on the part
-           part.command_callbacks[command[1]](command[2], command[3])
-
+           if isinstance(command[3], Iterable):
+                part.command_callbacks[command[1]](command[2], *command[3])
+           else:
+                part.command_callbacks[command[1]](command[2], command[3])
         except Exception as e:
             self.logger.warning(f'Failed executing command for part {command[0]}: {e}')
 

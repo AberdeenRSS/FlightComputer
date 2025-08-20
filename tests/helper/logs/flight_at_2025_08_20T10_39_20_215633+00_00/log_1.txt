@@ -1,0 +1,10 @@
+2025-08-20T10:39:20.217266+00:00: FlightExecutor: Iteration 0: Part Simple flight director failed to update Format specifier missing precision
+Traceback (most recent call last):
+  File "/home/sidney/repos/rocketry/flightcomputer/flight_computer/core/flight_executer.py", line 162, in control_loop
+    p.update(now, iteration)
+  File "/home/sidney/repos/rocketry/flightcomputer/flight_computer/core/content/flight_director/simple_flight_director.py", line 190, in update
+    phase_method(now, vertical_speed)
+  File "/home/sidney/repos/rocketry/flightcomputer/flight_computer/core/content/flight_director/simple_flight_director.py", line 265, in during_ascend_lockout
+    self.log(f'Lockout over, deployment now possible. Flight time: {(now - self.launch_time):2.f}s')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Format specifier missing precision

@@ -153,16 +153,18 @@ def decode_payload_internal(shape: type | str | list[tuple[type | str]], payload
         offset += str_len
         
         return res, offset
-
-    if isinstance(shape, tuple):
-        res, offset = decode_payload_internal(shape[1], payload, offset, False)
-        return res, offset
-
-    if isinstance(shape, Collection):
+    
+    if isinstance(shape, Collection) and len(shape) > 0 and isinstance(shape[0], tuple):
         res = list()
         for s in shape:
             resi, offset = decode_payload_internal(s, payload, offset, False)
             res.append(resi)
         return res, offset
+
+    if isinstance(shape, tuple):
+        res, offset = decode_payload_internal(shape[1], payload, offset, False)
+        return res, offset
+
+
     
     raise Exception()

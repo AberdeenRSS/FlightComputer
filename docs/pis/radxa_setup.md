@@ -3,6 +3,11 @@
 
 [Wifi Setup](https://docs.radxa.com/en/zero/zero3/radxa-os/network)
 
+You might need to modify the wifi config such that it connects on boot rather than on login.
+
+This can be done by modifying `/etc/NetworkManager/system-connections` and removing the `permissions` line:
+See [https://www.gejing.org/2025/02/28/277/](https://www.gejing.org/2025/02/28/277/)
+
 ## GSM hat
 
 The hat uses the default serial pins 8 and 10.

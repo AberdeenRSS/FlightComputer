@@ -61,6 +61,8 @@ class Part(metaclass=ABCMeta):
 
     dependencies: list[Self] 
 
+    __measurement_subscribers: list[dict[UUID, Callable[[Measurement], None]]]
+
     enabled: bool = True
 
     _last_enable_command: float = 0
@@ -139,6 +141,8 @@ class Part(metaclass=ABCMeta):
         self._accepted_commands = list(self.make_accepted_commands())
         self._command_callbacks = list(self.make_command_callbacks())
 
+        self.__measurement_subscribers = [{} for _ in range(len(self.measurement_shape))]
+
         self._measurement_index_lookup = dict((m[0], i) for i, m in enumerate(self.measurement_shape))
         self._command_index_lookup = dict((m[0], i) for i, m in enumerate(self.accepted_command))
 
@@ -159,6 +163,7 @@ class Part(metaclass=ABCMeta):
             parent.rocket.add_part(self) # type: ignore
 
         self.dependencies.extend(dependencies)
+
 
     def update(self, now: float, iteration: int) -> None:
         """
@@ -421,8 +426,17 @@ class Part(metaclass=ABCMeta):
         if level >= INFO_LOG_LEVEL:
             self.submit_measurement_raw([datetime or time.time(), 1, (level, msg)])
 
-    def submit_measurement_raw(self, measruement: Measurement):
-        self._measurement_buffer.append(measruement)
+    def submit_measurement_raw(self, measurement: Measurement):
+        self._measurement_buffer.append(measurement)
+
+        # Call any local subscribers to that measurement
+        subs = self.__measurement_subscribers[measurement[1]]
+
+        for c, s in subs.items():
+            try:
+                s(measurement)
+            except Exception as e:
+                self.log(f'Error calling subscription for measurement {self.measurement_shape[measurement[1]][0]} by {c}: {e}', _nameToLevel['ERROR'])
 
     def submit_measurement(self, measurement_index: int, measurement: MeasurementTypes | Sequence[MeasurementTypes], datetime: float | None = None ):
         self.submit_measurement_raw((datetime or time.time(), measurement_index, measurement))
@@ -430,6 +444,15 @@ class Part(metaclass=ABCMeta):
     def submit_measurement_by_name(self, measurement_name: str, measurement: MeasurementTypes | Sequence[MeasurementTypes], datetime: float | None = None):
         '''Uses `measurement_index_lookup` and is therefore slower. Consider using `submit_measurement` for high performance cases'''
         self.submit_measurement_raw((datetime or time.time(), self.measurement_index_lookup[measurement_name], measurement))
+
+    def subscribe_measurement(self, measurement_index: int, part_id: UUID, callback: Callable[[Measurement], None]):
+        self.__measurement_subscribers[measurement_index][part_id] = callback
+
+    def subscribe_measurement_by_name(self, measurement_name: str, part_id: UUID, callback: Callable[[Measurement], None]):
+        self.subscribe_measurement(self.measurement_index_lookup[measurement_name], part_id, callback)
+
+    def remove_sub(self, measurement_index: int, part_id: UUID):
+        del self.__measurement_subscribers[measurement_index][part_id]
 
 class Rocket:
     """ Class representing the rocket """

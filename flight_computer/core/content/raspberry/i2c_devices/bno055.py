@@ -29,8 +29,6 @@ class BNO055_Raspberry(Part):
 
     operating_mode = 0
 
-    # Set update to only every 5 seconds as 
-    # battery information is low frequency
     min_update_period = timedelta(milliseconds=10)
     min_measurement_period = timedelta(milliseconds=5)
 

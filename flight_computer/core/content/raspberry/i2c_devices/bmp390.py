@@ -8,7 +8,7 @@ from logging import _nameToLevel
 
 from datetime import timedelta
 from logging import _nameToLevel
-from typing import Callable, Collection, Iterable, Tuple, Type, Union
+from typing import Callable, Collection, Iterable, Tuple, Type, Union, cast
 from uuid import UUID
 from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
 from flight_computer.core.logic.rocket_definition import Part, Rocket
@@ -19,6 +19,8 @@ BMP_CHIP_ID = 0x00
 BMP_MAIN_CONFIG = 0x1B
 BMP_CALIBRATION_DATA = 0x31
 BMP_STATUS = 0x03
+
+CalibrationData = tuple[tuple[float, float, float], tuple[float, float, float, float, float, float, float, float, float, float, float]]
 
 def to_uint16(msb, lsb):
     x, = struct.unpack('>H', bytearray([msb, lsb]))
@@ -32,7 +34,7 @@ def to_in8(byte):
     x, = struct.unpack('>b', bytearray([byte]))
     return x
 
-def parse_calib_data(reg_data):
+def parse_calib_data(reg_data) -> CalibrationData:
 
     reg_par_t1 = to_uint16(reg_data[1], reg_data[0])
     quanpar_t1 = reg_par_t1 * 2**8
@@ -106,10 +108,13 @@ class BMP390_Raspberry(Part):
 
     operating_mode = 0
 
-    # Set update to only every 5 seconds as 
-    # battery information is low frequency
+
     min_update_period = timedelta(milliseconds=10)
     min_measurement_period = timedelta(milliseconds=5)
+
+    calib_data: CalibrationData | None = None
+
+    pressure_at_sea_level: float = 101325 # Standard pressure over sea level
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], i2c: RaspberryI2CInterface):
 
@@ -133,12 +138,14 @@ class BMP390_Raspberry(Part):
 
     def make_accepted_commands(self):
         return [
-            *super().make_accepted_commands()
+            *super().make_accepted_commands(),
+            ('set_sea_level_pressure', 'f')
         ]
     
     def make_command_callbacks(self):
         return [
-            *super().make_command_callbacks()
+            *super().make_command_callbacks(),
+            self.set_sea_level_pressure
         ]
    
     def update(self, now, iteration):
@@ -184,8 +191,10 @@ class BMP390_Raspberry(Part):
             pressure_uncomp = ((block[2]<<16 | block[1]<<8 | block[0]))
             temp_uncomp = ((block[5]<<16 | block[4]<<8 | block[3]))
 
-            temp_compensated = compensate_temp(self.calib_data[0], temp_uncomp)
-            pressure_compensated = compensate_pressure(self.calib_data[1], pressure_uncomp, temp_compensated)
+            calib_not_none = cast(CalibrationData, self.calib_data)
+
+            temp_compensated = compensate_temp(calib_not_none[0], temp_uncomp)
+            pressure_compensated = compensate_pressure(calib_not_none[1], pressure_uncomp, temp_compensated)
 
             self.submit_measurement(self.M_TEMP, temp_compensated)
             self.submit_measurement(self.M_PRESS, pressure_compensated)
@@ -196,3 +205,7 @@ class BMP390_Raspberry(Part):
             self.submit_measurement(self.M_ALT, alt)
         
         return i2c_callback
+
+    def set_sea_level_pressure(self, t: float, value: float):
+        self.pressure_at_sea_level = value
+        self.log('Set pressure above sea level to {value}Pa', datetime=t)
