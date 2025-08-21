@@ -3,17 +3,8 @@ from typing_extensions import Self
 from uuid import UUID
 import RPi.GPIO as GPIO
 import time
-
 from flight_computer.core.logic.rocket_definition import Part, Rocket
 
-servoPIN = 12
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(servoPIN, GPIO.OUT)
-
-print('set up servos')
-
-p = GPIO.PWM(servoPIN, 50) # GPIO 17 for PWM with 50Hz
-p.start(2.5) # Initialization
 
 def get_pwm(angle):
     return (angle/18.0) + 2.5
@@ -37,7 +28,7 @@ class Servo(Part):
     def update(self, now: float, iteration: int) -> None:
 
         if self.servo is None:
-            p = GPIO.PWM(servoPIN, 50) # GPIO 17 for PWM with 50Hz
+            p = GPIO.PWM(self.servo_pin, 50) # GPIO 17 for PWM with 50Hz
             p.start(get_pwm(self.current_angle)) # Initialization
             self.servo = p
             self.log(f'Setup servo on pin {self.servo_pin}')
