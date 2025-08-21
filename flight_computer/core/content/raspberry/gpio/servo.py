@@ -18,6 +18,9 @@ class Servo(Part):
 
     current_angle = close_angle
 
+    type = 'Actuator.Servo'
+
+
     def __init__(self, _id: UUID, name: str, parent: Self | None, pin: int):
         super().__init__(_id, name, parent, [])
 
