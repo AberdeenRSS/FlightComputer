@@ -31,6 +31,8 @@ class Servo(Part):
     def update(self, now: float, iteration: int) -> None:
 
         if self.servo is None:
+            GPIO.setmode(GPIO.BCM)  
+            GPIO.setup(self.servo_pin, GPIO.OUT)
             p = GPIO.PWM(self.servo_pin, 50) # GPIO 17 for PWM with 50Hz
             p.start(get_pwm(self.current_angle)) # Initialization
             self.servo = p
