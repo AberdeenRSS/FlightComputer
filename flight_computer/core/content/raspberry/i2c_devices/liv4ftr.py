@@ -1,12 +1,7 @@
-from asyncio import Task
-import asyncio
-import struct
-from smbus3 import SMBus
 
 
 from datetime import timedelta
-from logging import _nameToLevel
-from typing import Callable, Iterable, Tuple, Type, Union
+from typing import Union
 from uuid import UUID
 from flight_computer.core.content.raspberry.i2c import RaspberryI2CInterface
 from flight_computer.core.logic.rocket_definition import Part, Rocket
@@ -55,7 +50,7 @@ class LIV4FTR(Part):
         def i2c_callback(i2c, now, iteration):
 
             buffer = list()
-            print(f'{self.i2c_part.i2c_device_port}: {self.i2c_device_id:.2x}')
+            self.log(f'{self.i2c_part.i2c_device_port}: {self.i2c_device_id:.2x}')
 
             while True:
                 # Read NMEA messages from gps
