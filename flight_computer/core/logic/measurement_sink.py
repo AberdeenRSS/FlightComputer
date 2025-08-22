@@ -7,7 +7,7 @@ from flight_computer.core.logic.rocket_definition import Measurements, Part, Roc
 from flight_computer.core.models.flight import Flight
 from flight_computer.core.mqtt_client import MqttClient
 
-MeasurementsByPart = dict[Part, tuple[float, float, Sequence[Measurements]]]
+MeasurementsByPart = dict[Part, tuple[float, int, Sequence[Measurements]]]
 
 
 class MeasurementSinkBase(Part):

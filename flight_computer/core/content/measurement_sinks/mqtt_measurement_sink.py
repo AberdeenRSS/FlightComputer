@@ -1,5 +1,5 @@
 
-from logging import getLogger
+from logging import getLogger, _nameToLevel
 from typing import Iterable, Self, Tuple, Type, Union
 from uuid import UUID
 from flight_computer.core.helper.binary_format_encoder import enconde_payload
@@ -83,7 +83,11 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
     
     def send_last_measurements(self, now: float):
 
+        if self.mqtt_client is None or self.mqtt_client.client is None:
+            return
+        
         m_period = 1/self.max_send_frequency
+
 
         # Swap measurement buffer
         old_buffer = self.measurement_buffer
@@ -108,7 +112,10 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
 
                     count += 1
                     self.next_m_t[part._index][msg_index] = now + m_period
-                    self.mqtt_client.client.publish(f'{self.flight._id}/m/{part._index}/{msg_index}', enconde_payload(shape, time, payload), qos)
+                    try:
+                        self.mqtt_client.client.publish(f'{self.flight._id}/m/{part._index}/{msg_index}', enconde_payload(shape, time, payload), qos)
+                    except Exception as e:
+                        self.log(f'Error sending measurement of type {part.measurement_shape[msg_index][0]} for {part.name}: {e}', _nameToLevel['ERROR'])
 
         if count > 0:
             self.submit_measurement_by_name('commands_send_last', count, now)
