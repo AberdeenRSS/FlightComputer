@@ -27,7 +27,11 @@ class FileGps(Part):
 
     def make_measurement_shape(self):
         return [
-            *super().make_measurement_shape(),           
+            *super().make_measurement_shape(),    
+            ('lat', 0, 'f'),
+            ('lon', 0, 'f'),   
+            ('speed', 0, 'f'),    
+            ('invalid', 0, '?')
         ]
 
     def make_accepted_commands(self):
@@ -48,7 +52,17 @@ class FileGps(Part):
 
                 gps_data = json.loads(f.read())
 
-                print(gps_data)
+                if 'lat' in gps_data and gps_data['lat'] is not None:
+                    self.submit_measurement_by_name('lat', gps_data['lat'])
+
+                if 'lat' in gps_data and gps_data['lon'] is not None:
+                    self.submit_measurement_by_name('lon', gps_data['lon'])
+
+                if 'speed' in gps_data and gps_data['speed'] is not None:
+                    self.submit_measurement_by_name('speed', gps_data['speed'])
+
+                if 'valid' in gps_data and gps_data['valid'] is not None:
+                    self.submit_measurement_by_name('valid', gps_data['valid'])
 
         except Exception as e:
 
