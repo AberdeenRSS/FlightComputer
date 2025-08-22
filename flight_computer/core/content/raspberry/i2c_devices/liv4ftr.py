@@ -27,6 +27,8 @@ class LIV4FTR(Part):
 
         i2c.i2c_loop_callbacks.add(self.make_i2c_callback())
 
+        self.i2c_part = i2c
+
         # self.M_TEMP = self.measurement_index_lookup['temp']
 
     def make_measurement_shape(self):
@@ -53,7 +55,7 @@ class LIV4FTR(Part):
         def i2c_callback(i2c, now, iteration):
 
             buffer = list()
-            print(self.i2c_device_id)
+            print(f'{self.i2c_part.i2c_device_port}: {self.i2c_device_id:.2x}')
 
             while True:
                 # Read NMEA messages from gps

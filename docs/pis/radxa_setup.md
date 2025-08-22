@@ -15,6 +15,11 @@ By default the standard UART pins (8 and 10) are used as a serial output on the 
 
 [Enable UART2](https://docs.radxa.com/en/zero/zero3/os-config/rsetup#configure-uart2_m0-as-normal-serial-port)
 
+On the overlays enable:
+- I2C3-M0
+- I2C4-M0
+- UART2-M0
+
 Next pp dial up needs to be setup. The setup steps can be found here:
 [Waveshare](https://www.waveshare.com/wiki/SIM868_PPP_Dail-up_Networking)
 
@@ -33,6 +38,11 @@ sudo systemctl enable ppp
 sudo systemctl enable netfailover
 sudo systemctl start ppp
 sudo systemctl start netfailover
+```
+
+You also need to install `ifmetric`: 
+```sh
+sudo apt-get install ifmetric
 ```
 
 ### Troubleshooting
