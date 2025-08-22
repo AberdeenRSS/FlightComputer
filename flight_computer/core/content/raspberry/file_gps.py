@@ -31,7 +31,7 @@ class FileGps(Part):
             ('lat', 0, 'f'),
             ('lon', 0, 'f'),   
             ('speed', 0, 'f'),    
-            ('invalid', 0, '?')
+            ('valid', 0, '?')
         ]
 
     def make_accepted_commands(self):
