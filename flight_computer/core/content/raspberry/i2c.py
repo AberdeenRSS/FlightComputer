@@ -29,7 +29,7 @@ class RaspberryI2CInterface(Part):
     # Set update to only every 5 seconds as 
     # battery information is low frequency
     min_update_period = timedelta(milliseconds=10)
-    min_measurement_period = timedelta(milliseconds=10)
+    min_measurement_period = timedelta(milliseconds=1000)
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], i2c_device_port: int = 1, start_enabled = True):
 
