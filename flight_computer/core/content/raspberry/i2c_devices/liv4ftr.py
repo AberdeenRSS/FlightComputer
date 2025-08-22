@@ -50,7 +50,6 @@ class LIV4FTR(Part):
         def i2c_callback(i2c, now, iteration):
 
             buffer = list()
-            # self.log(f'{self.i2c_part.i2c_device_port}: {self.i2c_device_id:.2x}')
 
             while True:
                 # Read NMEA messages from gps
@@ -65,6 +64,6 @@ class LIV4FTR(Part):
             messages = bytes(buffer).decode('ascii').splitlines()
 
             for msg in messages:
-                print(msg)
+                self.log(msg)
         
         return i2c_callback

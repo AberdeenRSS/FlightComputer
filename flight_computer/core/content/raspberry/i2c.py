@@ -14,7 +14,7 @@ class RaspberryI2CInterface(Part):
 
     connect_task: Task | None = None
 
-    i2c_loop_callbacks: set[Callable[[SMBus, float, int], None]] = set()
+    i2c_loop_callbacks: set[Callable[[SMBus, float, int], None]] 
 
     i2cbus = None
 
@@ -29,14 +29,16 @@ class RaspberryI2CInterface(Part):
 
     # Set update to only every 5 seconds as 
     # battery information is low frequency
-    min_update_period = timedelta(milliseconds=1000)
-    min_measurement_period = timedelta(milliseconds=1000)
+    min_update_period = timedelta(milliseconds=5)
+    min_measurement_period = timedelta(milliseconds=5)
 
     def __init__(self, _id: UUID, name: str, parent: Union[Part, Rocket, None], i2c_device_port: int = 1, start_enabled = True):
 
         self.enabled = start_enabled
 
         self.i2c_device_port = i2c_device_port
+
+        self.i2c_loop_callbacks = set()
 
         super().__init__(_id, name, parent, list()) # type: ignore
 
@@ -65,8 +67,7 @@ class RaspberryI2CInterface(Part):
                 try:
                     c(self.i2cbus, now, iteration)
                 except Exception as e:
-                    
-                    # self.log(f'I2C eror: \n {e}', level=_nameToLevel['ERROR'])
+                    self.log(f'I2C eror: \n {e}', level=_nameToLevel['ERROR'])
                     print(traceback.format_exc())
 
             return
