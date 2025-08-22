@@ -64,8 +64,8 @@ class RaspberryI2CInterface(Part):
                 try:
                     c(self.i2cbus, now, iteration)
                 except Exception as e:
-                    pass
-                    # self.log(f'I2C eror: \n {e}', level=_nameToLevel['ERROR'])
+                    
+                    self.log(f'I2C eror: \n {e}', level=_nameToLevel['ERROR'])
 
             return
 
