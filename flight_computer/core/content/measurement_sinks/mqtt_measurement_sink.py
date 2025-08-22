@@ -16,7 +16,7 @@ class MqttMeasurementSink(ApiMeasurementSinkBase):
     start_task = None
     mqtt_client = None
 
-    max_send_frequency: float = 4
+    max_send_frequency: float = 1
     ''' 
     Maximum send frequency in Hz.
     If a measurement type surpasses this frequency some measurements will be dropped
