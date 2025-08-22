@@ -1,5 +1,6 @@
 from asyncio import Task
 import asyncio
+import traceback
 from smbus3 import SMBus
 from datetime import timedelta
 from logging import _nameToLevel
@@ -65,7 +66,8 @@ class RaspberryI2CInterface(Part):
                     c(self.i2cbus, now, iteration)
                 except Exception as e:
                     
-                    self.log(f'I2C eror: \n {e}', level=_nameToLevel['ERROR'])
+                    # self.log(f'I2C eror: \n {e}', level=_nameToLevel['ERROR'])
+                    print(traceback.format_exc())
 
             return
 
